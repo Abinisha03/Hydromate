@@ -20,7 +20,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.abiarul.hydromate"
+      "package": "com.abiarul.hydromate",
+      "newArchEnabled": true
     },
     "web": {
       "output": "static",
