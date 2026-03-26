@@ -1,0 +1,9 @@
+onlyBuiltDependencies:
+  - '@clerk/shared'
+  - browser-tabs-lock
+  - bufferutil
+  - core-js
+  - dtrace-provider
+  - esbuild
+  - unrs-resolver
+  - utf-8-validate
