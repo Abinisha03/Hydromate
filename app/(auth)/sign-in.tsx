@@ -44,6 +44,7 @@ export default function SignInScreen() {
   const router = useRouter();
   const clerk = useClerk();
   const { startOAuthFlow: googleAuth } = useOAuth({ strategy: 'oauth_google' });
+  const { isSignedIn } = useAuth();
   
   const { isLoading, isAuthenticated } = useConvexAuth();
   const [emailAddress, setEmailAddress] = useState('');
@@ -54,12 +55,22 @@ export default function SignInScreen() {
 
   const addresses = useQuery(api.addresses.getAddresses, isAuthenticated ? {} : "skip");
 
+  // Redirect authenticated users away from sign-in page
   useEffect(() => {
-    if (isAuthenticated && addresses !== undefined && addresses !== null) {
-      if (Array.isArray(addresses) && addresses.length === 0) {
-        router.replace('/(tabs)/profile');
+    if (isAuthenticated) {
+      // If addresses loaded, route based on whether they have addresses
+      if (addresses !== undefined && addresses !== null) {
+        if (Array.isArray(addresses) && addresses.length === 0) {
+          router.replace('/(tabs)/profile');
+        } else {
+          router.replace('/(tabs)');
+        }
       } else {
-        router.replace('/(tabs)');
+        // Don't block redirect — go to tabs while addresses load
+        const timeout = setTimeout(() => {
+          router.replace('/(tabs)');
+        }, 2000);
+        return () => clearTimeout(timeout);
       }
     }
   }, [isAuthenticated, addresses]);
@@ -102,6 +113,10 @@ export default function SignInScreen() {
 
     setLoadingAction('email');
     try {
+      // If already signed in, sign out first to allow new sign-in
+      if (isSignedIn) {
+        await clerk.signOut();
+      }
       const client = clerk.client;
       try {
         await client.signIn.create({ identifier: emailAddress });
@@ -114,6 +129,24 @@ export default function SignInScreen() {
           return;
         }
       } catch (signInErr: any) {
+        const msg = signInErr.errors?.[0]?.longMessage || signInErr.message || '';
+        // If "already signed in" error, sign out and retry once
+        if (msg.toLowerCase().includes('already signed in')) {
+          await clerk.signOut();
+          try {
+            await client.signIn.create({ identifier: emailAddress });
+            const sIn = client.signIn;
+            const factor = sIn.supportedFirstFactors?.find((f: any) => f.strategy === 'email_code');
+            if (factor) {
+              await sIn.prepareFirstFactor({ strategy: 'email_code', emailAddressId: (factor as any).emailAddressId });
+              setPendingVerification(true);
+              setIsSignUpFlow(false);
+              return;
+            }
+          } catch (retryErr: any) {
+            // Fall through to sign up
+          }
+        }
         await client.signUp.create({ 
           emailAddress,
           password: `Hydromate!${Math.random().toString(36).slice(-8)}`,
@@ -125,7 +158,14 @@ export default function SignInScreen() {
         setIsSignUpFlow(true);
       }
     } catch (err: any) {
-      showAlert('Auth Error', err.errors?.[0]?.longMessage || err.message);
+      const msg = err.errors?.[0]?.longMessage || err.message || '';
+      // Don't show "already signed in" as error — handle gracefully
+      if (msg.toLowerCase().includes('already signed in')) {
+        await clerk.signOut();
+        showAlert('Session Cleared', 'Previous session was cleared. Please try again.');
+      } else {
+        showAlert('Auth Error', msg);
+      }
     } finally {
       setLoadingAction(null);
     }
@@ -162,6 +202,16 @@ export default function SignInScreen() {
   };
 
   const isAnyLoading = loadingAction !== null;
+
+  // If user is already authenticated, show loading while redirecting
+  if (isAuthenticated && !isLoading) {
+    return (
+      <View style={[styles.page, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={{ color: COLORS.text, marginTop: 16, fontSize: 16, fontWeight: '600' }}>Redirecting...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.page}>
