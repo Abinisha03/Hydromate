@@ -6,8 +6,6 @@ import { useRouter } from 'expo-router';
 import { MaterialIcons, FontAwesome, FontAwesome5 } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
 import { scale } from '@/utils/responsive';
-import { useQuery, useConvexAuth } from 'convex/react';
-import { api } from '@/convex/_generated/api';
 
 const { width, height } = Dimensions.get('window');
 
@@ -43,37 +41,22 @@ export default function SignInScreen() {
   useWarmUpBrowser();
   const router = useRouter();
   const clerk = useClerk();
+  const { isSignedIn, isLoaded } = useAuth();
   const { startOAuthFlow: googleAuth } = useOAuth({ strategy: 'oauth_google' });
-  const { isSignedIn } = useAuth();
-  
-  const { isLoading, isAuthenticated } = useConvexAuth();
+
   const [emailAddress, setEmailAddress] = useState('');
   const [code, setCode] = useState('');
   const [pendingVerification, setPendingVerification] = useState(false);
   const [isSignUpFlow, setIsSignUpFlow] = useState(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
-  const addresses = useQuery(api.addresses.getAddresses, isAuthenticated ? {} : "skip");
-
-  // Redirect authenticated users away from sign-in page
+  // If user becomes signed in, navigate to tabs immediately
+  // (This handles the case where Clerk auth state changes after setActive)
   useEffect(() => {
-    if (isAuthenticated) {
-      // If addresses loaded, route based on whether they have addresses
-      if (addresses !== undefined && addresses !== null) {
-        if (Array.isArray(addresses) && addresses.length === 0) {
-          router.replace('/(tabs)/profile');
-        } else {
-          router.replace('/(tabs)');
-        }
-      } else {
-        // Don't block redirect — go to tabs while addresses load
-        const timeout = setTimeout(() => {
-          router.replace('/(tabs)');
-        }, 2000);
-        return () => clearTimeout(timeout);
-      }
+    if (isLoaded && isSignedIn) {
+      router.replace('/(tabs)');
     }
-  }, [isAuthenticated, addresses]);
+  }, [isLoaded, isSignedIn]);
 
   const showAlert = (title: string, message: string) => {
     if (Platform.OS === 'web') {
@@ -83,21 +66,32 @@ export default function SignInScreen() {
     }
   };
 
+  // Helper: sign out any stale session before new auth attempt
+  const ensureSignedOut = async () => {
+    if (isSignedIn) {
+      try {
+        await clerk.signOut();
+      } catch (e) {
+        // Ignore sign-out errors
+      }
+    }
+  };
+
   const onSelectAuth = async () => {
     try {
       setLoadingAction('google');
+      await ensureSignedOut();
       const redirectUrl = Linking.createURL('/(tabs)');
       const { createdSessionId, setActive } = await googleAuth({ redirectUrl });
-      if (createdSessionId) {
-        setActive!({ session: createdSessionId });
-        // The useEffect will handle redirection
+      if (createdSessionId && setActive) {
+        await setActive({ session: createdSessionId });
+        // useEffect above will handle redirect when isSignedIn changes
       }
     } catch (err: any) {
       const msg = err.errors?.[0]?.longMessage || err.message || JSON.stringify(err);
-      if (!msg.toLowerCase().includes('already signed in')) {
-        showAlert('Google Error', msg);
-      } else {
-        // Already signed in, the useEffect will handle redirection
+      // Ignore cancel/dismiss errors and "already signed in"
+      if (!msg.toLowerCase().includes('cancel') && !msg.toLowerCase().includes('already signed in')) {
+        showAlert('Google Sign-In Error', msg);
       }
     } finally {
       setLoadingAction(null);
@@ -113,11 +107,10 @@ export default function SignInScreen() {
 
     setLoadingAction('email');
     try {
-      // If already signed in, sign out first to allow new sign-in
-      if (isSignedIn) {
-        await clerk.signOut();
-      }
+      await ensureSignedOut();
       const client = clerk.client;
+
+      // Try sign-in first (existing user)
       try {
         await client.signIn.create({ identifier: emailAddress });
         const sIn = client.signIn;
@@ -129,43 +122,22 @@ export default function SignInScreen() {
           return;
         }
       } catch (signInErr: any) {
-        const msg = signInErr.errors?.[0]?.longMessage || signInErr.message || '';
-        // If "already signed in" error, sign out and retry once
-        if (msg.toLowerCase().includes('already signed in')) {
-          await clerk.signOut();
-          try {
-            await client.signIn.create({ identifier: emailAddress });
-            const sIn = client.signIn;
-            const factor = sIn.supportedFirstFactors?.find((f: any) => f.strategy === 'email_code');
-            if (factor) {
-              await sIn.prepareFirstFactor({ strategy: 'email_code', emailAddressId: (factor as any).emailAddressId });
-              setPendingVerification(true);
-              setIsSignUpFlow(false);
-              return;
-            }
-          } catch (retryErr: any) {
-            // Fall through to sign up
-          }
-        }
-        await client.signUp.create({ 
-          emailAddress,
-          password: `Hydromate!${Math.random().toString(36).slice(-8)}`,
-          firstName: 'Hydromate',
-          lastName: 'User'
-        });
-        await client.signUp.prepareVerification({ strategy: 'email_code' });
-        setPendingVerification(true);
-        setIsSignUpFlow(true);
+        // Sign-in failed — try sign-up (new user)
       }
+
+      // Sign-up flow (new user)
+      await client.signUp.create({
+        emailAddress,
+        password: `Hydromate!${Math.random().toString(36).slice(-8)}`,
+        firstName: 'Hydromate',
+        lastName: 'User'
+      });
+      await client.signUp.prepareVerification({ strategy: 'email_code' });
+      setPendingVerification(true);
+      setIsSignUpFlow(true);
     } catch (err: any) {
-      const msg = err.errors?.[0]?.longMessage || err.message || '';
-      // Don't show "already signed in" as error — handle gracefully
-      if (msg.toLowerCase().includes('already signed in')) {
-        await clerk.signOut();
-        showAlert('Session Cleared', 'Previous session was cleared. Please try again.');
-      } else {
-        showAlert('Auth Error', msg);
-      }
+      const msg = err.errors?.[0]?.longMessage || err.message || 'Something went wrong';
+      showAlert('Auth Error', msg);
     } finally {
       setLoadingAction(null);
     }
@@ -180,17 +152,17 @@ export default function SignInScreen() {
         const completeSignUp = await client.signUp.attemptEmailAddressVerification({ code });
         if (completeSignUp.status === 'complete') {
           await clerk.setActive({ session: completeSignUp.createdSessionId });
-          // Redirection handled by useEffect
+          // useEffect will detect isSignedIn and redirect
         }
       } else {
         const completeSignIn = await client.signIn.attemptFirstFactor({ strategy: 'email_code', code });
         if (completeSignIn.status === 'complete') {
           await clerk.setActive({ session: completeSignIn.createdSessionId });
-          // Redirection handled by useEffect
+          // useEffect will detect isSignedIn and redirect
         }
       }
     } catch (err: any) {
-      showAlert('Verification Error', err.errors?.[0]?.longMessage || 'Invalid code');
+      showAlert('Verification Error', err.errors?.[0]?.longMessage || 'Invalid code. Please try again.');
     } finally {
       setLoadingAction(null);
     }
@@ -203,12 +175,14 @@ export default function SignInScreen() {
 
   const isAnyLoading = loadingAction !== null;
 
-  // If user is already authenticated, show loading while redirecting
-  if (isAuthenticated && !isLoading) {
+  // Show loading while Clerk is loading or user is already signed in (redirect in progress)
+  if (!isLoaded || isSignedIn) {
     return (
       <View style={[styles.page, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={{ color: COLORS.text, marginTop: 16, fontSize: 16, fontWeight: '600' }}>Redirecting...</Text>
+        <Text style={{ color: COLORS.text, marginTop: 16, fontSize: 16, fontWeight: '600' }}>
+          {isSignedIn ? 'Redirecting...' : 'Loading...'}
+        </Text>
       </View>
     );
   }
