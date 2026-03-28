@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Dimensions } from 'react-native';
-import { useClerk, useOAuth, useAuth } from '@clerk/expo';
+import { useClerk, useOAuth, useAuth } from '@clerk/clerk-expo';
 import * as WebBrowser from 'expo-web-browser';
 import { useRouter } from 'expo-router';
 import { MaterialIcons, FontAwesome, FontAwesome5 } from '@expo/vector-icons';

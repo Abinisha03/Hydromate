@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useAuth } from '@clerk/expo';
+import { useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useConvexAuth, useQuery } from 'convex/react';

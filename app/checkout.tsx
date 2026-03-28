@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert, StatusBar, SafeAreaView } from 'react-native';
-import { useUser } from '@clerk/expo';
+import { useUser } from '@clerk/clerk-expo';
 import { useRouter, Stack } from 'expo-router';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 

@@ -4,7 +4,7 @@ import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { useUser } from '@clerk/expo';
+import { useUser } from '@clerk/clerk-expo';
 import BackgroundAnimation from '@/components/BackgroundAnimation';
 import { scale } from '@/utils/responsive';
 

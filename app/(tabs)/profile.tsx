@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, ScrollView, SafeAreaView, Platform, StatusBar, TouchableOpacity, Modal, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
-import { useAuth, useUser } from '@clerk/expo';
+import { useAuth, useUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { useQuery, useMutation, useConvexAuth } from 'convex/react';
 import { api } from '@/convex/_generated/api';
