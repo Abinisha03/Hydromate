@@ -2,11 +2,21 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+  users: defineTable({
+    clerkId: v.string(),
+    tokenIdentifier: v.string(),
+    name: v.string(),
+    email: v.string(),
+    imageUrl: v.optional(v.string()),
+  })
+    .index("by_clerkId", ["clerkId"])
+    .index("by_tokenIdentifier", ["tokenIdentifier"]),
+
   orders: defineTable({
     userId: v.string(),
-    orderId: v.string(), // Human readable short ID like 20989
-    status: v.string(), // "Pending", "Completed", "Cancelled"
-    paymentMode: v.string(), // "COD", "Online"
+    orderId: v.string(),
+    status: v.string(),
+    paymentMode: v.string(),
     quantity: v.number(),
     waterPrice: v.number(),
     bottlePrice: v.number(),
@@ -41,7 +51,7 @@ export default defineSchema({
     userName: v.string(),
     userPhone: v.string(),
     description: v.string(),
-    status: v.string(), // "Pending", "Resolved"
+    status: v.string(),
     date: v.string(),
   }).index("by_user", ["userId"]),
 });

@@ -4,11 +4,12 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { ClerkProvider, ClerkLoaded, useAuth } from '@clerk/clerk-expo';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
-import { ConvexReactClient } from 'convex/react';
+import { ConvexReactClient, useMutation, useQuery } from 'convex/react';
 import { tokenCache } from '@/utils/cache';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useEffect, useState } from 'react';
 import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import { api } from '@/convex/_generated/api';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 const convexUrl = process.env.EXPO_PUBLIC_CONVEX_URL!;
@@ -23,36 +24,77 @@ if (!convexUrl) {
 
 const convex = new ConvexReactClient(convexUrl);
 
-// Auth guard that handles routing based on Clerk auth state
+// Auth guard that handles routing and user sync
 function InitialLayout() {
   const { isLoaded, isSignedIn } = useAuth();
   const segments = useSegments();
   const router = useRouter();
-  const [isReady, setIsReady] = useState(false);
   const colorScheme = useColorScheme();
 
+  // Convex: store user and check if they have addresses
+  const storeUser = useMutation(api.users.storeUser);
+  const addresses = useQuery(
+    api.addresses.getAddresses,
+    isSignedIn ? {} : "skip"
+  );
+
+  const [hasStoredUser, setHasStoredUser] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+
+  // Store user in Convex when they sign in
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) {
+      setHasStoredUser(false);
+      return;
+    }
+
+    const syncUser = async () => {
+      try {
+        await storeUser();
+        setHasStoredUser(true);
+      } catch (e) {
+        console.error("Failed to store user:", e);
+        // Still let them through — storeUser might fail on first render before token syncs
+        setHasStoredUser(true);
+      }
+    };
+
+    syncUser();
+  }, [isLoaded, isSignedIn]);
+
+  // Auth-based routing
   useEffect(() => {
     if (!isLoaded) return;
 
     const inAuthGroup = segments[0] === '(auth)';
 
-    // Small delay on first load to show splash
     const delay = isReady ? 0 : 800;
     const timer = setTimeout(() => {
       setIsReady(true);
-      if (isSignedIn && inAuthGroup) {
-        // Signed in but on auth screen -> go to tabs
-        router.replace('/(tabs)');
-      } else if (!isSignedIn && !inAuthGroup) {
-        // Not signed in and not on auth screen -> go to sign-in
+
+      if (!isSignedIn && !inAuthGroup) {
+        // Not signed in → send to sign-in
         router.replace('/(auth)/sign-in');
+      } else if (isSignedIn && inAuthGroup) {
+        // Signed in but still on auth screen → check if new user
+        if (hasStoredUser && addresses !== undefined) {
+          if (Array.isArray(addresses) && addresses.length === 0) {
+            // New user with no addresses → address page
+            router.replace('/checkout');
+          } else {
+            router.replace('/(tabs)');
+          }
+        } else {
+          // Addresses still loading, default to tabs
+          router.replace('/(tabs)');
+        }
       }
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [isLoaded, isSignedIn, segments]);
+  }, [isLoaded, isSignedIn, segments, hasStoredUser, addresses]);
 
-  // Show loading splash while Clerk is initializing
+  // Loading screen while Clerk initializes
   if (!isLoaded || !isReady) {
     return (
       <View style={loadingStyles.container}>

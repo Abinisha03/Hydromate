@@ -40,7 +40,7 @@ export const createOrder = mutation({
     const date = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
 
     const id = await ctx.db.insert("orders", {
-      userId: identity.subject,
+      userId: identity.tokenIdentifier,
       orderId,
       status: "Pending",
       paymentMode: args.paymentMode,
@@ -71,7 +71,7 @@ export const getOrders = query({
 
     return await ctx.db
       .query("orders")
-      .withIndex("by_user", (q) => q.eq("userId", identity.subject))
+      .withIndex("by_user", (q) => q.eq("userId", identity.tokenIdentifier))
       .order("desc")
       .collect();
   },
@@ -86,7 +86,7 @@ export const getOrderById = query({
     }
 
     const order = await ctx.db.get(args.orderId);
-    if (!order || order.userId !== identity.subject) {
+    if (!order || order.userId !== identity.tokenIdentifier) {
       throw new Error("Order not found or access denied");
     }
 

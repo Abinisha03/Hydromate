@@ -23,7 +23,7 @@ export const createAddress = mutation({
     if (args.isDefault) {
       const existing = await ctx.db
         .query("addresses")
-        .withIndex("by_user", (q) => q.eq("userId", identity.subject))
+        .withIndex("by_user", (q) => q.eq("userId", identity.tokenIdentifier))
         .collect();
       for (const addr of existing) {
         if (addr.isDefault) {
@@ -33,7 +33,7 @@ export const createAddress = mutation({
     }
 
     return await ctx.db.insert("addresses", {
-      userId: identity.subject,
+      userId: identity.tokenIdentifier,
       ...args,
     });
   },
@@ -47,7 +47,7 @@ export const getAddresses = query({
 
     return await ctx.db
       .query("addresses")
-      .withIndex("by_user", (q) => q.eq("userId", identity.subject))
+      .withIndex("by_user", (q) => q.eq("userId", identity.tokenIdentifier))
       .collect();
   },
 });
@@ -73,14 +73,14 @@ export const updateAddress = mutation({
     if (!identity) throw new Error("Not authenticated");
 
     const existing = await ctx.db.get(id);
-    if (!existing || existing.userId !== identity.subject) {
+    if (!existing || existing.userId !== identity.tokenIdentifier) {
       throw new Error("Address not found or access denied");
     }
 
     if (data.isDefault) {
       const all = await ctx.db
         .query("addresses")
-        .withIndex("by_user", (q) => q.eq("userId", identity.subject))
+        .withIndex("by_user", (q) => q.eq("userId", identity.tokenIdentifier))
         .collect();
       for (const addr of all) {
         if (addr.isDefault && addr._id !== id) {
@@ -100,7 +100,7 @@ export const deleteAddress = mutation({
     if (!identity) throw new Error("Not authenticated");
 
     const existing = await ctx.db.get(args.id);
-    if (!existing || existing.userId !== identity.subject) {
+    if (!existing || existing.userId !== identity.tokenIdentifier) {
       throw new Error("Address not found or access denied");
     }
 
@@ -116,7 +116,7 @@ export const setDefaultAddress = mutation({
 
     const all = await ctx.db
       .query("addresses")
-      .withIndex("by_user", (q) => q.eq("userId", identity.subject))
+      .withIndex("by_user", (q) => q.eq("userId", identity.tokenIdentifier))
       .collect();
 
     for (const addr of all) {

@@ -3,6 +3,8 @@ import { StyleSheet, View, Text, TextInput, TouchableOpacity, KeyboardAvoidingVi
 import { useUser } from '@clerk/clerk-expo';
 import { useRouter, Stack } from 'expo-router';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 
 const COLORS = {
   primary: '#2EC4B6',
@@ -17,16 +19,17 @@ const COLORS = {
 export default function CheckoutScreen() {
   const { user } = useUser();
   const router = useRouter();
+  const createAddress = useMutation(api.addresses.createAddress);
 
   const [form, setForm] = useState({
     buildingName: '',
     streetNo: '',
     gateNo: '',
     floorNo: '',
-    doorNo: '8/218A',
-    streetName: 'CSI church street',
-    area: 'Duraiyoor',
-    location: 'Gangaikondan Tirunelveli',
+    doorNo: '',
+    streetName: '',
+    area: '',
+    location: '',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,22 +38,42 @@ export default function CheckoutScreen() {
     setForm(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleSave = () => {
+  const showAlert = (title: string, message: string) => {
+    if (Platform.OS === 'web') {
+      window.alert(`${title}\n\n${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
+
+  const handleSave = async () => {
     if (!form.streetName || !form.area || !form.location) {
-      if (Platform.OS === 'web') {
-        window.alert('Please fill out the required address fields.');
-      } else {
-        Alert.alert('Required Fields', 'Please fill out the required address fields.');
-      }
+      showAlert('Required Fields', 'Please fill out Street Name, Area, and Location.');
       return;
     }
 
     setIsSubmitting(true);
-    
-    setTimeout(() => {
+    try {
+      await createAddress({
+        name: user?.fullName || user?.firstName || 'User',
+        phone: user?.primaryPhoneNumber?.phoneNumber || '',
+        buildingName: form.buildingName || '-',
+        streetNo: form.streetNo || '-',
+        gateNo: form.gateNo || '-',
+        floorNo: form.floorNo || '-',
+        doorNo: form.doorNo || '-',
+        streetName: form.streetName,
+        area: form.area,
+        location: form.location,
+        isDefault: true,
+      });
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      console.error('Address save error:', error);
+      showAlert('Error', 'Failed to save address. Please try again.');
+    } finally {
       setIsSubmitting(false);
-      router.push('/(tabs)/profile');
-    }, 800);
+    }
   };
 
   return (
@@ -135,7 +158,7 @@ export default function CheckoutScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-               <Text style={styles.inputLabel}>Street Name</Text>
+               <Text style={styles.inputLabel}>Street Name *</Text>
                <TextInput
                 style={styles.inputFull}
                 placeholder="CSI Church Street"
@@ -146,7 +169,7 @@ export default function CheckoutScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-               <Text style={styles.inputLabel}>Area / Neighborhood</Text>
+               <Text style={styles.inputLabel}>Area / Neighborhood *</Text>
                <TextInput
                 style={styles.inputFull}
                 placeholder="Duraiyoor"
@@ -157,7 +180,7 @@ export default function CheckoutScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-               <Text style={styles.inputLabel}>Full Location / City</Text>
+               <Text style={styles.inputLabel}>Full Location / City *</Text>
                <TextInput
                 style={styles.inputFull}
                 placeholder="Gangaikondan, Tirunelveli"
@@ -167,11 +190,6 @@ export default function CheckoutScreen() {
               />
             </View>
 
-            <TouchableOpacity style={styles.getLocationBtn}>
-              <MaterialIcons name="my-location" size={18} color="#cc3333" style={{ marginRight: 8 }} />
-              <Text style={styles.getLocationText}>Get Current Location</Text>
-            </TouchableOpacity>
-
           </View>
 
           <TouchableOpacity 
@@ -180,7 +198,7 @@ export default function CheckoutScreen() {
             disabled={isSubmitting}
           >
             <Text style={styles.submitBtnText}>
-              {isSubmitting ? 'SAVING...' : 'CONFIRM ADDRESS'}
+              {isSubmitting ? 'SAVING...' : 'SAVE ADDRESS & CONTINUE'}
             </Text>
             <MaterialIcons name="check-circle" size={22} color="#fff" style={{ marginLeft: 10 }} />
           </TouchableOpacity>
@@ -255,18 +273,6 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     borderWidth: 1.5,
     borderColor: '#F1F5F9',
-  },
-  getLocationBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    marginTop: 10,
-    paddingVertical: 8,
-  },
-  getLocationText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#cc3333',
   },
   submitBtn: {
     height: 64,
