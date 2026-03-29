@@ -71,7 +71,7 @@ export default function ProfileScreen() {
   const openAddModal = () => {
     setEditingAddress(null);
     setFormData({
-      name: user?.fullName || '',
+      name: (user?.fullName && user.fullName !== 'Hydromate User') ? user.fullName : '',
       phone: user?.primaryPhoneNumber?.phoneNumber || '',
       buildingName: '',
       streetNo: '',
@@ -356,7 +356,7 @@ export default function ProfileScreen() {
 
             <ScrollView style={styles.modalScroll}>
               <View style={styles.formGroup}>
-                 <TextInput style={styles.fullInput} placeholder="Full Name" value={formData.name} onChangeText={(v) => setFormData(p => ({ ...p, name: v }))} />
+                 <TextInput style={styles.fullInput} placeholder="Enter your name" value={formData.name} onChangeText={(v) => setFormData(p => ({ ...p, name: v }))} />
                  <TextInput style={styles.fullInput} placeholder="Phone No" value={formData.phone} onChangeText={(v) => setFormData(p => ({ ...p, phone: v }))} keyboardType="phone-pad" />
                  <TextInput style={styles.fullInput} placeholder="Building Name" value={formData.buildingName} onChangeText={(v) => setFormData(p => ({ ...p, buildingName: v }))} />
                  

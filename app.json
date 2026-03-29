@@ -2,13 +2,15 @@
   "expo": {
     "name": "watercan-mobile",
     "slug": "hydromate",
-    "extra": {
-      "eas": {
-        "projectId": "d062702d-e419-4a0f-a3a1-2ae528196b46"
-      }
-    },
+    "scheme": "hydromate",
     "android": {
       "package": "com.abiarul.hydromate"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "6f3c290e-75a1-49d5-8e6d-d311f1a54c81"
+      }
+    },
+    "owner": "abinisha03"
   }
 }

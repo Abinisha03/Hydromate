@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, SafeAreaView, Platform, StatusBar, Modal, FlatList, Animated, Dimensions, TextInput, ImageBackground } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, SafeAreaView, Platform, StatusBar, Modal, FlatList, Animated, Dimensions, TextInput, ImageBackground, Alert } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
@@ -55,12 +55,32 @@ export default function HomeScreen() {
   const [showPincodes, setShowPincodes] = useState(false);
   const [selectedPincodeLabel, setSelectedPincodeLabel] = useState<string | null>(null);
   const [selectedPincodeValue, setSelectedPincodeValue] = useState<string | null>(null);
+  const [containerWidth, setContainerWidth] = useState(width - scale(20));
+  const [activeSlide, setActiveSlide] = useState(0);
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Auto-scroll Carousel
+  useEffect(() => {
+    // Only auto-scroll if container has measured its width successfully
+    if (containerWidth <= 0) return;
+    
+    const interval = setInterval(() => {
+      setActiveSlide((prev) => {
+        const nextSlide = (prev + 1) % 2; // We currently have 2 slides
+        scrollViewRef.current?.scrollTo({ 
+          x: nextSlide * containerWidth, 
+          animated: true 
+        });
+        return nextSlide;
+      });
+    }, 3500); // changes slide every 3.5 seconds
+    return () => clearInterval(interval);
+  }, [containerWidth]);
   
   // Sidebar State
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
-
-  // Order Availability Check
+  // Availability Check
   const [availability, setAvailability] = useState({ isAvailable: true, reason: '' });
 
   // Banner Animation State
@@ -93,7 +113,11 @@ export default function HomeScreen() {
       const day = istDate.getUTCDay();
       const hour = istDate.getUTCHours();
 
-      if (hour < 6 || hour >= 20) {
+      if (day === 0 && hour >= 12) {
+        setAvailability({ isAvailable: false, reason: 'Orders are closed after 12 PM on Sunday. Please order after Monday 6 AM.' });
+      } else if (day === 1 && hour < 6) {
+        setAvailability({ isAvailable: false, reason: 'Orders are closed until Monday 6 AM.' });
+      } else if (hour < 6 || hour >= 20) {
         setAvailability({ isAvailable: false, reason: 'Orders open 6 AM - 8 PM' });
       } else {
         setAvailability({ isAvailable: true, reason: '' });
@@ -152,6 +176,33 @@ export default function HomeScreen() {
     { label: 'Logout', icon: 'exit-to-app', action: () => signOut() },
   ];
 
+  const handleBuyNow = () => {
+    if (!availability.isAvailable) {
+      if (Platform.OS === 'web') {
+        window.alert(availability.reason);
+      } else {
+        Alert.alert('Orders Closed', availability.reason);
+      }
+      return;
+    }
+    if (!selectedPincodeLabel) {
+      setShowPincodes(true);
+      return;
+    }
+    router.push({
+      pathname: '/payment',
+      params: {
+        qty: quantity,
+        waterPrice: waterPrice,
+        bottlePrice: currentBottlePrice,
+        totalPrice: totalPrice,
+        pincode: selectedPincodeLabel,
+        noBottleReturn: hasNoBottle.toString(),
+        expressCharge: expressCharge.toString(),
+      }
+    });
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.secondary} />
@@ -170,23 +221,82 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <View style={styles.mainWrapper}>
+        <View style={styles.mainWrapper} onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}>
         
-        {/* Banner Card - Animated Wellness Banner */}
-        <View style={styles.bannerCard}>
-           <Animated.View style={{ opacity: bannerFadeAnim, flex: 1 }}>
-              <ImageBackground 
-                source={WATER_IMAGES[bannerIndex]} 
-                style={styles.bannerBackground}
-                imageStyle={{ borderRadius: scale(16) }}
-              >
-                <View style={styles.bannerOverlay}>
-                  <Text style={styles.bannerTagline}>Health First</Text>
-                  <Text style={styles.bannerTitle}>PURE {WATER_WORDS[bannerIndex]}.{"\n"}PURE LIFE.</Text>
-                  <Text style={styles.bannerSubtitle}>Premium demineralized water for a healthier you.</Text>
-                </View>
-              </ImageBackground>
-           </Animated.View>
+        {/* Banner Carousel */}
+        <View style={{ marginBottom: scale(10) }}>
+          <ScrollView 
+            ref={scrollViewRef}
+            horizontal 
+            pagingEnabled 
+            showsHorizontalScrollIndicator={false} 
+            onMomentumScrollEnd={(e) => {
+              const slide = Math.round(e.nativeEvent.contentOffset.x / containerWidth);
+              setActiveSlide(slide);
+            }}
+          >
+          {/* Slide 1: Promotional Banner */}
+          <View style={[styles.bannerCard, { width: containerWidth, marginBottom: 0 }]}>
+            <View style={styles.bannerContent}>
+              <View style={styles.bannerTextContainer}>
+                <Text style={styles.bannerTagline}>Health First</Text>
+                <Text style={styles.bannerTitle}>PURE HYDRATION.{"\n"}PURE LIFE.</Text>
+                <Text style={styles.bannerSubtitle}>Premium demineralized water for a healthier you.</Text>
+              </View>
+              <View style={styles.bannerImageWrapper}>
+                <View style={styles.bannerBgDecoration} />
+                <Image 
+                  source={require('@/assets/images/banner.png')} 
+                  style={styles.bannerImage}
+                  contentFit="contain"
+                />
+              </View>
+            </View>
+          </View>
+
+          {/* Slide 2: Sunday Closed Generated Banner */}
+          <View style={[styles.bannerCard, { 
+            width: containerWidth, 
+            marginBottom: 0, 
+            marginLeft: 0, 
+            backgroundColor: COLORS.primary, // Changed to match app primary theme
+            flexDirection: 'row',
+            overflow: 'hidden',
+            minHeight: scale(110)
+          }]}>
+            <View style={{ flex: 1.6, padding: scale(12), justifyContent: 'center' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: scale(4), flexWrap: 'wrap' }}>
+                <Text style={{ color: '#FFFFFF', fontSize: scale(15), fontWeight: '900', marginRight: scale(4) }}>
+                  Sunday Holiday
+                </Text>
+                <Text style={{ color: COLORS.accent, fontSize: scale(10), fontWeight: '700' }}>
+                  After 12 PM
+                </Text>
+              </View>
+              
+              <Text style={{ color: '#FFFFFF', fontSize: scale(12), fontWeight: '700', marginBottom: scale(2) }}>
+                Pure Drinking Water
+              </Text>
+              <Text style={{ color: '#FFFFFF', fontSize: scale(12), fontWeight: '700', marginBottom: scale(10) }}>
+                At Your Doorstep
+              </Text>
+              
+              {/* Dummy Order Now Button (Visual only since button is outside) */}
+              <View style={{ backgroundColor: COLORS.white, paddingVertical: scale(5), paddingHorizontal: scale(12), borderRadius: scale(12), alignSelf: 'flex-start', elevation: 2 }}>
+                <Text style={{ color: COLORS.secondary, fontSize: scale(9), fontWeight: '900' }}>ORDER NOW</Text>
+              </View>
+            </View>
+
+            <View style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
+              {/* Using water_can.png as the graphic since we don't have the actual delivery man image */}
+              <Image 
+                source={require('@/assets/images/water_can.png')} 
+                style={{ width: '130%', height: '110%', bottom: -scale(10), right: -scale(10) }}
+                contentFit="contain"
+              />
+            </View>
+          </View>
+          </ScrollView>
         </View>
 
         {/* Order Section - Soft Rounded Card */}
@@ -284,34 +394,15 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Action Button - Mint Teal Gradient Look */}
         <TouchableOpacity 
           style={[
             styles.buyBtn, 
             (!selectedPincodeLabel || !availability.isAvailable) && { opacity: 0.6 }
           ]}
-          disabled={!availability.isAvailable}
-          onPress={() => {
-            if (!selectedPincodeLabel) {
-              setShowPincodes(true);
-              return;
-            }
-            router.push({
-              pathname: '/payment',
-              params: {
-                qty: quantity,
-                waterPrice: waterPrice,
-                bottlePrice: currentBottlePrice,
-                totalPrice: totalPrice,
-                pincode: selectedPincodeLabel,
-                noBottleReturn: hasNoBottle.toString(),
-                expressCharge: expressCharge.toString(),
-              }
-            })
-          }}
+          onPress={handleBuyNow}
         >
           <Text style={styles.buyBtnText}>
-            {availability.isAvailable ? 'BUY NOW' : availability.reason.toUpperCase()}
+            BUY NOW
           </Text>
           {availability.isAvailable && (
             <MaterialIcons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 8 }} />
@@ -453,15 +544,30 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     height: scale(120),
   },
-  bannerBackground: {
-    width: '100%',
-    height: '100%',
-  },
-  bannerOverlay: {
+  bannerContent: {
     flex: 1,
-    backgroundColor: 'rgba(15, 157, 138, 0.3)',
+    flexDirection: 'row',
+    backgroundColor: COLORS.secondary,
+  },
+  bannerTextContainer: {
+    flex: 1.5,
     padding: scale(15),
     justifyContent: 'center',
+    zIndex: 2,
+  },
+  bannerImageWrapper: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  bannerBgDecoration: {
+    position: 'absolute',
+    width: scale(100),
+    height: scale(100),
+    borderRadius: scale(50),
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    right: -scale(20),
+    top: -scale(20),
   },
   bannerTagline: {
     fontSize: scale(10),
@@ -497,6 +603,23 @@ const styles = StyleSheet.create({
     width: '90%',
     height: '90%',
     zIndex: 2,
+  },
+  paginationRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: scale(6),
+  },
+  dot: {
+    width: scale(6),
+    height: scale(6),
+    borderRadius: scale(3),
+    backgroundColor: '#CBD5E0',
+    marginHorizontal: scale(3),
+  },
+  activeDot: {
+    width: scale(16),
+    backgroundColor: COLORS.primary,
   },
   orderSection: {
     backgroundColor: COLORS.white,

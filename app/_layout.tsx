@@ -72,11 +72,13 @@ function InitialLayout() {
     const timer = setTimeout(() => {
       setIsReady(true);
 
+      const isRoot = (segments as string[]).length === 0 || ((segments as string[]).length === 1 && segments[0] === 'index');
+
       if (!isSignedIn && !inAuthGroup) {
         // Not signed in → send to sign-in
         router.replace('/(auth)/sign-in');
-      } else if (isSignedIn && inAuthGroup) {
-        // Signed in but still on auth screen → check if new user
+      } else if (isSignedIn && (inAuthGroup || isRoot)) {
+        // Signed in but still on auth screen or splash screen → check if new user
         if (hasStoredUser && addresses !== undefined) {
           if (Array.isArray(addresses) && addresses.length === 0) {
             // New user with no addresses → address page
@@ -84,10 +86,8 @@ function InitialLayout() {
           } else {
             router.replace('/(tabs)');
           }
-        } else {
-          // Addresses still loading, default to tabs
-          router.replace('/(tabs)');
         }
+        // If addresses are loading, we don't redirect yet.
       }
     }, delay);
 
