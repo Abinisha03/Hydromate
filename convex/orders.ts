@@ -21,10 +21,6 @@ export const createOrder = mutation({
     const day = istDate.getUTCDay(); // 0 is Sunday
     const hour = istDate.getUTCHours(); // IST Hour
 
-    if (day === 0) {
-      throw new Error("Sunday is a holiday. Orders cannot be placed today.");
-    }
-
     if (hour < 6 || hour >= 20) {
       throw new Error("Orders are accepted only between 6:00 AM and 8:00 PM.");
     }
@@ -53,8 +49,8 @@ export const createOrder = mutation({
       pincode: args.pincode,
       noBottleReturn: args.noBottleReturn,
       otp,
-      supplierName: "Mahesh",
-      supplierPhone: "9092066984",
+      supplierName: "Ganesh",
+      supplierPhone: "8438005206",
     });
 
     return id;

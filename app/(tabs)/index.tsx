@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, SafeAreaView, Platform, StatusBar, Modal, FlatList, Animated, Dimensions, TextInput } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, SafeAreaView, Platform, StatusBar, Modal, FlatList, Animated, Dimensions, TextInput, ImageBackground } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
@@ -11,6 +11,20 @@ import { scale } from '@/utils/responsive';
 
 const { width } = Dimensions.get('window');
 const SIDEBAR_WIDTH = width * 0.75;
+
+const WATER_IMAGES = [
+  require('@/assets/images/water_bg_1.jpg'),
+  require('@/assets/images/water_bg_2.jpg'),
+  require('@/assets/images/water_bg_3.jpg'),
+  require('@/assets/images/water_bg_4.jpg'),
+];
+
+const WATER_WORDS = [
+  "PURITY",
+  "HEALTH",
+  "CLARITY",
+  "WELLNESS"
+];
 
 // Theme Colors
 const COLORS = {
@@ -49,6 +63,28 @@ export default function HomeScreen() {
   // Order Availability Check
   const [availability, setAvailability] = useState({ isAvailable: true, reason: '' });
 
+  // Banner Animation State
+  const [bannerIndex, setBannerIndex] = useState(0);
+  const bannerFadeAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      Animated.timing(bannerFadeAnim, {
+        toValue: 0,
+        duration: 1500,
+        useNativeDriver: true,
+      }).start(() => {
+        setBannerIndex((prev) => (prev + 1) % WATER_IMAGES.length);
+        Animated.timing(bannerFadeAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     const checkAvailability = () => {
       const now = new Date();
@@ -57,9 +93,7 @@ export default function HomeScreen() {
       const day = istDate.getUTCDay();
       const hour = istDate.getUTCHours();
 
-      if (day === 0) {
-        setAvailability({ isAvailable: false, reason: 'Sunday is a holiday' });
-      } else if (hour < 6 || hour >= 20) {
+      if (hour < 6 || hour >= 20) {
         setAvailability({ isAvailable: false, reason: 'Orders open 6 AM - 8 PM' });
       } else {
         setAvailability({ isAvailable: true, reason: '' });
@@ -138,23 +172,21 @@ export default function HomeScreen() {
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.mainWrapper}>
         
-        {/* Banner Card - Soft & Wellness Look */}
+        {/* Banner Card - Animated Wellness Banner */}
         <View style={styles.bannerCard}>
-          <View style={styles.bannerContent}>
-            <View style={styles.bannerTextContainer}>
-              <Text style={styles.bannerTagline}>Health First</Text>
-              <Text style={styles.bannerTitle}>PURE HYDRATION.{"\n"}PURE LIFE.</Text>
-              <Text style={styles.bannerSubtitle}>Premium demineralized water for a healthier you.</Text>
-            </View>
-            <View style={styles.bannerImageWrapper}>
-              <View style={styles.bannerBgDecoration} />
-              <Image 
-                source={require('@/assets/images/banner.png')} 
-                style={styles.bannerImage}
-                contentFit="contain"
-              />
-            </View>
-          </View>
+           <Animated.View style={{ opacity: bannerFadeAnim, flex: 1 }}>
+              <ImageBackground 
+                source={WATER_IMAGES[bannerIndex]} 
+                style={styles.bannerBackground}
+                imageStyle={{ borderRadius: scale(16) }}
+              >
+                <View style={styles.bannerOverlay}>
+                  <Text style={styles.bannerTagline}>Health First</Text>
+                  <Text style={styles.bannerTitle}>PURE {WATER_WORDS[bannerIndex]}.{"\n"}PURE LIFE.</Text>
+                  <Text style={styles.bannerSubtitle}>Premium demineralized water for a healthier you.</Text>
+                </View>
+              </ImageBackground>
+           </Animated.View>
         </View>
 
         {/* Order Section - Soft Rounded Card */}
@@ -411,7 +443,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   bannerCard: {
-    backgroundColor: COLORS.white,
     borderRadius: scale(16),
     overflow: 'hidden',
     marginBottom: scale(10),
@@ -420,63 +451,47 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 10,
+    height: scale(120),
   },
-  bannerContent: {
-    flexDirection: 'row',
-    padding: scale(10),
-    alignItems: 'center',
+  bannerBackground: {
+    width: '100%',
+    height: '100%',
   },
-  bannerTextContainer: {
-    flex: 1.4,
-    zIndex: 2,
+  bannerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 157, 138, 0.3)',
+    padding: scale(15),
+    justifyContent: 'center',
   },
   bannerTagline: {
-    fontSize: scale(9),
-    color: COLORS.primary,
+    fontSize: scale(10),
+    color: COLORS.white,
     fontWeight: '800',
     letterSpacing: 1,
     textTransform: 'uppercase',
     marginBottom: scale(2),
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   bannerTitle: {
-    fontSize: scale(14),
+    fontSize: scale(18),
     fontWeight: '900',
-    color: COLORS.text,
-    lineHeight: scale(16),
-    marginBottom: scale(2),
+    color: COLORS.white,
+    lineHeight: scale(22),
+    marginBottom: scale(4),
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   bannerSubtitle: {
-    fontSize: scale(10),
-    color: '#666',
-    lineHeight: scale(12),
-    marginBottom: scale(6),
-  },
-  discoverBtn: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
-  },
-  discoverBtnText: {
+    fontSize: scale(11),
     color: COLORS.white,
-    fontSize: 11,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-  },
-  bannerImageWrapper: {
-    flex: 1,
-    height: Math.min(width * 0.18, 90), // Very compact height
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  bannerBgDecoration: {
-    position: 'absolute',
-    width: Math.min(width * 0.18, 80),
-    height: Math.min(width * 0.18, 80),
-    borderRadius: 40,
-    backgroundColor: COLORS.accent,
-    zIndex: 1,
+    opacity: 0.9,
+    lineHeight: scale(14),
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   bannerImage: {
     width: '90%',

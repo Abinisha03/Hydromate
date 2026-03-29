@@ -45,8 +45,8 @@ export default function PaymentScreen() {
     const day = istDate.getUTCDay();
     const hour = istDate.getUTCHours();
 
-    if (day === 0 || hour < 6 || hour >= 20) {
-      const reason = day === 0 ? "Sunday is a holiday. Orders are closed." : "Orders are only accepted between 6:00 AM and 8:00 PM.";
+    if (hour < 6 || hour >= 20) {
+      const reason = "Orders open 6 AM - 8 PM";
       if (Platform.OS === 'web') window.alert(reason);
       else Alert.alert("Orders Closed", reason);
       setIsProcessing(false);
