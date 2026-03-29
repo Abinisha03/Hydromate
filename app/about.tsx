@@ -1,9 +1,24 @@
 import React from 'react';
-import { StyleSheet, View, Text, SafeAreaView, ScrollView, ImageBackground, StatusBar, Dimensions } from 'react-native';
+import { StyleSheet, View, Text, SafeAreaView, ScrollView, ImageBackground, StatusBar, Dimensions, Animated } from 'react-native';
 import { Stack } from 'expo-router';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 
 const { width } = Dimensions.get('window');
+
+const WATER_IMAGES = [
+  require('@/assets/images/water_bg_1.jpg'),
+  require('@/assets/images/water_bg_2.jpg'),
+  require('@/assets/images/water_bg_3.jpg'),
+  require('@/assets/images/water_bg_4.jpg'),
+];
+
+const WATER_WORDS = [
+  "PURITY",
+  "HEALTH",
+  "CLARITY",
+  "WELLNESS"
+];
 
 const COLORS = {
   primary: '#2EC4B6',
@@ -15,6 +30,27 @@ const COLORS = {
 };
 
 export default function AboutUsScreen() {
+  const [index, setIndex] = React.useState(0);
+  const fadeAnim = React.useRef(new Animated.Value(1)).current;
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 1500,
+        useNativeDriver: true,
+      }).start(() => {
+        setIndex((prev) => (prev + 1) % WATER_IMAGES.length);
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.secondary} />
@@ -29,16 +65,20 @@ export default function AboutUsScreen() {
       
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.heroSection}>
-          <ImageBackground 
-            source={{ uri: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?q=80&w=2070&auto=format&fit=crop' }}
-            style={styles.heroImage}
-            imageStyle={{ borderRadius: 40 }}
-          >
-            <View style={styles.heroOverlay}>
-              <FontAwesome5 name="water" size={60} color="#fff" />
-              <Text style={styles.heroTitle}>PURE CARE.{"\n"}PURE LIFE.</Text>
-            </View>
-          </ImageBackground>
+          <View style={[styles.heroImage, { position: 'relative' }]}>
+             <Animated.View style={{ opacity: fadeAnim, flex: 1 }}>
+                <ImageBackground 
+                  source={WATER_IMAGES[index]}
+                  style={styles.heroImage}
+                  imageStyle={{ borderRadius: 40 }}
+                >
+                  <View style={styles.heroOverlay}>
+                    <FontAwesome5 name="water" size={60} color="#fff" />
+                    <Text style={styles.heroTitle}>PURE {WATER_WORDS[index]}.{"\n"}PURE LIFE.</Text>
+                  </View>
+                </ImageBackground>
+             </Animated.View>
+          </View>
         </View>
 
         <View style={styles.contentSection}>
