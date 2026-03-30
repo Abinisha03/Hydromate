@@ -8,6 +8,7 @@ import { api } from '@/convex/_generated/api';
 import { Image } from 'expo-image';
 import BackgroundAnimation from '@/components/BackgroundAnimation';
 import { scale } from '@/utils/responsive';
+import AddressModal from '@/components/AddressModal';
 
 const { width } = Dimensions.get('window');
 const SIDEBAR_WIDTH = width * 0.75;
@@ -58,6 +59,7 @@ export default function HomeScreen() {
   
   // Sidebar State
   const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [addressModalVisible, setAddressModalVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
 
   // Order Availability Check
@@ -115,6 +117,13 @@ export default function HomeScreen() {
     }
   }, [isLoading, isAuthenticated, addresses]);
 
+  const defaultAddress = Array.isArray(addresses) ? addresses.find(a => a.isDefault) : null;
+  
+  useEffect(() => {
+    // We no longer auto-set pincode from address as per the new requirement 
+    // to strictly select it from the home page dropdown.
+  }, [defaultAddress]);
+
   const waterPrice = 35;
   const bottlePricePerUnit = 200;
   const expressCharge = selectedPincodeValue === '91176129' ? (75 * quantity) : 0;
@@ -157,17 +166,41 @@ export default function HomeScreen() {
       <StatusBar barStyle="light-content" backgroundColor={COLORS.secondary} />
       <BackgroundAnimation />
       
-      {/* Custom Header */}
+      {/* Centered Top Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.menuBtn} onPress={() => toggleSidebar(true)}>
-          <MaterialIcons name="menu" size={28} color={COLORS.white} />
+          <MaterialIcons name="menu" size={24} color={COLORS.white} />
         </TouchableOpacity>
-        <View style={styles.brandRow}>
-          <FontAwesome5 name="leaf" size={18} color={COLORS.primary} style={{ marginRight: 8 }} />
-          <Text style={styles.headerTitle}>HYDROMATE</Text>
+        
+        <View style={styles.headerCenter}>
+          <View style={styles.brandRow}>
+            <Image 
+              source={require('@/assets/images/hydromate_logo.png')} 
+              style={styles.headerLogo} 
+            />
+            <Text style={styles.headerTitle}>HYDROMATE</Text>
+          </View>
         </View>
-        <View style={{ width: 48 }} /> 
+        
+        <View style={{ width: scale(32) }} /> 
       </View>
+
+      {/* Compact Left-Aligned Location Bar */}
+      <TouchableOpacity 
+        style={styles.locationBar} 
+        onPress={() => setAddressModalVisible(true)}
+      >
+        <MaterialIcons name="location-on" size={14} color={COLORS.primary} style={{ marginRight: 6 }} />
+        <View style={styles.locationInfo}>
+           <Text style={styles.locationLabel}>HOME <MaterialIcons name="keyboard-arrow-down" size={12} color={COLORS.gray} /></Text>
+           <Text style={styles.locationAddress} numberOfLines={1}>
+             {defaultAddress 
+               ? `${defaultAddress.buildingName || ''}, ${defaultAddress.area || ''}`
+               : "Set delivery address"}
+           </Text>
+        </View>
+      </TouchableOpacity>
+
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.mainWrapper}>
@@ -178,12 +211,11 @@ export default function HomeScreen() {
               <ImageBackground 
                 source={WATER_IMAGES[bannerIndex]} 
                 style={styles.bannerBackground}
-                imageStyle={{ borderRadius: scale(16) }}
+                imageStyle={{ borderRadius: scale(12) }}
               >
                 <View style={styles.bannerOverlay}>
-                  <Text style={styles.bannerTagline}>Health First</Text>
-                  <Text style={styles.bannerTitle}>PURE {WATER_WORDS[bannerIndex]}.{"\n"}PURE LIFE.</Text>
-                  <Text style={styles.bannerSubtitle}>Premium demineralized water for a healthier you.</Text>
+                  <Text style={styles.bannerTitle}>PURE {WATER_WORDS[bannerIndex]} FOR YOU.</Text>
+                  <Text style={styles.bannerSubtitle}>Premium demineralized water for health.</Text>
                 </View>
               </ImageBackground>
            </Animated.View>
@@ -232,9 +264,10 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Delivery Dropdown - Mint Border */}
+          {/* Delivery Dropdown - Only show if no default address or for manual override if needed */}
+          {/* Delivery Dropdown - Always visible and required */}
           <TouchableOpacity 
-            style={styles.dropdown}
+            style={[styles.dropdown, !selectedPincodeLabel && { borderColor: COLORS.primary }]}
             onPress={() => setShowPincodes(true)}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
@@ -292,6 +325,10 @@ export default function HomeScreen() {
           ]}
           disabled={!availability.isAvailable}
           onPress={() => {
+            if (!defaultAddress) {
+              setAddressModalVisible(true);
+              return;
+            }
             if (!selectedPincodeLabel) {
               setShowPincodes(true);
               return;
@@ -303,9 +340,17 @@ export default function HomeScreen() {
                 waterPrice: waterPrice,
                 bottlePrice: currentBottlePrice,
                 totalPrice: totalPrice,
-                pincode: selectedPincodeLabel,
+                pincode: selectedPincodeLabel || (defaultAddress?.pincode || '627001'),
                 noBottleReturn: hasNoBottle.toString(),
                 expressCharge: expressCharge.toString(),
+                // Pass home page address details for order persistence
+                buildingName: defaultAddress?.buildingName || '',
+                streetNo: defaultAddress?.streetNo || '',
+                floorNo: defaultAddress?.floorNo || '',
+                doorNo: defaultAddress?.doorNo || '',
+                streetName: defaultAddress?.streetName || '',
+                area: defaultAddress?.area || '',
+                location: defaultAddress?.location || '',
               }
             })
           }}
@@ -337,7 +382,10 @@ export default function HomeScreen() {
           <Animated.View style={[styles.sidebar, { transform: [{ translateX: slideAnim }] }]}>
             <View style={styles.sidebarHeader}>
               <View style={styles.sidebarLogoBox}>
-                 <FontAwesome5 name="water" size={40} color={COLORS.white} />
+                <Image 
+                  source={require('@/assets/images/hydromate_logo.png')} 
+                  style={styles.sidebarLogo} 
+                />
               </View>
               <Text style={styles.sidebarBrand}>HYDROMATE</Text>
               <Text style={styles.sidebarTagline}>HEALTHY HYDRATION</Text>
@@ -362,6 +410,13 @@ export default function HomeScreen() {
       </Modal>
 
       {/* Pincode Selector Modal - Soft Rounded */}
+      <AddressModal
+        visible={addressModalVisible}
+        onClose={() => setAddressModalVisible(false)}
+        initialData={defaultAddress}
+        addressesCount={Array.isArray(addresses) ? addresses.length : 0}
+      />
+
       <Modal
         visible={showPincodes}
         transparent={true}
@@ -406,17 +461,20 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accent,
   },
   header: {
-    height: scale(54),
-    paddingTop: scale(8),
+    height: scale(48),
     backgroundColor: COLORS.secondary,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: scale(15),
+    paddingHorizontal: scale(12),
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   menuBtn: {
-    width: scale(44),
-    height: scale(44),
+    width: scale(32),
+    height: scale(32),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -426,16 +484,43 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: COLORS.white,
-    fontSize: scale(16),
+    fontSize: scale(14),
     fontWeight: '900',
-    letterSpacing: 2,
+    letterSpacing: 1,
+  },
+  headerLogo: {
+    width: scale(20),
+    height: scale(20),
+    marginRight: 6,
+  },
+  locationBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: scale(15),
+    paddingVertical: scale(2),
+    backgroundColor: 'transparent',
+    marginTop: scale(2),
+  },
+  locationInfo: {
+    flex: 1,
+  },
+  locationLabel: {
+    fontSize: scale(10),
+    fontWeight: '900',
+    color: COLORS.text,
+    letterSpacing: 0.5,
+  },
+  locationAddress: {
+    fontSize: scale(9),
+    color: COLORS.gray,
+    fontWeight: '600',
   },
   container: {
     flex: 1,
   },
   content: {
-    padding: scale(10),
-    paddingBottom: scale(10),
+    padding: scale(8),
+    paddingBottom: 2,
   },
   mainWrapper: {
     maxWidth: 550,
@@ -443,15 +528,11 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   bannerCard: {
-    borderRadius: scale(16),
+    borderRadius: scale(12),
     overflow: 'hidden',
     marginBottom: scale(10),
-    elevation: 3,
-    shadowColor: COLORS.secondary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    height: scale(120),
+    height: scale(85),
+    elevation: 2,
   },
   bannerBackground: {
     width: '100%',
@@ -475,23 +556,15 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   bannerTitle: {
-    fontSize: scale(18),
+    fontSize: scale(14),
     fontWeight: '900',
     color: COLORS.white,
-    lineHeight: scale(22),
-    marginBottom: scale(4),
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    marginBottom: 2,
   },
   bannerSubtitle: {
-    fontSize: scale(11),
+    fontSize: scale(10),
     color: COLORS.white,
     opacity: 0.9,
-    lineHeight: scale(14),
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
   bannerImage: {
     width: '90%',
@@ -500,10 +573,10 @@ const styles = StyleSheet.create({
   },
   orderSection: {
     backgroundColor: COLORS.white,
-    borderRadius: scale(16),
-    padding: scale(10),
+    borderRadius: scale(12),
+    padding: scale(8),
     alignItems: 'center',
-    marginBottom: scale(8),
+    marginBottom: scale(10),
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -519,15 +592,13 @@ const styles = StyleSheet.create({
   },
   orderTitle: {
     fontSize: scale(13),
-    fontWeight: '700',
+    fontWeight: '600',
     color: COLORS.text,
   },
   productImage: {
-    width: width * 0.35,
-    height: width * 0.45,
-    maxHeight: 110,
-    maxWidth: 100,
-    marginBottom: 12,
+    width: scale(70),
+    height: scale(70),
+    marginBottom: scale(6),
   },
   stepperContainer: {
     flexDirection: 'row',
@@ -553,13 +624,13 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   quantityInput: {
-    fontSize: scale(22),
+    fontSize: scale(18),
     fontWeight: '900',
     color: COLORS.secondary,
-    width: scale(60),
+    width: scale(50),
     textAlign: 'center',
     padding: 0,
-    marginHorizontal: scale(5),
+    marginHorizontal: scale(4),
   },
   quantityBox: {
     width: scale(50),
@@ -587,6 +658,99 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: COLORS.text,
+  },
+  addressDisplayCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: scale(16),
+    padding: scale(12),
+    marginBottom: scale(10),
+    elevation: 3,
+    shadowColor: COLORS.secondary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(46, 196, 182, 0.1)',
+  },
+  addressCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: scale(8),
+    paddingBottom: scale(6),
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  deliveryInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  deliveryLabel: {
+    fontSize: scale(11),
+    color: COLORS.gray,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  editAddressBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.secondary,
+    paddingHorizontal: scale(10),
+    paddingVertical: scale(4),
+    borderRadius: scale(8),
+  },
+  editBtnText: {
+    color: COLORS.white,
+    fontSize: scale(10),
+    fontWeight: '800',
+    marginLeft: scale(4),
+  },
+  addressInfoBox: {
+    paddingVertical: scale(2),
+  },
+  addressLine1: {
+    fontSize: scale(14),
+    fontWeight: '800',
+    color: COLORS.secondary,
+    marginBottom: scale(2),
+  },
+  addressLine2: {
+    fontSize: scale(12),
+    color: COLORS.text,
+    opacity: 0.8,
+    fontWeight: '500',
+    marginBottom: scale(6),
+  },
+  pincodeBadge: {
+    backgroundColor: COLORS.accent,
+    alignSelf: 'flex-start',
+    paddingHorizontal: scale(8),
+    paddingVertical: scale(2),
+    borderRadius: scale(6),
+  },
+  pincodeBadgeText: {
+    fontSize: scale(10),
+    color: COLORS.secondary,
+    fontWeight: '800',
+  },
+  noAddressCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: scale(16),
+    padding: scale(16),
+    marginBottom: scale(10),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderStyle: 'dashed',
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+  },
+  noAddressText: {
+    fontSize: scale(14),
+    fontWeight: '800',
+    color: COLORS.primary,
+    marginLeft: scale(10),
   },
   checkboxWrapper: {
     width: '100%',
@@ -654,8 +818,8 @@ const styles = StyleSheet.create({
   },
   buyBtn: {
     backgroundColor: COLORS.primary,
-    height: scale(38),
-    borderRadius: scale(19),
+    height: scale(36),
+    borderRadius: scale(18),
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
@@ -664,6 +828,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
+    marginTop: 2,
   },
   buyBtnText: {
     color: COLORS.white,
@@ -702,12 +867,23 @@ const styles = StyleSheet.create({
   sidebarLogoBox: {
     width: 90,
     height: 90,
-    borderRadius: 30,
-    backgroundColor: COLORS.primary,
+    borderRadius: 45,
+    backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 15,
-    elevation: 5,
+    elevation: 8,
+    shadowColor: COLORS.secondary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+  },
+  sidebarLogo: {
+    width: '100%',
+    height: '100%',
   },
   sidebarBrand: {
     fontSize: 24,

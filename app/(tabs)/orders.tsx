@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, SafeAreaView, Platform, StatusBar, TouchableOpacity, FlatList } from 'react-native';
-import { useQuery } from 'convex/react';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, SafeAreaView, Platform, StatusBar, TouchableOpacity, FlatList, Alert } from 'react-native';
+import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useRouter } from 'expo-router';
 import { MaterialIcons, FontAwesome5, FontAwesome } from '@expo/vector-icons';
@@ -20,13 +20,51 @@ export default function OrdersScreen() {
   const router = useRouter();
   const { success } = useLocalSearchParams();
   const [activeTab, setActiveTab] = useState('PENDING');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [bannerVisible, setBannerVisible] = useState(false);
+  const ITEMS_PER_PAGE = 5;
   const orders = useQuery(api.orders.getOrders);
+  const cancelOrder = useMutation(api.orders.cancelOrder);
+
+  useEffect(() => {
+    if (success === 'true') {
+      setBannerVisible(true);
+    }
+  }, [success]);
+
+  useEffect(() => {
+    // Hide banner on tab switch unless it's PENDING and success is true
+    if (activeTab !== 'PENDING') {
+      setBannerVisible(false);
+    } else if (success === 'true') {
+      setBannerVisible(true);
+    }
+    // Always reset to first page when switching tabs
+    setCurrentPage(1);
+  }, [activeTab, success]);
+
+  const handleCancelOrder = async (orderId: any) => {
+    try {
+      console.log("Cancelling order:", orderId);
+      await cancelOrder({ orderId });
+      setActiveTab('CANCEL'); // Switch to CANCEL section immediately
+    } catch (error) {
+      console.error("Cancel failed:", error);
+      Alert.alert("Error", "Could not cancel the order. Please try again.");
+    }
+  };
 
   const tabs = ['PENDING', 'COMPLETED', 'CANCEL'];
 
   const filteredOrders = orders?.filter(order => 
     order.status.toUpperCase() === activeTab
   ) || [];
+
+  const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE);
+  const paginatedOrders = filteredOrders.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const renderOrderItem = ({ item }: { item: any }) => (
     <TouchableOpacity 
@@ -36,6 +74,18 @@ export default function OrdersScreen() {
         params: { id: item._id }
       })}
     >
+      {item.status.toUpperCase() === 'PENDING' && (
+        <TouchableOpacity 
+          style={styles.cancelIconBtn} 
+          onPress={(e) => {
+            e.stopPropagation();
+            handleCancelOrder(item._id);
+          }}
+        >
+          <MaterialIcons name="cancel" size={24} color="#E53E3E" />
+        </TouchableOpacity>
+      )}
+
       <View style={styles.orderRow}>
         <Text style={styles.orderLabel}>Order Id</Text>
         <Text style={styles.colon}>:</Text>
@@ -70,6 +120,16 @@ export default function OrdersScreen() {
         <Text style={styles.orderLabel}>Date</Text>
         <Text style={styles.colon}>:</Text>
         <Text style={styles.orderValue}>{item.date}</Text>
+      </View>
+      
+      <View style={[styles.orderRow, { marginBottom: 0 }]}>
+        <Text style={styles.orderLabel}>Address</Text>
+        <Text style={styles.colon}>:</Text>
+        <Text style={styles.orderValue} numberOfLines={2}>
+          {item.buildingName || ''} {item.doorNo ? `, ${item.doorNo}` : ''}
+          {"\n"}
+          {item.streetName || ''}, {item.area || ''}
+        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -108,7 +168,7 @@ export default function OrdersScreen() {
         </View>
 
         <FlatList
-          data={filteredOrders}
+          data={paginatedOrders}
           renderItem={renderOrderItem}
           keyExtractor={(item) => item._id}
           contentContainerStyle={styles.listContent}
@@ -123,14 +183,48 @@ export default function OrdersScreen() {
           }
         />
 
-        {(success || activeTab === 'PENDING') && (
+        {bannerVisible && filteredOrders.length > 0 && activeTab === 'PENDING' && (
           <View style={styles.successBanner}>
             <View style={styles.successIconBox}>
                <MaterialIcons name="water-drop" size={16} color={COLORS.primary} style={{ opacity: 0.5 }} />
             </View>
             <Text style={styles.successText}>
-              Your order has been placed successfully with Cash on Delivery.
+              Your order has been placed successfully.
             </Text>
+          </View>
+        )}
+
+        {filteredOrders.length > ITEMS_PER_PAGE && (
+          <View style={styles.paginationContainer}>
+            <View style={{ flex: 1 }}>
+              {currentPage > 1 && (
+                <TouchableOpacity 
+                  style={styles.pageBtn}
+                  onPress={() => setCurrentPage(p => Math.max(1, p - 1))}
+                >
+                  <MaterialIcons name="chevron-left" size={24} color={COLORS.white} />
+                  <Text style={styles.pageBtnText}>Back</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <Text style={styles.pageIndicator}>
+                {currentPage} / {totalPages}
+              </Text>
+            </View>
+
+            <View style={{ flex: 1, alignItems: 'flex-end' }}>
+              {currentPage < totalPages && (
+                <TouchableOpacity 
+                  style={styles.pageBtn}
+                  onPress={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                >
+                  <Text style={styles.pageBtnText}>Next</Text>
+                  <MaterialIcons name="chevron-right" size={24} color={COLORS.white} />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         )}
       </View>
@@ -205,55 +299,55 @@ const styles = StyleSheet.create({
   },
   orderCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 24,
-    padding: 24,
-    marginBottom: 20,
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 8,
     borderWidth: 1.5,
-    borderColor: COLORS.accent, // Use theme accent for subtle border
+    borderColor: COLORS.accent,
     elevation: 2,
     shadowColor: COLORS.secondary,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 10,
+    shadowRadius: 5,
   },
   orderRow: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: 4,
     alignItems: 'center',
   },
   orderLabel: {
     flex: 1.5,
-    fontSize: 16,
+    fontSize: 12,
     color: COLORS.secondary,
     fontWeight: '700',
   },
   colon: {
-    width: 20,
-    fontSize: 16,
+    width: 15,
+    fontSize: 12,
     color: COLORS.secondary,
     textAlign: 'center',
     fontWeight: '700',
   },
   orderValue: {
     flex: 2,
-    fontSize: 16,
+    fontSize: 13,
     color: COLORS.text,
     fontWeight: '900',
-    paddingLeft: 10,
+    paddingLeft: 4,
   },
   successBanner: {
     backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 12,
+    padding: 12,
     marginHorizontal: 20,
-    marginBottom: 40,
+    marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowRadius: 4,
   },
   successIconBox: {
     marginRight: 16,
@@ -286,5 +380,46 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  cancelIconBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 10,
+    padding: 2,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: 'transparent',
+  },
+  pageBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.secondary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 4,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  pageBtnDisabled: {
+    backgroundColor: '#F1F5F9',
+  },
+  pageBtnText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  pageIndicator: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.text,
   },
 });
