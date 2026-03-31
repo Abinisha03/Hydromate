@@ -30,26 +30,13 @@ export default function ProfileScreen() {
 
   const { isLoading, isAuthenticated } = useConvexAuth();
   const addresses = useQuery(api.addresses.getAddresses, isAuthenticated ? {} : 'skip');
-  const convexUser = useQuery(api.users.getCurrentUser, isAuthenticated ? {} : 'skip');
   const deleteAddress = useMutation(api.addresses.deleteAddress);
   const setDefaultAddress = useMutation(api.addresses.setDefaultAddress);
-  const updateUserProfile = useMutation(api.users.updateUserProfile);
 
   // Address modal
   const [modalVisible, setModalVisible] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
   const autoOpenedRef = useRef(false);
-
-  // User profile editing
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [editName, setEditName] = useState('');
-  const [editPhone, setEditPhone] = useState('');
-  const [savingProfile, setSavingProfile] = useState(false);
-
-  // Derived: has the user set a custom profile yet?
-  const hasProfile = !!(convexUser?.displayName && convexUser?.phone);
-  const displayName = convexUser?.displayName || convexUser?.name || 'Set your name';
-  const displayPhone = convexUser?.phone || '';
 
   // Auto-open address modal for brand new users
   useEffect(() => {
@@ -59,42 +46,6 @@ export default function ProfileScreen() {
       setModalVisible(true);
     }
   }, [addresses]);
-
-  // When convexUser loads, pre-fill edit fields
-  useEffect(() => {
-    if (convexUser) {
-      setEditName(convexUser.displayName || convexUser.name || '');
-      setEditPhone(convexUser.phone || '');
-    }
-  }, [convexUser]);
-
-  // ── Profile save ──────────────────────────────────────────────────────────
-  const handleSaveProfile = async () => {
-    if (!editName.trim()) {
-      Alert.alert('Required', 'Please enter your name.');
-      return;
-    }
-    if (!editPhone.trim() || editPhone.trim().length < 10) {
-      Alert.alert('Invalid', 'Please enter a valid 10-digit phone number.');
-      return;
-    }
-    setSavingProfile(true);
-    try {
-      await updateUserProfile({ displayName: editName.trim(), phone: editPhone.trim() });
-      setIsEditingProfile(false);
-    } catch (e: any) {
-      Alert.alert('Error', e.message ?? 'Could not save profile.');
-    } finally {
-      setSavingProfile(false);
-    }
-  };
-
-  const handleCancelEdit = () => {
-    // Reset to saved values
-    setEditName(convexUser?.displayName || convexUser?.name || '');
-    setEditPhone(convexUser?.phone || '');
-    setIsEditingProfile(false);
-  };
 
   // ── Address actions ───────────────────────────────────────────────────────
   const handleSignOut = async () => {
@@ -140,91 +91,28 @@ export default function ProfileScreen() {
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.mainWrapper}>
 
-          {/* ── User Card / Add Details Button ─────────────────────────────────────────── */}
-          {!hasProfile && !isEditingProfile ? (
-            <TouchableOpacity style={styles.addDetailsBox} onPress={() => setIsEditingProfile(true)}>
-              <MaterialIcons name="person-add" size={24} color={COLORS.primary} style={{ marginRight: 12 }} />
-              <Text style={styles.addDetailsText}>Add Details</Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.userCard}>
-              {/* Avatar */}
-              <View style={styles.avatarWrapper}>
-                <View style={styles.avatar}>
-                  <MaterialIcons name="person" size={44} color="#fff" />
-                </View>
+          {/* ── User Card ─────────────────────────────────────────── */}
+          <View style={styles.userCard}>
+            {/* Avatar */}
+            <View style={styles.avatarWrapper}>
+              <View style={styles.avatar}>
+                <MaterialIcons name="person" size={44} color="#fff" />
               </View>
+            </View>
 
-            {/* Info / Edit form */}
+            {/* Info Display */}
             <View style={styles.userInfo}>
-              {isEditingProfile ? (
-                /* ── Edit form ────────────── */
-                <View>
-                  <TextInput
-                    style={styles.profileInput}
-                    placeholder="Your Name (e.g. John)"
-                    placeholderTextColor={COLORS.gray}
-                    value={editName}
-                    onChangeText={setEditName}
-                  />
-                  <TextInput
-                    style={[styles.profileInput, { marginTop: 8 }]}
-                    placeholder="Mobile Number (e.g. 9876543210)"
-                    placeholderTextColor={COLORS.gray}
-                    value={editPhone}
-                    onChangeText={setEditPhone}
-                    keyboardType="phone-pad"
-                    maxLength={10}
-                  />
+              <Text style={styles.userName}>
+                {defaultAddress?.name || user?.fullName || user?.primaryEmailAddress?.emailAddress || 'HydroMate User'}
+              </Text>
+              {defaultAddress?.phone ? (
+                <View style={styles.phoneBadge}>
+                  <MaterialIcons name="phone" size={13} color={COLORS.secondary} style={{ marginRight: 5 }} />
+                  <Text style={styles.userPhone}>{defaultAddress.phone}</Text>
                 </View>
-              ) : (
-                /* ── Display ────────────────── */
-                <View>
-                  <Text style={styles.userName}>{displayName}</Text>
-                  {displayPhone ? (
-                    <View style={styles.phoneBadge}>
-                      <MaterialIcons name="phone" size={13} color={COLORS.secondary} style={{ marginRight: 5 }} />
-                      <Text style={styles.userPhone}>{displayPhone}</Text>
-                    </View>
-                  ) : null}
-                </View>
-              )}
+              ) : null}
             </View>
-
-            {/* ── Icon buttons (Edit / Cancel+Save) ── */}
-            <View style={styles.profileActions}>
-                {isEditingProfile ? (
-                  <>
-                    {/* Save icon */}
-                    <TouchableOpacity
-                      style={[styles.profileIconBtn, { backgroundColor: COLORS.primary }]}
-                      onPress={handleSaveProfile}
-                      disabled={savingProfile}
-                    >
-                      {savingProfile
-                        ? <ActivityIndicator size="small" color="#fff" />
-                        : <MaterialIcons name="check" size={20} color="#fff" />}
-                    </TouchableOpacity>
-                    {/* Cancel icon */}
-                    <TouchableOpacity
-                      style={[styles.profileIconBtn, { backgroundColor: COLORS.danger, marginTop: 6 }]}
-                      onPress={handleCancelEdit}
-                    >
-                      <MaterialIcons name="close" size={20} color="#fff" />
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                /* Edit icon */
-                <TouchableOpacity
-                  style={[styles.profileIconBtn, { backgroundColor: COLORS.secondary }]}
-                  onPress={() => setIsEditingProfile(true)}
-                >
-                  <MaterialIcons name="edit" size={20} color="#fff" />
-                </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          )}
+          </View>
 
 
 
