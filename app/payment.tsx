@@ -62,6 +62,13 @@ export default function PaymentScreen() {
         totalAmount: Number(params.totalPrice) || 50,
         paymentMode: selectedMethod === 'cod' ? 'COD' : 'Online',
         pincode: (params.pincode as string) || 'N/A',
+        buildingName: (params.buildingName as string) || '',
+        streetNo: (params.streetNo as string) || '',
+        floorNo: (params.floorNo as string) || '',
+        doorNo: (params.doorNo as string) || '',
+        streetName: (params.streetName as string) || '',
+        area: (params.area as string) || '',
+        location: (params.location as string) || '',
         noBottleReturn: params.noBottleReturn === 'true',
       });
       setShowSuccess(true);
@@ -202,13 +209,23 @@ export default function PaymentScreen() {
               <Text style={styles.summaryValue}>₹ {params.expressCharge}</Text>
             </View>
           )}
-          <View style={[styles.summaryRow, { marginTop: 12 }]}>
+          <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Total to Pay</Text>
             <Text style={styles.totalValue}>₹ {params.totalPrice}</Text>
           </View>
-          <View style={styles.locationTag}>
-             <MaterialIcons name="location-on" size={14} color={COLORS.primary} style={{ marginRight: 6 }} />
-             <Text style={styles.locationText}>{params.pincode}</Text>
+          
+          <View style={styles.deliveryInfoBox}>
+             <View style={styles.deliveryInfoHeader}>
+                <MaterialIcons name="local-shipping" size={16} color={COLORS.primary} />
+                <Text style={styles.deliveryInfoTitle}>Delivering to:</Text>
+             </View>
+             <Text style={styles.deliveryText}>
+                {params.buildingName}{params.doorNo ? `, Door ${params.doorNo}` : ''}
+                {"\n"}
+                {params.streetName}, {params.area}
+                {"\n"}
+                {params.pincode}
+             </Text>
           </View>
         </View>
 
@@ -459,6 +476,30 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.secondary,
     fontWeight: '700',
+  },
+  deliveryInfoBox: {
+    marginTop: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  deliveryInfoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  deliveryInfoTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    marginLeft: 6,
+    textTransform: 'uppercase',
+  },
+  deliveryText: {
+    fontSize: 13,
+    color: COLORS.text,
+    lineHeight: 18,
+    opacity: 0.8,
   },
   placeOrderBtn: {
     height: scale(42),

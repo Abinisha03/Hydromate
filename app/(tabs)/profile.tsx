@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, Text, ScrollView, SafeAreaView, Platform, StatusBar, TouchableOpacity, Modal, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useAuth, useUser } from '@clerk/clerk-expo';
@@ -8,6 +8,7 @@ import { api } from '@/convex/_generated/api';
 import * as Location from 'expo-location';
 import BackgroundAnimation from '@/components/BackgroundAnimation';
 import { scale } from '@/utils/responsive';
+import AddressModal from '@/components/AddressModal';
 
 const COLORS = {
   primary: '#2EC4B6',
@@ -33,31 +34,20 @@ export default function ProfileScreen() {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
-  const [loadingLocation, setLoadingLocation] = useState(false);
+  const autoOpenedRef = useRef(false);
 
+  // Auto-open Add Address modal for new users with no addresses
   useEffect(() => {
-    if (!isLoading && isAuthenticated && Array.isArray(addresses)) {
-      if (addresses.length === 0) {
-        openAddModal();
-      } else if (!editingAddress) {
-        setModalVisible(false);
-      }
+    if (
+      !autoOpenedRef.current &&
+      Array.isArray(addresses) &&
+      addresses.length === 0
+    ) {
+      autoOpenedRef.current = true;
+      setEditingAddress(null);
+      setModalVisible(true);
     }
-  }, [isLoading, isAuthenticated, addresses]);
-
-  // Form State
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    buildingName: '',
-    streetNo: '',
-    gateNo: '',
-    floorNo: '',
-    doorNo: '',
-    streetName: '',
-    area: '',
-    location: '',
-  });
+  }, [addresses]);
 
   const handleSignOut = async () => {
     try {
@@ -70,126 +60,12 @@ export default function ProfileScreen() {
 
   const openAddModal = () => {
     setEditingAddress(null);
-    setFormData({
-      name: (user?.fullName && user.fullName !== 'Hydromate User') ? user.fullName : '',
-      phone: user?.primaryPhoneNumber?.phoneNumber || '',
-      buildingName: '',
-      streetNo: '',
-      gateNo: '',
-      floorNo: '',
-      doorNo: '',
-      streetName: '',
-      area: '',
-      location: '',
-    });
     setModalVisible(true);
   };
 
   const openEditModal = (addr: any) => {
     setEditingAddress(addr);
-    setFormData({
-      name: addr.name,
-      phone: addr.phone,
-      buildingName: addr.buildingName,
-      streetNo: addr.streetNo,
-      gateNo: addr.gateNo,
-      floorNo: addr.floorNo,
-      doorNo: addr.doorNo,
-      streetName: addr.streetName,
-      area: addr.area,
-      location: addr.location,
-    });
     setModalVisible(true);
-  };
-
-  const getCurrentLocation = async () => {
-    setLoadingLocation(true);
-    try {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        const msg = 'Allow location access to fetch your current address.';
-        if (Platform.OS === 'web') window.alert('Permission Denied\n\n' + msg);
-        else Alert.alert('Permission Denied', msg);
-        return;
-      }
-
-      let location = await Location.getCurrentPositionAsync({});
-      let reverseGeocode = await Location.reverseGeocodeAsync({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
-
-      if (reverseGeocode.length > 0) {
-        const addr = reverseGeocode[0];
-        setFormData(prev => ({
-          ...prev,
-          streetName: addr.street || '',
-          area: addr.district || addr.subregion || '',
-          location: `${addr.city || ''}, ${addr.region || ''}, ${addr.postalCode || ''}, ${addr.country || ''}`,
-        }));
-      }
-    } catch (error) {
-      console.error(error);
-      const msg = 'Could not fetch current location.';
-      if (Platform.OS === 'web') window.alert('Error\n\n' + msg);
-      else Alert.alert('Error', msg);
-    } finally {
-      setLoadingLocation(false);
-    }
-  };
-
-  const saveAddress = async () => {
-    // Validate most important fields as requested: phone, street name, door no, area, location
-    const mostImportant = ['phone', 'streetName', 'doorNo', 'area', 'location'];
-    const missingFields: string[] = [];
-    
-    // Human-friendly field names for the alert
-    const fieldNames: Record<string, string> = {
-      phone: "Phone Number",
-      streetName: "Street Name",
-      doorNo: "Door No",
-      area: "Area",
-      location: "Location"
-    };
-
-    for (const field of mostImportant) {
-      if (!formData[field as keyof typeof formData]) {
-        missingFields.push(fieldNames[field] || field);
-      }
-    }
-
-    if (missingFields.length > 0) {
-      const message = `The following details are mandatory:\n• ${missingFields.join('\n• ')}\n\nPlease provide these details to save your address.`;
-      
-      if (Platform.OS === 'web') {
-        window.alert(`Required Fields\n\n${message}`);
-      } else {
-        Alert.alert('Required Fields', message);
-      }
-      return;
-    }
-
-    try {
-      if (editingAddress) {
-        await updateAddress({
-          id: editingAddress._id,
-          ...formData,
-          isDefault: editingAddress.isDefault,
-        });
-      } else {
-        await createAddress({
-          ...formData,
-          isDefault: (addresses?.length || 0) === 0,
-        });
-      }
-      setModalVisible(false);
-      router.replace('/(tabs)');
-    } catch (error) {
-      console.error(error);
-      const msg = 'Failed to save address to Convex.';
-      if (Platform.OS === 'web') window.alert('Error\n\n' + msg);
-      else Alert.alert('Error', msg);
-    }
   };
 
   const handleDelete = async (id: any) => {
@@ -343,49 +219,18 @@ export default function ProfileScreen() {
         </View>
       </ScrollView>
 
-      {/* Add/Edit Modal */}
-      <Modal visible={modalVisible} animationType="slide" transparent={true}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-               <Text style={styles.modalTitle}>{editingAddress ? 'Edit address' : 'Add address'}</Text>
-               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                  <MaterialIcons name="close" size={24} color={COLORS.text} />
-               </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalScroll}>
-              <View style={styles.formGroup}>
-                 <TextInput style={styles.fullInput} placeholder="Enter your name" value={formData.name} onChangeText={(v) => setFormData(p => ({ ...p, name: v }))} />
-                 <TextInput style={styles.fullInput} placeholder="Phone No" value={formData.phone} onChangeText={(v) => setFormData(p => ({ ...p, phone: v }))} keyboardType="phone-pad" />
-                 <TextInput style={styles.fullInput} placeholder="Building Name" value={formData.buildingName} onChangeText={(v) => setFormData(p => ({ ...p, buildingName: v }))} />
-                 
-                 <View style={styles.formRow}>
-                    <TextInput style={styles.halfInput} placeholder="Street No" value={formData.streetNo} onChangeText={(v) => setFormData(p => ({ ...p, streetNo: v }))} keyboardType="numeric" />
-                    <TextInput style={styles.halfInput} placeholder="Gate No" value={formData.gateNo} onChangeText={(v) => setFormData(p => ({ ...p, gateNo: v }))} />
-                 </View>
-
-                 <View style={styles.formRow}>
-                    <TextInput style={styles.halfInput} placeholder="Floor No" value={formData.floorNo} onChangeText={(v) => setFormData(p => ({ ...p, floorNo: v }))} keyboardType="numeric" />
-                    <TextInput style={styles.halfInput} placeholder="Door No" value={formData.doorNo} onChangeText={(v) => setFormData(p => ({ ...p, doorNo: v }))} keyboardType="numeric" />
-                 </View>
-
-                 <TextInput style={styles.fullInput} placeholder="Street Name" value={formData.streetName} onChangeText={(v) => setFormData(p => ({ ...p, streetName: v }))} />
-                 <TextInput style={styles.fullInput} placeholder="Area" value={formData.area} onChangeText={(v) => setFormData(p => ({ ...p, area: v }))} />
-                 <TextInput style={styles.fullInput} placeholder="Location" value={formData.location} onChangeText={(v) => setFormData(p => ({ ...p, location: v }))} multiline />
-
-                 <TouchableOpacity style={styles.locationLink} onPress={getCurrentLocation} disabled={loadingLocation}>
-                    {loadingLocation ? <ActivityIndicator size="small" color="#e53e3e" /> : <Text style={styles.locationLinkText}>Get current address</Text>}
-                 </TouchableOpacity>
-              </View>
-
-              <TouchableOpacity style={styles.saveBtn} onPress={saveAddress}>
-                 <Text style={styles.saveBtnText}>SAVE ADDRESS</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      <AddressModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        initialData={editingAddress}
+        addressesCount={Array.isArray(addresses) ? addresses.length : 0}
+        onSuccess={() => {
+          // After saving a NEW address (not editing), go to home
+          if (!editingAddress) {
+            router.replace('/(tabs)');
+          }
+        }}
+      />
     </SafeAreaView>
   );
 }

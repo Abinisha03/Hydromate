@@ -133,6 +133,36 @@ export default function OrderDetailsScreen() {
              <Text style={styles.otpValue}>{order.otp}</Text>
           </View>
         </View>
+        
+        {/* Delivery Address Section - New Detailed View */}
+        <View style={styles.detailsCard}>
+           <View style={styles.cardHeader}>
+              <MaterialIcons name="location-on" size={24} color={COLORS.primary} />
+              <Text style={styles.cardHeaderTitle}>Delivery Address</Text>
+           </View>
+           <View style={styles.divider} />
+           
+           <View style={styles.detailRow}>
+             <Text style={styles.label}>Building Name</Text>
+             <Text style={styles.value}>{order.buildingName || 'N/A'}</Text>
+           </View>
+           <View style={styles.detailRow}>
+             <Text style={styles.label}>Door / Floor No</Text>
+             <Text style={styles.value}>{order.doorNo}{order.floorNo ? ` / Floor ${order.floorNo}` : ''}</Text>
+           </View>
+           <View style={styles.detailRow}>
+             <Text style={styles.label}>Street / Area</Text>
+             <Text style={styles.value}>{order.streetName}, {order.area}</Text>
+           </View>
+           <View style={styles.detailRow}>
+             <Text style={styles.label}>City / Location</Text>
+             <Text style={styles.value}>{order.location}</Text>
+           </View>
+           <View style={styles.detailRow}>
+             <Text style={styles.label}>Pincode</Text>
+             <Text style={styles.value}>{order.pincode}</Text>
+           </View>
+        </View>
 
         {/* Supplier Info - Branded Card */}
         <View style={styles.supplierCard}>

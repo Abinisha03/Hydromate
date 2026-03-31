@@ -1,11 +1,49 @@
 {
   "expo": {
-    "name": "watercan-mobile",
+    "name": "Hydromate",
     "slug": "hydromate",
+    "version": "1.0.0",
     "scheme": "hydromate",
-    "android": {
-      "package": "com.abiarul.hydromate"
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#E6F4FE"
     },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.abiarul.hydromate"
+    },
+    "android": {
+      "package": "com.abiarul.hydromate",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundColor": "#E6F4FE"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "INTERNET"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Hydromate to use your location to autofill your delivery address."
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "6f3c290e-75a1-49d5-8e6d-d311f1a54c81"
