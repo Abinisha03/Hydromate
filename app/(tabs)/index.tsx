@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity, SafeAreaView, Platform, StatusBar, Modal, FlatList, Animated, Dimensions, TextInput, ImageBackground, Alert } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
-import { useAuth, useUser } from '@clerk/clerk-expo';
+import { useClerk, useUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { useQuery, useConvexAuth } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -49,7 +49,7 @@ const PINCODES = [
 
 export default function HomeScreen() {
   const { user } = useUser();
-  const { signOut } = useAuth();
+  const { signOut } = useClerk();
   const router = useRouter();
   const [quantity, setQuantity] = useState(1);
   const [hasNoBottle, setHasNoBottle] = useState(false);
