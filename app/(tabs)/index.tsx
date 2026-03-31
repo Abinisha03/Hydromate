@@ -287,44 +287,22 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* Slide 2: Sunday Closed Generated Banner */}
-          <View style={[styles.bannerCard, { 
-            width: containerWidth, 
-            marginBottom: 0, 
-            marginLeft: 0, 
-            backgroundColor: COLORS.primary,
-            flexDirection: 'row',
-            overflow: 'hidden',
-            minHeight: scale(110)
-          }]}>
-            <View style={{ flex: 1.6, padding: scale(12), justifyContent: 'center' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: scale(4), flexWrap: 'wrap' }}>
-                <Text style={{ color: '#FFFFFF', fontSize: scale(15), fontWeight: '900', marginRight: scale(4) }}>
-                  Sunday Holiday
-                </Text>
-                <Text style={{ color: COLORS.accent, fontSize: scale(10), fontWeight: '700' }}>
-                  After 12 PM
-                </Text>
+          {/* Slide 2: Daily Working Hours generated from Slide 1 template */}
+          <View style={[styles.bannerCard, { width: containerWidth, marginBottom: 0 }]}>
+            <View style={styles.bannerContent}>
+              <View style={styles.bannerTextContainer}>
+                <Text style={styles.bannerTagline}>Daily Work</Text>
+                <Text style={styles.bannerTitle}>6 AM TO 8 PM</Text>
+                <Text style={styles.bannerSubtitle}>Pure drinking water{"\n"}At your doorstep.</Text>
               </View>
-              
-              <Text style={{ color: '#FFFFFF', fontSize: scale(12), fontWeight: '700', marginBottom: scale(2) }}>
-                Pure Drinking Water
-              </Text>
-              <Text style={{ color: '#FFFFFF', fontSize: scale(12), fontWeight: '700', marginBottom: scale(10) }}>
-                At Your Doorstep
-              </Text>
-              
-              <View style={{ backgroundColor: COLORS.white, paddingVertical: scale(5), paddingHorizontal: scale(12), borderRadius: scale(12), alignSelf: 'flex-start', elevation: 2 }}>
-                <Text style={{ color: COLORS.secondary, fontSize: scale(9), fontWeight: '900' }}>ORDER NOW</Text>
+              <View style={styles.bannerImageWrapper}>
+                <View style={styles.bannerBgDecoration} />
+                <Image 
+                  source={require('@/assets/images/water_can.png')} 
+                  style={styles.bannerImage}
+                  contentFit="contain"
+                />
               </View>
-            </View>
-
-            <View style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
-              <Image 
-                source={require('@/assets/images/water_can.png')} 
-                style={{ width: '130%', height: '110%', bottom: -scale(10), right: -scale(10) }}
-                contentFit="contain"
-              />
             </View>
           </View>
           </ScrollView>
