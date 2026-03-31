@@ -116,7 +116,7 @@ export default function OrderDetailsScreen() {
             <Text style={styles.label}>Ordered On</Text>
             <Text style={styles.value}>{order.date}</Text>
           </View>
-          {order.expressCharge > 0 && (
+          {(order.expressCharge ?? 0) > 0 && (
             <View style={styles.detailRow}>
               <Text style={styles.label}>Express Delivery</Text>
               <Text style={styles.value}>₹ {order.expressCharge}</Text>
