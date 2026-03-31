@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   StyleSheet, View, Text, SafeAreaView, Platform, StatusBar,
-  TouchableOpacity, Alert, Modal, TextInput, ScrollView
+  TouchableOpacity, Alert, Modal, TextInput, ScrollView, FlatList
 } from 'react-native';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -242,9 +242,14 @@ export default function OrdersScreen() {
           })}
         </View>
 
-        {/* Non-scrollable order list — 3 per page */}
-        <View style={styles.listContent}>
-          {paginatedOrders.length === 0 ? (
+        {/* Scrollable order list — 3 per page */}
+        <FlatList
+          data={paginatedOrders}
+          renderItem={renderOrderItem}
+          keyExtractor={(item) => item._id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
             <View style={styles.emptyState}>
               <MaterialIcons name="layers-clear" size={80} color={COLORS.accent} />
               <Text style={styles.emptyTitle}>No Orders Found</Text>
@@ -252,12 +257,8 @@ export default function OrdersScreen() {
                 You haven't placed any {activeTab.toLowerCase()} orders yet.
               </Text>
             </View>
-          ) : (
-            paginatedOrders.map((item) => (
-              <View key={item._id}>{renderOrderItem({ item })}</View>
-            ))
-          )}
-        </View>
+          }
+        />
 
         {/* Success banner */}
         {bannerVisible && filteredOrders.length > 0 && activeTab === 'PENDING' && (

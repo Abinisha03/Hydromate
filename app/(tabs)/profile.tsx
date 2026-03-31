@@ -151,20 +151,19 @@ export default function ProfileScreen() {
 
             {/* Info / Edit form */}
             <View style={styles.userInfo}>
-              {isEditingProfile ? (
+              {isEditingProfile || !hasProfile ? (
                 /* ── Edit form ────────────── */
                 <View>
                   <TextInput
                     style={styles.profileInput}
-                    placeholder="Your Name"
+                    placeholder="Your Name (e.g. John)"
                     placeholderTextColor={COLORS.gray}
                     value={editName}
                     onChangeText={setEditName}
-                    autoFocus
                   />
                   <TextInput
                     style={[styles.profileInput, { marginTop: 8 }]}
-                    placeholder="Phone Number"
+                    placeholder="Mobile Number (e.g. 9876543210)"
                     placeholderTextColor={COLORS.gray}
                     value={editPhone}
                     onChangeText={setEditPhone}
@@ -175,26 +174,20 @@ export default function ProfileScreen() {
               ) : (
                 /* ── Display ────────────────── */
                 <View>
-                  {!hasProfile ? (
-                    <Text style={styles.userNamePlaceholder}>Tap ✏️ to set your name & number</Text>
-                  ) : (
-                    <>
-                      <Text style={styles.userName}>{displayName}</Text>
-                      {displayPhone ? (
-                        <View style={styles.phoneBadge}>
-                          <MaterialIcons name="phone" size={13} color={COLORS.secondary} style={{ marginRight: 5 }} />
-                          <Text style={styles.userPhone}>{displayPhone}</Text>
-                        </View>
-                      ) : null}
-                    </>
-                  )}
+                  <Text style={styles.userName}>{displayName}</Text>
+                  {displayPhone ? (
+                    <View style={styles.phoneBadge}>
+                      <MaterialIcons name="phone" size={13} color={COLORS.secondary} style={{ marginRight: 5 }} />
+                      <Text style={styles.userPhone}>{displayPhone}</Text>
+                    </View>
+                  ) : null}
                 </View>
               )}
             </View>
 
             {/* ── Icon buttons (Edit / Cancel+Save) ── */}
             <View style={styles.profileActions}>
-              {isEditingProfile ? (
+              {isEditingProfile || !hasProfile ? (
                 <>
                   {/* Save icon */}
                   <TouchableOpacity
@@ -206,13 +199,15 @@ export default function ProfileScreen() {
                       ? <ActivityIndicator size="small" color="#fff" />
                       : <MaterialIcons name="check" size={20} color="#fff" />}
                   </TouchableOpacity>
-                  {/* Cancel icon */}
-                  <TouchableOpacity
-                    style={[styles.profileIconBtn, { backgroundColor: COLORS.danger, marginTop: 6 }]}
-                    onPress={handleCancelEdit}
-                  >
-                    <MaterialIcons name="close" size={20} color="#fff" />
-                  </TouchableOpacity>
+                  {/* Cancel icon (only if they already have a profile to fall back to) */}
+                  {hasProfile && (
+                    <TouchableOpacity
+                      style={[styles.profileIconBtn, { backgroundColor: COLORS.danger, marginTop: 6 }]}
+                      onPress={handleCancelEdit}
+                    >
+                      <MaterialIcons name="close" size={20} color="#fff" />
+                    </TouchableOpacity>
+                  )}
                 </>
               ) : (
                 /* Edit icon */
@@ -226,17 +221,7 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          {/* ── First-time profile setup card ───────────────────── */}
-          {!hasProfile && !isEditingProfile && (
-            <TouchableOpacity style={styles.setupCard} onPress={() => setIsEditingProfile(true)}>
-              <MaterialIcons name="person-add" size={22} color={COLORS.primary} style={{ marginRight: 10 }} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.setupTitle}>Complete Your Profile</Text>
-                <Text style={styles.setupSub}>Add your name and phone number to get started</Text>
-              </View>
-              <MaterialIcons name="chevron-right" size={22} color={COLORS.primary} />
-            </TouchableOpacity>
-          )}
+
 
           {/* ── Saved Addresses ──────────────────────────────────── */}
           <View style={styles.sectionHeaderRow}>
