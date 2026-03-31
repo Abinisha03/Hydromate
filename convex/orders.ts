@@ -8,7 +8,7 @@ export const createOrder = mutation({
     bottlePrice: v.number(),
     totalAmount: v.number(),
     expressCharge: v.number(),
-    paymentMode: v.string(), // "COD", "Online"
+    paymentMode: v.string(),
     pincode: v.string(),
     buildingName: v.optional(v.string()),
     streetNo: v.optional(v.string()),
@@ -21,19 +21,18 @@ export const createOrder = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    
-    // 1. Time & Day Validation (IST: UTC+5:30)
+
+    // Time & Day Validation (IST: UTC+5:30)
     const now = new Date();
     const istDate = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
-    const hour = istDate.getUTCHours(); // IST Hour
+    const hour = istDate.getUTCHours();
 
     if (hour < 6 || hour >= 20) {
       throw new Error("Orders are accepted only between 6:00 AM and 8:00 PM.");
     }
 
     if (!identity) {
-      console.error("Auth Error: getUserIdentity returned null");
-      throw new Error("Order creation failed: Not authenticated in Convex. Please ensure you are logged in and try again.");
+      throw new Error("Order creation failed: Not authenticated in Convex.");
     }
 
     const orderId = Math.floor(10000 + Math.random() * 90000).toString();
@@ -50,7 +49,7 @@ export const createOrder = mutation({
       bottlePrice: args.bottlePrice,
       totalAmount: args.totalAmount,
       expressCharge: args.expressCharge,
-      date: date,
+      date,
       pincode: args.pincode,
       buildingName: args.buildingName,
       streetNo: args.streetNo,
@@ -73,9 +72,7 @@ export const getOrders = query({
   args: {},
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      return [];
-    }
+    if (!identity) return [];
 
     return await ctx.db
       .query("orders")
@@ -89,9 +86,7 @@ export const getOrderById = query({
   args: { orderId: v.id("orders") },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
+    if (!identity) throw new Error("Not authenticated");
 
     const order = await ctx.db.get(args.orderId);
     if (!order || order.userId !== identity.tokenIdentifier) {
@@ -106,12 +101,11 @@ export const cancelOrder = mutation({
   args: { orderId: v.id("orders") },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
+    if (!identity) throw new Error("Not authenticated");
 
     const order = await ctx.db.get(args.orderId);
-    if (!order || order.userId !== identity.subject) {
+    // FIXED: use tokenIdentifier (not subject) — must match how createOrder stores userId
+    if (!order || order.userId !== identity.tokenIdentifier) {
       throw new Error("Order not found or access denied");
     }
 
@@ -119,8 +113,45 @@ export const cancelOrder = mutation({
       throw new Error("Only pending orders can be cancelled");
     }
 
+    await ctx.db.patch(args.orderId, { status: "Cancel" });
+    return { success: true };
+  },
+});
+
+export const updateOrder = mutation({
+  args: {
+    orderId: v.id("orders"),
+    quantity: v.number(),
+    pincode: v.string(),
+    noBottleReturn: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const order = await ctx.db.get(args.orderId);
+    if (!order || order.userId !== identity.tokenIdentifier) {
+      throw new Error("Order not found or access denied");
+    }
+
+    if (order.status.toLowerCase() !== "pending") {
+      throw new Error("Only pending orders can be edited");
+    }
+
+    // Recalculate totals
+    const waterPrice = 35;
+    const bottlePrice = args.noBottleReturn ? args.quantity * 200 : 0;
+    const expressCharge = args.pincode.includes("91176129") ? args.quantity * 75 : 0;
+    const totalAmount = args.quantity * waterPrice + bottlePrice + expressCharge;
+
     await ctx.db.patch(args.orderId, {
-      status: "Cancel"
+      quantity: args.quantity,
+      pincode: args.pincode,
+      noBottleReturn: args.noBottleReturn,
+      waterPrice,
+      bottlePrice,
+      expressCharge,
+      totalAmount,
     });
 
     return { success: true };
