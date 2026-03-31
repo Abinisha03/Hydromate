@@ -8,7 +8,6 @@ export const storeUser = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
-    // Check if user already exists by tokenIdentifier
     let existing = await ctx.db
       .query("users")
       .withIndex("by_tokenIdentifier", (q) =>
@@ -16,7 +15,6 @@ export const storeUser = mutation({
       )
       .first();
 
-    // Fallback: check by clerkId for old records missing tokenIdentifier
     if (!existing) {
       existing = await ctx.db
         .query("users")
@@ -25,7 +23,6 @@ export const storeUser = mutation({
     }
 
     if (existing) {
-      // Patch existing user — backfill tokenIdentifier if missing
       await ctx.db.patch(existing._id, {
         tokenIdentifier: identity.tokenIdentifier,
         name: identity.name ?? existing.name,
@@ -35,7 +32,6 @@ export const storeUser = mutation({
       return existing._id;
     }
 
-    // Create new user
     const userId = await ctx.db.insert("users", {
       clerkId: identity.subject,
       tokenIdentifier: identity.tokenIdentifier,
@@ -55,7 +51,6 @@ export const getCurrentUser = query({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) return null;
 
-    // Try tokenIdentifier first
     const byToken = await ctx.db
       .query("users")
       .withIndex("by_tokenIdentifier", (q) =>
@@ -65,7 +60,6 @@ export const getCurrentUser = query({
 
     if (byToken) return byToken;
 
-    // Fallback to clerkId for old records
     return await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
@@ -73,7 +67,42 @@ export const getCurrentUser = query({
   },
 });
 
-// Check if user exists (for new user detection)
+// Update user's editable display name and phone — persisted in Convex
+export const updateUserProfile = mutation({
+  args: {
+    displayName: v.string(),
+    phone: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    let user = await ctx.db
+      .query("users")
+      .withIndex("by_tokenIdentifier", (q) =>
+        q.eq("tokenIdentifier", identity.tokenIdentifier)
+      )
+      .first();
+
+    if (!user) {
+      user = await ctx.db
+        .query("users")
+        .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+        .first();
+    }
+
+    if (!user) throw new Error("User record not found");
+
+    await ctx.db.patch(user._id, {
+      displayName: args.displayName.trim(),
+      phone: args.phone.trim(),
+    });
+
+    return { success: true };
+  },
+});
+
+// Check if user exists
 export const userExists = query({
   args: {},
   handler: async (ctx) => {

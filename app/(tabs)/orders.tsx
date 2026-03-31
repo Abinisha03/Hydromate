@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   StyleSheet, View, Text, SafeAreaView, Platform, StatusBar,
-  TouchableOpacity, FlatList, Alert, Modal, TextInput, ScrollView
+  TouchableOpacity, Alert, Modal, TextInput, ScrollView
 } from 'react-native';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -33,7 +33,7 @@ export default function OrdersScreen() {
   const [activeTab, setActiveTab] = useState('PENDING');
   const [currentPage, setCurrentPage] = useState(1);
   const [bannerVisible, setBannerVisible] = useState(false);
-  const ITEMS_PER_PAGE = 5;
+  const ITEMS_PER_PAGE = 3;
 
   // Edit modal state
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -242,13 +242,9 @@ export default function OrdersScreen() {
           })}
         </View>
 
-        {/* List */}
-        <FlatList
-          data={paginatedOrders}
-          renderItem={renderOrderItem}
-          keyExtractor={(item) => item._id}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
+        {/* Non-scrollable order list — 3 per page */}
+        <View style={styles.listContent}>
+          {paginatedOrders.length === 0 ? (
             <View style={styles.emptyState}>
               <MaterialIcons name="layers-clear" size={80} color={COLORS.accent} />
               <Text style={styles.emptyTitle}>No Orders Found</Text>
@@ -256,8 +252,12 @@ export default function OrdersScreen() {
                 You haven't placed any {activeTab.toLowerCase()} orders yet.
               </Text>
             </View>
-          }
-        />
+          ) : (
+            paginatedOrders.map((item) => (
+              <View key={item._id}>{renderOrderItem({ item })}</View>
+            ))
+          )}
+        </View>
 
         {/* Success banner */}
         {bannerVisible && filteredOrders.length > 0 && activeTab === 'PENDING' && (

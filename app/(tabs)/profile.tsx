@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, ScrollView, SafeAreaView, Platform, StatusBar, TouchableOpacity, Modal, TextInput, ActivityIndicator, Alert } from 'react-native';
+import {
+  StyleSheet, View, Text, ScrollView, SafeAreaView, Platform,
+  StatusBar, TouchableOpacity, TextInput, ActivityIndicator, Alert, Animated
+} from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { useQuery, useMutation, useConvexAuth } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import * as Location from 'expo-location';
 import BackgroundAnimation from '@/components/BackgroundAnimation';
 import { scale } from '@/utils/responsive';
 import AddressModal from '@/components/AddressModal';
@@ -18,37 +20,83 @@ const COLORS = {
   white: '#FFFFFF',
   gray: '#718096',
   border: '#E2E8F0',
+  danger: '#E53E3E',
 };
 
 export default function ProfileScreen() {
   const { user } = useUser();
   const { signOut } = useAuth();
   const router = useRouter();
-  
+
   const { isLoading, isAuthenticated } = useConvexAuth();
-  const addresses = useQuery(api.addresses.getAddresses, isAuthenticated ? {} : "skip");
-  const createAddress = useMutation(api.addresses.createAddress);
-  const updateAddress = useMutation(api.addresses.updateAddress);
+  const addresses = useQuery(api.addresses.getAddresses, isAuthenticated ? {} : 'skip');
+  const convexUser = useQuery(api.users.getCurrentUser, isAuthenticated ? {} : 'skip');
   const deleteAddress = useMutation(api.addresses.deleteAddress);
   const setDefaultAddress = useMutation(api.addresses.setDefaultAddress);
+  const updateUserProfile = useMutation(api.users.updateUserProfile);
 
+  // Address modal
   const [modalVisible, setModalVisible] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
   const autoOpenedRef = useRef(false);
 
-  // Auto-open Add Address modal for new users with no addresses
+  // User profile editing
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  // Derived: has the user set a custom profile yet?
+  const hasProfile = !!(convexUser?.displayName && convexUser?.phone);
+  const displayName = convexUser?.displayName || convexUser?.name || 'Set your name';
+  const displayPhone = convexUser?.phone || '';
+
+  // Auto-open address modal for brand new users
   useEffect(() => {
-    if (
-      !autoOpenedRef.current &&
-      Array.isArray(addresses) &&
-      addresses.length === 0
-    ) {
+    if (!autoOpenedRef.current && Array.isArray(addresses) && addresses.length === 0) {
       autoOpenedRef.current = true;
       setEditingAddress(null);
       setModalVisible(true);
     }
   }, [addresses]);
 
+  // When convexUser loads, pre-fill edit fields
+  useEffect(() => {
+    if (convexUser) {
+      setEditName(convexUser.displayName || convexUser.name || '');
+      setEditPhone(convexUser.phone || '');
+    }
+  }, [convexUser]);
+
+  // ── Profile save ──────────────────────────────────────────────────────────
+  const handleSaveProfile = async () => {
+    if (!editName.trim()) {
+      Alert.alert('Required', 'Please enter your name.');
+      return;
+    }
+    if (!editPhone.trim() || editPhone.trim().length < 10) {
+      Alert.alert('Invalid', 'Please enter a valid 10-digit phone number.');
+      return;
+    }
+    setSavingProfile(true);
+    try {
+      await updateUserProfile({ displayName: editName.trim(), phone: editPhone.trim() });
+      setIsEditingProfile(false);
+    } catch (e: any) {
+      Alert.alert('Error', e.message ?? 'Could not save profile.');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    // Reset to saved values
+    setEditName(convexUser?.displayName || convexUser?.name || '');
+    setEditPhone(convexUser?.phone || '');
+    setIsEditingProfile(false);
+  };
+
+  // ── Address actions ───────────────────────────────────────────────────────
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -58,37 +106,20 @@ export default function ProfileScreen() {
     }
   };
 
-  const openAddModal = () => {
-    setEditingAddress(null);
-    setModalVisible(true);
-  };
-
-  const openEditModal = (addr: any) => {
-    setEditingAddress(addr);
-    setModalVisible(true);
-  };
-
   const handleDelete = async (id: any) => {
-    console.log('Attempting to delete address:', id);
-    
-    const onConfirm = async () => {
+    const doDelete = async () => {
       try {
         await deleteAddress({ id });
-        if (Platform.OS === 'web') alert('Address deleted successfully');
       } catch (error) {
-        console.error('Delete error:', error);
-        alert('Failed to delete address: ' + (error as Error).message);
+        Alert.alert('Error', 'Failed to delete address: ' + (error as Error).message);
       }
     };
-
     if (Platform.OS === 'web') {
-      if (window.confirm('Are you sure you want to remove this address?')) {
-        onConfirm();
-      }
+      if (window.confirm('Remove this address?')) doDelete();
     } else {
       Alert.alert('Delete Address', 'Are you sure you want to remove this address?', [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: onConfirm },
+        { text: 'Delete', style: 'destructive', onPress: doDelete },
       ]);
     }
   };
@@ -99,122 +130,206 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.secondary} />
       <BackgroundAnimation />
+
+      {/* Header */}
       <View style={styles.header}>
-        <FontAwesome5 name="user-circle" size={24} color={COLORS.white} style={{ marginRight: 12 }} />
+        <FontAwesome5 name="user-circle" size={22} color={COLORS.white} style={{ marginRight: 10 }} />
         <Text style={styles.headerTitle}>Account Profile</Text>
       </View>
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.mainWrapper}>
-        
-        {/* User Info Card - Wellness Style */}
-        <View style={styles.userCard}>
-          <View style={styles.avatarWrapper}>
-             <View style={styles.avatar}>
-               <MaterialIcons name="person" size={50} color="#fff" />
-             </View>
-             <View style={styles.avatarRing} />
-          </View>
-          <View style={styles.userInfo}>
-            <Text style={styles.userName}>
-              {defaultAddress ? defaultAddress.name : (user?.primaryEmailAddress?.emailAddress || 'Loading...')}
-            </Text>
-            {defaultAddress && (
-              <View style={styles.phoneBadge}>
-                 <MaterialIcons name="phone" size={14} color={COLORS.secondary} style={{ marginRight: 6 }} />
-                 <Text style={styles.userPhone}>
-                   {defaultAddress.phone}
-                 </Text>
-              </View>
-            )}
-          </View>
-        </View>
 
-        {/* Address Management Section */}
-        <View style={styles.sectionHeaderRow}>
-           <Text style={styles.sectionHeaderTitle}>Saved Addresses</Text>
-        </View>
-
-        {addresses === undefined || addresses === null ? (
-          <ActivityIndicator color={COLORS.primary} style={{ marginTop: 20 }} />
-        ) : (
-          addresses.map((addr) => (
-            <View key={addr._id} style={[styles.addressCard, addr.isDefault && styles.defaultBorder]}>
-              <View style={styles.addressHeader}>
-                <View style={styles.addressNameRow}>
-                   <MaterialIcons name="location-city" size={18} color={COLORS.primary} style={{ marginRight: 10 }} />
-                   <Text style={styles.addressNameText}>{addr.buildingName || 'Home'}</Text>
-                </View>
-                <View style={styles.addressActions}>
-                  <TouchableOpacity style={styles.editBtn} onPress={() => openEditModal(addr)}>
-                    <MaterialIcons name="edit" size={18} color="#fff" />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.trashBtn} onPress={() => handleDelete(addr._id)}>
-                    <MaterialIcons name="delete" size={18} color="#fff" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <View style={styles.divider} />
-
-              {[
-                { label: 'Building Name', value: addr.buildingName },
-                { label: 'Gate No', value: addr.gateNo },
-                { label: 'Floor No', value: addr.floorNo },
-                { label: 'Door No', value: addr.doorNo },
-                { label: 'Street Name', value: addr.streetName },
-                { label: 'Area', value: addr.area },
-                { label: 'Location', value: addr.location },
-              ].map((item, idx) => (
-                <View key={idx} style={styles.addressRow}>
-                  <Text style={styles.addressLabel}>{item.label}</Text>
-                  <Text style={styles.labelColon}>:</Text>
-                  <Text style={styles.addressValue}>{item.value || '-'}</Text>
-                </View>
-              ))}
-
-              <View style={styles.useAddressContainer}>
-                <TouchableOpacity 
-                   style={[styles.useAddressBtn, addr.isDefault && styles.activeAddressBtn]} 
-                   onPress={() => setDefaultAddress({ id: addr._id })}
-                >
-                  <Text style={[styles.useAddressText, addr.isDefault && { color: '#fff' }]}>
-                    {addr.isDefault ? 'PRIMARY ADDRESS' : 'Use This Address'}
-                  </Text>
-                  <MaterialIcons 
-                    name={addr.isDefault ? "check-circle" : "radio-button-unchecked"} 
-                    size={20} 
-                    color={addr.isDefault ? "#fff" : "#007AFF"} 
-                    style={{ marginLeft: 10 }} 
-                  />
-                </TouchableOpacity>
+          {/* ── User Card ─────────────────────────────────────────── */}
+          <View style={styles.userCard}>
+            {/* Avatar */}
+            <View style={styles.avatarWrapper}>
+              <View style={styles.avatar}>
+                <MaterialIcons name="person" size={44} color="#fff" />
               </View>
             </View>
-          ))
-        )}
 
-        <View style={styles.centerAddBtn}>
-          <TouchableOpacity style={styles.mobileAddBtn} onPress={openAddModal}>
-             <Text style={styles.mobileAddBtnText}>ADD NEW</Text>
+            {/* Info / Edit form */}
+            <View style={styles.userInfo}>
+              {isEditingProfile ? (
+                /* ── Edit form ────────────── */
+                <View>
+                  <TextInput
+                    style={styles.profileInput}
+                    placeholder="Your Name"
+                    placeholderTextColor={COLORS.gray}
+                    value={editName}
+                    onChangeText={setEditName}
+                    autoFocus
+                  />
+                  <TextInput
+                    style={[styles.profileInput, { marginTop: 8 }]}
+                    placeholder="Phone Number"
+                    placeholderTextColor={COLORS.gray}
+                    value={editPhone}
+                    onChangeText={setEditPhone}
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                  />
+                </View>
+              ) : (
+                /* ── Display ────────────────── */
+                <View>
+                  {!hasProfile ? (
+                    <Text style={styles.userNamePlaceholder}>Tap ✏️ to set your name & number</Text>
+                  ) : (
+                    <>
+                      <Text style={styles.userName}>{displayName}</Text>
+                      {displayPhone ? (
+                        <View style={styles.phoneBadge}>
+                          <MaterialIcons name="phone" size={13} color={COLORS.secondary} style={{ marginRight: 5 }} />
+                          <Text style={styles.userPhone}>{displayPhone}</Text>
+                        </View>
+                      ) : null}
+                    </>
+                  )}
+                </View>
+              )}
+            </View>
+
+            {/* ── Icon buttons (Edit / Cancel+Save) ── */}
+            <View style={styles.profileActions}>
+              {isEditingProfile ? (
+                <>
+                  {/* Save icon */}
+                  <TouchableOpacity
+                    style={[styles.profileIconBtn, { backgroundColor: COLORS.primary }]}
+                    onPress={handleSaveProfile}
+                    disabled={savingProfile}
+                  >
+                    {savingProfile
+                      ? <ActivityIndicator size="small" color="#fff" />
+                      : <MaterialIcons name="check" size={20} color="#fff" />}
+                  </TouchableOpacity>
+                  {/* Cancel icon */}
+                  <TouchableOpacity
+                    style={[styles.profileIconBtn, { backgroundColor: COLORS.danger, marginTop: 6 }]}
+                    onPress={handleCancelEdit}
+                  >
+                    <MaterialIcons name="close" size={20} color="#fff" />
+                  </TouchableOpacity>
+                </>
+              ) : (
+                /* Edit icon */
+                <TouchableOpacity
+                  style={[styles.profileIconBtn, { backgroundColor: COLORS.secondary }]}
+                  onPress={() => setIsEditingProfile(true)}
+                >
+                  <MaterialIcons name="edit" size={20} color="#fff" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          {/* ── First-time profile setup card ───────────────────── */}
+          {!hasProfile && !isEditingProfile && (
+            <TouchableOpacity style={styles.setupCard} onPress={() => setIsEditingProfile(true)}>
+              <MaterialIcons name="person-add" size={22} color={COLORS.primary} style={{ marginRight: 10 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.setupTitle}>Complete Your Profile</Text>
+                <Text style={styles.setupSub}>Add your name and phone number to get started</Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={22} color={COLORS.primary} />
+            </TouchableOpacity>
+          )}
+
+          {/* ── Saved Addresses ──────────────────────────────────── */}
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionHeaderTitle}>Saved Addresses</Text>
+          </View>
+
+          {addresses === undefined || addresses === null ? (
+            <ActivityIndicator color={COLORS.primary} style={{ marginTop: 20 }} />
+          ) : (
+            (addresses ?? []).map((addr) => (
+              <View key={addr._id} style={[styles.addressCard, addr.isDefault && styles.defaultBorder]}>
+                {/* Card header with icon-only edit + delete */}
+                <View style={styles.addressHeader}>
+                  <View style={styles.addressNameRow}>
+                    <MaterialIcons name="location-city" size={18} color={COLORS.primary} style={{ marginRight: 8 }} />
+                    <Text style={styles.addressNameText}>{addr.buildingName || 'Home'}</Text>
+                    {addr.isDefault && (
+                      <View style={styles.defaultBadge}>
+                        <Text style={styles.defaultBadgeText}>PRIMARY</Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.addressActions}>
+                    <TouchableOpacity
+                      style={styles.iconBtn}
+                      onPress={() => { setEditingAddress(addr); setModalVisible(true); }}
+                    >
+                      <MaterialIcons name="edit" size={16} color="#fff" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.iconBtn, { backgroundColor: COLORS.danger }]}
+                      onPress={() => handleDelete(addr._id)}
+                    >
+                      <MaterialIcons name="delete" size={16} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.divider} />
+
+                {[
+                  { label: 'Building', value: addr.buildingName },
+                  { label: 'Gate No', value: addr.gateNo },
+                  { label: 'Floor / Door', value: [addr.floorNo, addr.doorNo].filter(Boolean).join(' / ') },
+                  { label: 'Street', value: addr.streetName },
+                  { label: 'Area', value: addr.area },
+                  { label: 'Location', value: addr.location },
+                ].map((item, idx) => item.value ? (
+                  <View key={idx} style={styles.addressRow}>
+                    <Text style={styles.addressLabel}>{item.label}</Text>
+                    <Text style={styles.labelColon}>:</Text>
+                    <Text style={styles.addressValue}>{item.value}</Text>
+                  </View>
+                ) : null)}
+
+                {!addr.isDefault && (
+                  <TouchableOpacity
+                    style={styles.useAddressBtn}
+                    onPress={() => setDefaultAddress({ id: addr._id })}
+                  >
+                    <MaterialIcons name="radio-button-unchecked" size={18} color={COLORS.secondary} style={{ marginRight: 8 }} />
+                    <Text style={styles.useAddressText}>Use as Primary</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))
+          )}
+
+          {/* Add new address */}
+          <TouchableOpacity
+            style={styles.addAddressBtn}
+            onPress={() => { setEditingAddress(null); setModalVisible(true); }}
+          >
+            <MaterialIcons name="add-location-alt" size={20} color={COLORS.white} style={{ marginRight: 8 }} />
+            <Text style={styles.addAddressBtnText}>ADD NEW ADDRESS</Text>
           </TouchableOpacity>
-        </View>
 
-        {/* Global Action Buttons */}
-        <TouchableOpacity style={styles.secondaryBtn} onPress={() => router.push('/orders')}>
-          <View style={[styles.btnIconBox, { backgroundColor: COLORS.accent }]}>
-             <MaterialIcons name="history" size={20} color={COLORS.secondary} />
-          </View>
-          <Text style={styles.secondaryBtnText}>View Order History</Text>
-          <MaterialIcons name="chevron-right" size={24} color={COLORS.border} />
-        </TouchableOpacity>
+          {/* Bottom actions */}
+          <TouchableOpacity style={styles.secondaryBtn} onPress={() => router.push('/orders')}>
+            <View style={[styles.btnIconBox, { backgroundColor: COLORS.accent }]}>
+              <MaterialIcons name="history" size={20} color={COLORS.secondary} />
+            </View>
+            <Text style={styles.secondaryBtnText}>View Order History</Text>
+            <MaterialIcons name="chevron-right" size={24} color={COLORS.border} />
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
-           <View style={[styles.btnIconBox, { backgroundColor: '#FFF5F5' }]}>
-             <MaterialIcons name="logout" size={20} color="#e53e3e" />
-          </View>
-          <Text style={styles.signOutBtnText}>Secure Sign Out</Text>
-          <MaterialIcons name="chevron-right" size={24} color={COLORS.border} />
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
+            <View style={[styles.btnIconBox, { backgroundColor: '#FFF5F5' }]}>
+              <MaterialIcons name="logout" size={20} color={COLORS.danger} />
+            </View>
+            <Text style={styles.signOutBtnText}>Secure Sign Out</Text>
+            <MaterialIcons name="chevron-right" size={24} color={COLORS.border} />
+          </TouchableOpacity>
 
         </View>
       </ScrollView>
@@ -225,10 +340,7 @@ export default function ProfileScreen() {
         initialData={editingAddress}
         addressesCount={Array.isArray(addresses) ? addresses.length : 0}
         onSuccess={() => {
-          // After saving a NEW address (not editing), go to home
-          if (!editingAddress) {
-            router.replace('/(tabs)');
-          }
+          if (!editingAddress) router.replace('/(tabs)');
         }}
       />
     </SafeAreaView>
@@ -236,255 +348,184 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.accent,
-  },
+  safeArea: { flex: 1, backgroundColor: COLORS.accent },
   header: {
     backgroundColor: COLORS.secondary,
-    paddingHorizontal: scale(20),
     height: scale(48),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 4,
   },
-  headerTitle: {
-    fontSize: scale(16),
-    fontWeight: '900',
-    color: '#ffffff',
-    letterSpacing: 1,
-  },
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: scale(12),
-    paddingBottom: scale(20),
-  },
-  mainWrapper: {
-    maxWidth: 550,
-    width: '100%',
-    alignSelf: 'center',
-  },
+  headerTitle: { fontSize: scale(16), fontWeight: '900', color: '#fff', letterSpacing: 1 },
+  container: { flex: 1 },
+  content: { padding: scale(12), paddingBottom: scale(24) },
+  mainWrapper: { maxWidth: 550, width: '100%', alignSelf: 'center' },
+
+  // User card
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: scale(12),
-    borderRadius: scale(16),
+    padding: scale(14),
+    borderRadius: scale(18),
     backgroundColor: COLORS.white,
-    marginBottom: scale(12),
+    marginBottom: scale(10),
     elevation: 3,
     shadowColor: COLORS.secondary,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 10,
   },
-  avatarWrapper: {
-     marginRight: 20,
-     position: 'relative',
-  },
+  avatarWrapper: { marginRight: 14 },
   avatar: {
-    width: scale(48),
-    height: scale(48),
-    borderRadius: scale(16),
+    width: scale(54),
+    height: scale(54),
+    borderRadius: scale(18),
     backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 2,
   },
-  avatarRing: {
-     position: 'absolute',
-     width: 72,
-     height: 72,
-     borderRadius: 28,
-     borderWidth: 2,
-     borderColor: COLORS.accent,
-     top: -4,
-     left: -4,
-     zIndex: 1,
-  },
-  userInfo: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: scale(16),
-    fontWeight: '900',
-    color: COLORS.secondary,
-    marginBottom: scale(2),
-  },
+  userInfo: { flex: 1 },
+  userName: { fontSize: scale(16), fontWeight: '900', color: COLORS.secondary, marginBottom: scale(4) },
+  userNamePlaceholder: { fontSize: scale(13), color: COLORS.gray, fontStyle: 'italic' },
   phoneBadge: {
-     flexDirection: 'row',
-     alignItems: 'center',
-     backgroundColor: COLORS.accent,
-     paddingHorizontal: scale(10),
-     paddingVertical: scale(4),
-     borderRadius: scale(8),
-     alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.accent,
+    paddingHorizontal: scale(8),
+    paddingVertical: scale(3),
+    borderRadius: scale(8),
+    alignSelf: 'flex-start',
   },
-  userPhone: {
-    fontSize: scale(12),
-    color: COLORS.secondary,
+  userPhone: { fontSize: scale(12), color: COLORS.secondary, fontWeight: '700' },
+
+  // Profile icon buttons
+  profileActions: { alignItems: 'center', justifyContent: 'center', marginLeft: 10 },
+  profileIconBtn: {
+    width: scale(36),
+    height: scale(36),
+    borderRadius: scale(12),
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+  },
+
+  // Profile inputs
+  profileInput: {
+    backgroundColor: COLORS.accent,
+    borderRadius: scale(10),
+    paddingHorizontal: scale(10),
+    paddingVertical: scale(6),
+    fontSize: scale(14),
     fontWeight: '700',
+    color: COLORS.secondary,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
+
+  // Setup card (for first-time users)
+  setupCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: scale(14),
+    padding: scale(14),
+    marginBottom: scale(14),
+    elevation: 2,
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+    borderStyle: 'dashed',
+  },
+  setupTitle: { fontSize: scale(13), fontWeight: '800', color: COLORS.secondary },
+  setupSub: { fontSize: scale(11), color: COLORS.gray, marginTop: 2 },
+
+  // Section header
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 4,
+    marginBottom: scale(12),
+    paddingHorizontal: 2,
   },
-  sectionHeaderTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: COLORS.text,
-  },
-  addBtn: {
-    backgroundColor: '#007AFF', // Blue like image 2
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    elevation: 2,
-  },
-  addBtnText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '900',
-  },
+  sectionHeaderTitle: { fontSize: scale(16), fontWeight: '900', color: COLORS.text },
+
+  // Address card
   addressCard: {
     borderRadius: scale(16),
     backgroundColor: COLORS.white,
     padding: scale(12),
-    marginBottom: scale(12),
+    marginBottom: scale(10),
     elevation: 3,
     shadowColor: COLORS.secondary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#F8FAFC',
-  },
-  defaultBorder: {
-    borderColor: COLORS.primary,
-  },
-  addressHeader: {
-     flexDirection: 'row',
-     alignItems: 'center',
-     justifyContent: 'space-between',
-     marginBottom: 16,
-  },
-  addressNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  addressNameText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: COLORS.secondary,
-  },
-  addressActions: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  editBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  trashBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#E53E3E',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.accent,
-    marginBottom: 20,
-  },
-  addressRow: {
-    flexDirection: 'row',
-    marginBottom: 12,
-    alignItems: 'center',
-  },
-  addressLabel: {
-    flex: 1,
-    fontSize: 13,
-    color: '#2EC4B6',
-    fontWeight: '600',
-  },
-  labelColon: {
-    paddingHorizontal: 10,
-    fontSize: 13,
-    color: '#2EC4B6',
-    fontWeight: '600',
-  },
-  addressValue: {
-    flex: 1.5,
-    fontSize: 14,
-    fontWeight: '800',
-    color: COLORS.secondary,
-  },
-  useAddressContainer: {
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  useAddressBtn: {
-    backgroundColor: '#fff',
-    borderWidth: 1.5,
-    borderColor: COLORS.secondary,
-    paddingHorizontal: 20,
-    height: 54,
-    borderRadius: 18,
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activeAddressBtn: {
-    backgroundColor: COLORS.secondary,
-  },
-  useAddressText: {
-    color: COLORS.secondary,
-    fontSize: 14,
-    fontWeight: '900',
-  },
-  centerAddBtn: {
-    alignItems: 'center',
-    marginBottom: 32,
-    marginTop: 10,
-  },
-  mobileAddBtn: {
-    backgroundColor: COLORS.secondary,
-    paddingHorizontal: scale(24),
-    height: scale(42),
-    borderRadius: scale(21),
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    width: '80%',
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#F1F5F9',
   },
-  mobileAddBtnText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '900',
-    letterSpacing: 1,
+  defaultBorder: { borderColor: COLORS.primary },
+  addressHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: scale(10),
   },
+  addressNameRow: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  addressNameText: { fontSize: scale(14), fontWeight: '800', color: COLORS.secondary },
+  defaultBadge: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginLeft: 8,
+  },
+  defaultBadgeText: { fontSize: scale(9), fontWeight: '900', color: '#fff', letterSpacing: 0.5 },
+  addressActions: { flexDirection: 'row', gap: 8 },
+  iconBtn: {
+    width: scale(32),
+    height: scale(32),
+    borderRadius: scale(10),
+    backgroundColor: COLORS.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  divider: { height: 1, backgroundColor: COLORS.accent, marginBottom: scale(10) },
+  addressRow: { flexDirection: 'row', marginBottom: scale(6), alignItems: 'center' },
+  addressLabel: { flex: 1, fontSize: scale(12), color: COLORS.primary, fontWeight: '600' },
+  labelColon: { paddingHorizontal: 8, fontSize: scale(12), color: COLORS.primary, fontWeight: '600' },
+  addressValue: { flex: 1.5, fontSize: scale(13), fontWeight: '800', color: COLORS.secondary },
+  useAddressBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: scale(10),
+    paddingTop: scale(10),
+    borderTopWidth: 1,
+    borderTopColor: COLORS.accent,
+  },
+  useAddressText: { fontSize: scale(13), fontWeight: '700', color: COLORS.secondary },
+
+  // Add address button
+  addAddressBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.secondary,
+    height: scale(44),
+    borderRadius: scale(22),
+    marginBottom: scale(16),
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+  },
+  addAddressBtnText: { fontSize: scale(14), fontWeight: '900', color: '#fff', letterSpacing: 0.5 },
+
+  // Bottom rows
   secondaryBtn: {
     flexDirection: 'row',
     backgroundColor: COLORS.white,
-    height: scale(44),
+    height: scale(48),
     borderRadius: scale(12),
     alignItems: 'center',
     paddingHorizontal: scale(14),
@@ -492,131 +533,18 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#F1F5F9',
   },
-  btnIconBox: {
-     width: 40,
-     height: 40,
-     borderRadius: 12,
-     alignItems: 'center',
-     justifyContent: 'center',
-     marginRight: 16,
-  },
-  secondaryBtnText: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '800',
-    color: COLORS.secondary,
-  },
+  btnIconBox: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
+  secondaryBtnText: { flex: 1, fontSize: scale(14), fontWeight: '800', color: COLORS.secondary },
   signOutBtn: {
     flexDirection: 'row',
     backgroundColor: COLORS.white,
-    height: 56,
-    borderRadius: 20,
+    height: scale(48),
+    borderRadius: scale(12),
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: scale(14),
     borderWidth: 1.5,
     borderColor: '#F1F5F9',
+    marginBottom: scale(8),
   },
-  signOutBtnText: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#e53e3e',
-  },
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(27, 58, 58, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 24,
-    width: '94%',
-    height: '80%',
-    padding: 20,
-    elevation: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: COLORS.secondary,
-  },
-  modalScroll: {
-    flex: 1,
-  },
-  formGroup: {
-    gap: 10,
-  },
-  fullInput: {
-    backgroundColor: '#F0FDF9',
-    height: scale(46),
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    fontSize: 15,
-    fontWeight: '700',
-    color: COLORS.secondary,
-    marginBottom: 2,
-    elevation: 2,
-    shadowColor: COLORS.secondary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-  },
-  formRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  halfInput: {
-    flex: 1,
-    backgroundColor: '#F0FDF9',
-    height: scale(46),
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    fontSize: 15,
-    fontWeight: '700',
-    color: COLORS.secondary,
-    elevation: 2,
-    shadowColor: COLORS.secondary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-  },
-  locationLink: {
-    alignSelf: 'flex-end',
-    paddingVertical: 10,
-  },
-  locationLinkText: {
-    color: '#e53e3e',
-    fontWeight: '800',
-    fontSize: 15,
-  },
-  saveBtn: {
-    backgroundColor: COLORS.secondary,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 32,
-    marginBottom: 40,
-  },
-  saveBtnText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '900',
-  },
+  signOutBtnText: { flex: 1, fontSize: scale(14), fontWeight: '800', color: COLORS.danger },
 });
