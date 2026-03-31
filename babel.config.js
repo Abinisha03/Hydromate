@@ -7,3 +7,6 @@ module.exports = function (api) {
     ],
   };
 };
+
+// Cache bust for EAS Metro bundler: worklets plugin
+
