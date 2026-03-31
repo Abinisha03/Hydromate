@@ -9,16 +9,25 @@ export const storeUser = mutation({
     if (!identity) throw new Error("Not authenticated");
 
     // Check if user already exists by tokenIdentifier
-    const existing = await ctx.db
+    let existing = await ctx.db
       .query("users")
       .withIndex("by_tokenIdentifier", (q) =>
         q.eq("tokenIdentifier", identity.tokenIdentifier)
       )
       .first();
 
+    // Fallback: check by clerkId for old records missing tokenIdentifier
+    if (!existing) {
+      existing = await ctx.db
+        .query("users")
+        .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+        .first();
+    }
+
     if (existing) {
-      // Update user info if changed
+      // Patch existing user — backfill tokenIdentifier if missing
       await ctx.db.patch(existing._id, {
+        tokenIdentifier: identity.tokenIdentifier,
         name: identity.name ?? existing.name,
         email: identity.email ?? existing.email,
         imageUrl: identity.pictureUrl ?? existing.imageUrl,
@@ -46,11 +55,20 @@ export const getCurrentUser = query({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) return null;
 
-    return await ctx.db
+    // Try tokenIdentifier first
+    const byToken = await ctx.db
       .query("users")
       .withIndex("by_tokenIdentifier", (q) =>
         q.eq("tokenIdentifier", identity.tokenIdentifier)
       )
+      .first();
+
+    if (byToken) return byToken;
+
+    // Fallback to clerkId for old records
+    return await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
       .first();
   },
 });
@@ -62,13 +80,20 @@ export const userExists = query({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) return false;
 
-    const user = await ctx.db
+    const byToken = await ctx.db
       .query("users")
       .withIndex("by_tokenIdentifier", (q) =>
         q.eq("tokenIdentifier", identity.tokenIdentifier)
       )
       .first();
 
-    return !!user;
+    if (byToken) return true;
+
+    const byClerk = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .first();
+
+    return !!byClerk;
   },
 });
