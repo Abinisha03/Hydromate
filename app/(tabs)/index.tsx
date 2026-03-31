@@ -226,7 +226,7 @@ export default function HomeScreen() {
         <View style={styles.headerCenter}>
           <View style={styles.brandRow}>
             <Image 
-              source={require('@/assets/images/hydromate_logo.png')} 
+              source={require('@/assets/images/hydromate_logo.jpg')} 
               style={styles.headerLogo} 
             />
             <Text style={styles.headerTitle}>HYDROMATE</Text>
@@ -439,7 +439,7 @@ export default function HomeScreen() {
             <View style={styles.sidebarHeader}>
               <View style={styles.sidebarLogoBox}>
                 <Image 
-                  source={require('@/assets/images/hydromate_logo.png')} 
+                  source={require('@/assets/images/hydromate_logo.jpg')} 
                   style={styles.sidebarLogo} 
                 />
               </View>
