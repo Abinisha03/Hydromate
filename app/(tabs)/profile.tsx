@@ -140,18 +140,24 @@ export default function ProfileScreen() {
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.mainWrapper}>
 
-          {/* ── User Card ─────────────────────────────────────────── */}
-          <View style={styles.userCard}>
-            {/* Avatar */}
-            <View style={styles.avatarWrapper}>
-              <View style={styles.avatar}>
-                <MaterialIcons name="person" size={44} color="#fff" />
+          {/* ── User Card / Add Details Button ─────────────────────────────────────────── */}
+          {!hasProfile && !isEditingProfile ? (
+            <TouchableOpacity style={styles.addDetailsBox} onPress={() => setIsEditingProfile(true)}>
+              <MaterialIcons name="person-add" size={24} color={COLORS.primary} style={{ marginRight: 12 }} />
+              <Text style={styles.addDetailsText}>Add Details</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.userCard}>
+              {/* Avatar */}
+              <View style={styles.avatarWrapper}>
+                <View style={styles.avatar}>
+                  <MaterialIcons name="person" size={44} color="#fff" />
+                </View>
               </View>
-            </View>
 
             {/* Info / Edit form */}
             <View style={styles.userInfo}>
-              {isEditingProfile || !hasProfile ? (
+              {isEditingProfile ? (
                 /* ── Edit form ────────────── */
                 <View>
                   <TextInput
@@ -187,29 +193,27 @@ export default function ProfileScreen() {
 
             {/* ── Icon buttons (Edit / Cancel+Save) ── */}
             <View style={styles.profileActions}>
-              {isEditingProfile || !hasProfile ? (
-                <>
-                  {/* Save icon */}
-                  <TouchableOpacity
-                    style={[styles.profileIconBtn, { backgroundColor: COLORS.primary }]}
-                    onPress={handleSaveProfile}
-                    disabled={savingProfile}
-                  >
-                    {savingProfile
-                      ? <ActivityIndicator size="small" color="#fff" />
-                      : <MaterialIcons name="check" size={20} color="#fff" />}
-                  </TouchableOpacity>
-                  {/* Cancel icon (only if they already have a profile to fall back to) */}
-                  {hasProfile && (
+                {isEditingProfile ? (
+                  <>
+                    {/* Save icon */}
+                    <TouchableOpacity
+                      style={[styles.profileIconBtn, { backgroundColor: COLORS.primary }]}
+                      onPress={handleSaveProfile}
+                      disabled={savingProfile}
+                    >
+                      {savingProfile
+                        ? <ActivityIndicator size="small" color="#fff" />
+                        : <MaterialIcons name="check" size={20} color="#fff" />}
+                    </TouchableOpacity>
+                    {/* Cancel icon */}
                     <TouchableOpacity
                       style={[styles.profileIconBtn, { backgroundColor: COLORS.danger, marginTop: 6 }]}
                       onPress={handleCancelEdit}
                     >
                       <MaterialIcons name="close" size={20} color="#fff" />
                     </TouchableOpacity>
-                  )}
-                </>
-              ) : (
+                  </>
+                ) : (
                 /* Edit icon */
                 <TouchableOpacity
                   style={[styles.profileIconBtn, { backgroundColor: COLORS.secondary }]}
@@ -217,9 +221,10 @@ export default function ProfileScreen() {
                 >
                   <MaterialIcons name="edit" size={20} color="#fff" />
                 </TouchableOpacity>
-              )}
+                )}
+              </View>
             </View>
-          </View>
+          )}
 
 
 
@@ -409,6 +414,20 @@ const styles = StyleSheet.create({
   },
 
   // Setup card (for first-time users)
+  addDetailsBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    padding: scale(14),
+    borderRadius: scale(16),
+    marginBottom: scale(14),
+    elevation: 2,
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+  },
+  addDetailsText: { fontSize: scale(14), fontWeight: '800', color: COLORS.secondary },
   setupCard: {
     flexDirection: 'row',
     alignItems: 'center',
