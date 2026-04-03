@@ -412,8 +412,10 @@ const styles = StyleSheet.create({
     borderColor: COLORS.accent,
     borderRadius: scale(16),
     paddingHorizontal: scale(14),
-    height: scale(48),
+    paddingVertical: scale(8),
+    minHeight: scale(48),
     backgroundColor: '#F8FAFC',
+    textAlignVertical: 'center',
   },
   inputIcon: {
     marginRight: 14,
@@ -423,6 +425,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.text,
+    textAlignVertical: 'center',
+    paddingVertical: 0, 
   },
   primaryButton: {
     backgroundColor: COLORS.primary,

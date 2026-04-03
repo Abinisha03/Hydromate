@@ -510,6 +510,8 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontWeight: '600',
     minHeight: scale(100),
+    padding: scale(10),
+    textAlignVertical: 'top',
   },
   submitBtn: {
     backgroundColor: COLORS.primary,

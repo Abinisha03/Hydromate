@@ -716,10 +716,12 @@ const styles = StyleSheet.create({
     fontSize: scale(18),
     fontWeight: '900',
     color: COLORS.secondary,
-    width: scale(50),
+    width: scale(60),
+    minHeight: scale(40),
     textAlign: 'center',
     padding: 0,
     marginHorizontal: scale(4),
+    textAlignVertical: 'center',
   },
   quantityBox: {
     width: scale(50),
