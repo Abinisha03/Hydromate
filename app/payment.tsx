@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, SafeAreaView, Platform, StatusBar, ScrollView, Alert, Dimensions } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useUser } from '@clerk/clerk-expo';
 import BackgroundAnimation from '@/components/BackgroundAnimation';
+import AddressModal from '@/components/AddressModal';
 import { scale } from '@/utils/responsive';
 
 const { width } = Dimensions.get('window');
@@ -24,16 +25,57 @@ export default function PaymentScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const createOrder = useMutation(api.orders.createOrder);
+  const deleteAddress = useMutation(api.addresses.deleteAddress);
   const { user } = useUser();
 
   const [selectedMethod, setSelectedMethod] = useState('cod');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
+  // Address Management
+  const addresses = useQuery(api.addresses.getAddresses);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<any>(null);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+
+  const selectedAddress = addresses?.find(a => 
+    selectedAddressId ? a._id === selectedAddressId : a.isDefault
+  ) || addresses?.[0];
+
+  // Address Sections
+  const primaryAddress = addresses?.find(a => a.isDefault);
+  const otherAddresses = addresses?.filter(a => !a.isDefault) || [];
+
+  const handleDeleteAddress = async (id: any) => {
+    const doDelete = async () => {
+      try {
+        await deleteAddress({ id });
+      } catch (error) {
+        if (Platform.OS === 'web') window.alert('Failed to delete address: ' + (error as Error).message);
+        else Alert.alert('Error', 'Failed to delete address: ' + (error as Error).message);
+      }
+    };
+    
+    if (Platform.OS === 'web') {
+      if (window.confirm('Are you sure you want to remove this address?')) doDelete();
+    } else {
+      Alert.alert('Delete Address', 'Are you sure you want to remove this address?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: doDelete },
+      ]);
+    }
+  };
+
   const handlePayment = async () => {
     if (!user) {
       if (Platform.OS === 'web') window.alert("You must be logged in to place an order.");
       else Alert.alert("Error", "You must be logged in to place an order.");
+      return;
+    }
+
+    if (!selectedAddress) {
+      if (Platform.OS === 'web') window.alert("Please provide a delivery address.");
+      else Alert.alert("Missing Address", "Please provide a delivery address.");
       return;
     }
 
@@ -61,14 +103,14 @@ export default function PaymentScreen() {
         expressCharge: Number(params.expressCharge) || 0,
         totalAmount: Number(params.totalPrice) || 50,
         paymentMode: selectedMethod === 'cod' ? 'COD' : 'Online',
-        pincode: (params.pincode as string) || 'N/A',
-        buildingName: (params.buildingName as string) || '',
-        streetNo: (params.streetNo as string) || '',
-        floorNo: (params.floorNo as string) || '',
-        doorNo: (params.doorNo as string) || '',
-        streetName: (params.streetName as string) || '',
-        area: (params.area as string) || '',
-        location: (params.location as string) || '',
+        pincode: selectedAddress.pincode || 'N/A',
+        buildingName: selectedAddress.buildingName || '',
+        streetNo: selectedAddress.streetNo || '',
+        floorNo: selectedAddress.floorNo || '',
+        doorNo: selectedAddress.doorNo || '',
+        streetName: selectedAddress.streetName || '',
+        area: selectedAddress.area || '',
+        location: selectedAddress.location || '',
         noBottleReturn: params.noBottleReturn === 'true',
       });
       setShowSuccess(true);
@@ -217,17 +259,147 @@ export default function PaymentScreen() {
           <View style={styles.deliveryInfoBox}>
              <View style={styles.deliveryInfoHeader}>
                 <MaterialIcons name="local-shipping" size={16} color={COLORS.primary} />
-                <Text style={styles.deliveryInfoTitle}>Delivering to:</Text>
+                <Text style={styles.deliveryInfoTitle}>DELIVERING TO:</Text>
              </View>
-             <Text style={styles.deliveryText}>
-                {params.buildingName}{params.doorNo ? `, Door ${params.doorNo}` : ''}
-                {"\n"}
-                {params.streetName}, {params.area}
-                {"\n"}
-                {params.pincode}
-             </Text>
+             
+             {addresses && addresses.length > 0 ? (
+               <View style={styles.addressListContainer}>
+                 {/* Primary Address Section */}
+                 {primaryAddress && (
+                   <View style={styles.addressSection}>
+                     <Text style={styles.addressSectionHeading}>PRIMARY ADDRESS</Text>
+                     <TouchableOpacity 
+                       style={[styles.addressItemCard, selectedAddress?._id === primaryAddress._id && styles.selectedAddressBorder]}
+                       onPress={() => setSelectedAddressId(primaryAddress._id)}
+                     >
+                        <View style={styles.addressItemRow}>
+                           <MaterialIcons 
+                             name={selectedAddress?._id === primaryAddress._id ? "radio-button-checked" : "radio-button-unchecked"} 
+                             size={20} 
+                             color={selectedAddress?._id === primaryAddress._id ? COLORS.primary : COLORS.gray} 
+                           />
+                           <View style={styles.addressItemInfo}>
+                              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                <Text style={styles.deliveryTextSmall}>
+                                   <Text style={{ fontWeight: '800' }}>{primaryAddress.name} ({primaryAddress.phone})</Text>
+                                   {"\n"}
+                                   {primaryAddress.buildingName ? `${primaryAddress.buildingName}, ` : ''}
+                                   {primaryAddress.doorNo ? `Door ${primaryAddress.doorNo}, ` : ''}
+                                   {primaryAddress.streetName}, {primaryAddress.area}, {primaryAddress.location} - {primaryAddress.pincode}
+                                </Text>
+                              </ScrollView>
+                           </View>
+                           <View style={styles.addressActionsRow}>
+                              <TouchableOpacity 
+                                onPress={() => {
+                                  setEditingAddress(primaryAddress);
+                                  setShowAddressModal(true);
+                                }}
+                                style={styles.editAddressInlineBtn}
+                              >
+                                 <MaterialIcons name="edit" size={16} color={COLORS.secondary} />
+                              </TouchableOpacity>
+                              <TouchableOpacity 
+                                onPress={() => handleDeleteAddress(primaryAddress._id)}
+                                style={[styles.editAddressInlineBtn, { backgroundColor: '#FFF5F5' }]}
+                              >
+                                 <MaterialIcons name="delete-outline" size={16} color="#E53E3E" />
+                              </TouchableOpacity>
+                           </View>
+                        </View>
+                     </TouchableOpacity>
+                   </View>
+                 )}
+
+                 {/* Other Addresses Section */}
+                 {otherAddresses.length > 0 && (
+                   <View style={[styles.addressSection, { marginTop: 12 }]}>
+                     <Text style={styles.addressSectionHeading}>OTHER SAVED ADDRESSES</Text>
+                     {otherAddresses.map((addr) => {
+                       const isSelected = selectedAddress?._id === addr._id;
+                       return (
+                         <TouchableOpacity 
+                           key={addr._id} 
+                           style={[styles.addressItemCard, isSelected && styles.selectedAddressBorder, { marginBottom: 8 }]}
+                           onPress={() => setSelectedAddressId(addr._id)}
+                         >
+                            <View style={styles.addressItemRow}>
+                               <MaterialIcons 
+                                 name={isSelected ? "radio-button-checked" : "radio-button-unchecked"} 
+                                 size={20} 
+                                 color={isSelected ? COLORS.primary : COLORS.gray} 
+                               />
+                               <View style={styles.addressItemInfo}>
+                                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                    <Text style={styles.deliveryTextSmall}>
+                                       <Text style={{ fontWeight: '800' }}>{addr.name} ({addr.phone})</Text>
+                                       {"\n"}
+                                       {addr.buildingName ? `${addr.buildingName}, ` : ''}
+                                       {addr.doorNo ? `Door ${addr.doorNo}, ` : ''}
+                                       {addr.streetName}, {addr.area}, {addr.location} - {addr.pincode}
+                                    </Text>
+                                  </ScrollView>
+                               </View>
+                               <View style={styles.addressActionsRow}>
+                                  <TouchableOpacity 
+                                    onPress={() => {
+                                      setEditingAddress(addr);
+                                      setShowAddressModal(true);
+                                    }}
+                                    style={styles.editAddressInlineBtn}
+                                  >
+                                     <MaterialIcons name="edit" size={16} color={COLORS.secondary} />
+                                  </TouchableOpacity>
+                                  <TouchableOpacity 
+                                    onPress={() => handleDeleteAddress(addr._id)}
+                                    style={[styles.editAddressInlineBtn, { backgroundColor: '#FFF5F5' }]}
+                                  >
+                                     <MaterialIcons name="delete-outline" size={16} color="#E53E3E" />
+                                  </TouchableOpacity>
+                               </View>
+                            </View>
+                         </TouchableOpacity>
+                       );
+                     })}
+                   </View>
+                 )}
+               </View>
+             ) : (
+               <TouchableOpacity 
+                  style={styles.addAddressInlineBtn}
+                  onPress={() => {
+                    setEditingAddress(null);
+                    setShowAddressModal(true);
+                  }}
+               >
+                  <MaterialIcons name="add-location-alt" size={20} color={COLORS.primary} />
+                  <Text style={styles.addAddressInlineText}>Add Delivery Address</Text>
+               </TouchableOpacity>
+             )}
+
+             <TouchableOpacity 
+                style={styles.newAddressLink}
+                onPress={() => {
+                  setEditingAddress(null);
+                  setShowAddressModal(true);
+                }}
+             >
+                <Text style={styles.newAddressLinkText}>+ Add New Address</Text>
+             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Address Modal */}
+        <AddressModal 
+          visible={showAddressModal}
+          onClose={() => {
+            setShowAddressModal(false);
+            setEditingAddress(null);
+          }}
+          initialData={editingAddress}
+          addressesCount={addresses?.length || 0}
+          addresses={addresses || []}
+        />
 
         {/* Place Order Button */}
         <TouchableOpacity 
@@ -500,6 +672,84 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     lineHeight: 18,
     opacity: 0.8,
+    marginTop: 8,
+  },
+  deliveryTextSmall: {
+    fontSize: 12,
+    color: COLORS.text,
+    lineHeight: 16,
+    opacity: 0.8,
+  },
+  addressSectionHeading: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#108678',
+    letterSpacing: 1.5,
+    marginBottom: 8,
+  },
+  addressSection: {
+    marginBottom: 4,
+  },
+  addressListContainer: {
+    marginTop: 10,
+    gap: 8,
+  },
+  addressItemCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1.5,
+    borderColor: '#F1F5F9',
+  },
+  selectedAddressBorder: {
+    borderColor: COLORS.primary,
+    backgroundColor: '#F0FDF9',
+  },
+  addressItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  addressItemInfo: {
+    flex: 1,
+  },
+  editAddressInlineBtn: {
+    padding: 8,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+  },
+  addressActionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  editAddressBtn: {
+    padding: 4,
+  },
+  addAddressInlineBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    gap: 10,
+  },
+  addAddressInlineText: {
+    color: COLORS.primary,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  newAddressLink: {
+    marginTop: 12,
+    alignSelf: 'flex-start',
+  },
+  newAddressLinkText: {
+    color: COLORS.secondary,
+    fontSize: 13,
+    fontWeight: '800',
+    textDecorationLine: 'underline',
   },
   placeOrderBtn: {
     height: scale(42),

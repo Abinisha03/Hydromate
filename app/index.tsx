@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
+import "@/assets/images/logo.png"
 
 // This is just a splash screen.
 // The root layout's auth guard handles all navigation.

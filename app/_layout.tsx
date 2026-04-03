@@ -9,6 +9,7 @@ import { tokenCache } from '@/utils/cache';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useEffect, useState } from 'react';
 import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { api } from '@/convex/_generated/api';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
@@ -98,6 +99,11 @@ function InitialLayout() {
   if (!isLoaded || !isReady) {
     return (
       <View style={loadingStyles.container}>
+        <Image 
+          source={require('@/assets/images/logo.png')} 
+          style={loadingStyles.logo}
+          contentFit="contain"
+        />
         <Text style={loadingStyles.brandTitle}>HYDROMATE</Text>
         <Text style={loadingStyles.brandSlogan}>Pure Care. Pure Hydration.</Text>
         <ActivityIndicator size="large" color="#2EC4B6" style={{ marginTop: 24 }} />
@@ -140,6 +146,11 @@ const loadingStyles = StyleSheet.create({
     backgroundColor: '#E8FFF9',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  logo: {
+    width: 120,
+    height: 120,
+    marginBottom: 20,
   },
   brandTitle: {
     fontSize: 28,

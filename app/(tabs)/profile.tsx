@@ -130,7 +130,9 @@ export default function ProfileScreen() {
                 <View style={styles.addressHeader}>
                   <View style={styles.addressNameRow}>
                     <MaterialIcons name="location-city" size={18} color={COLORS.primary} style={{ marginRight: 8 }} />
-                    <Text style={styles.addressNameText}>{addr.buildingName || 'Home'}</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+                      <Text style={styles.addressNameText}>{addr.buildingName || 'Home'}</Text>
+                    </ScrollView>
                     {addr.isDefault && (
                       <View style={styles.defaultBadge}>
                         <Text style={styles.defaultBadgeText}>PRIMARY</Text>
@@ -166,7 +168,9 @@ export default function ProfileScreen() {
                   <View key={idx} style={styles.addressRow}>
                     <Text style={styles.addressLabel}>{item.label}</Text>
                     <Text style={styles.labelColon}>:</Text>
-                    <Text style={styles.addressValue}>{item.value}</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollValueContainer}>
+                      <Text style={styles.addressValue}>{item.value}</Text>
+                    </ScrollView>
                   </View>
                 ) : null)}
 
@@ -217,6 +221,7 @@ export default function ProfileScreen() {
         onClose={() => setModalVisible(false)}
         initialData={editingAddress}
         addressesCount={Array.isArray(addresses) ? addresses.length : 0}
+        addresses={Array.isArray(addresses) ? addresses : []}
         onSuccess={() => {
           if (!editingAddress) router.replace('/(tabs)');
         }}
@@ -382,10 +387,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   divider: { height: 1, backgroundColor: COLORS.accent, marginBottom: scale(10) },
-  addressRow: { flexDirection: 'row', marginBottom: scale(6), alignItems: 'center' },
-  addressLabel: { flex: 1, fontSize: scale(12), color: COLORS.primary, fontWeight: '600' },
-  labelColon: { paddingHorizontal: 8, fontSize: scale(12), color: COLORS.primary, fontWeight: '600' },
-  addressValue: { flex: 1.5, fontSize: scale(13), fontWeight: '800', color: COLORS.secondary },
+  addressRow: { flexDirection: 'row', marginBottom: scale(8), alignItems: 'flex-start' },
+  addressLabel: { width: scale(90), fontSize: scale(12), color: COLORS.primary, fontWeight: '600' },
+  labelColon: { width: scale(15), textAlign: 'center', fontSize: scale(12), color: COLORS.primary, fontWeight: '600' },
+  addressValue: { fontSize: scale(13), fontWeight: '800', color: COLORS.secondary },
+  scrollValueContainer: { flex: 1 },
   useAddressBtn: {
     flexDirection: 'row',
     alignItems: 'center',

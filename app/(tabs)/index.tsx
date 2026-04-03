@@ -226,7 +226,7 @@ export default function HomeScreen() {
         <View style={styles.headerCenter}>
           <View style={styles.brandRow}>
             <Image 
-              source={require('@/assets/images/hydromate_logo.jpg')} 
+              source={require('@/assets/images/logo.png')} 
               style={styles.headerLogo} 
             />
             <Text style={styles.headerTitle}>HYDROMATE</Text>
@@ -439,7 +439,7 @@ export default function HomeScreen() {
             <View style={styles.sidebarHeader}>
               <View style={styles.sidebarLogoBox}>
                 <Image 
-                  source={require('@/assets/images/hydromate_logo.jpg')} 
+                  source={require('@/assets/images/logo.png')} 
                   style={styles.sidebarLogo} 
                 />
               </View>
@@ -471,6 +471,7 @@ export default function HomeScreen() {
         onClose={() => setAddressModalVisible(false)}
         initialData={defaultAddress}
         addressesCount={Array.isArray(addresses) ? addresses.length : 0}
+        addresses={Array.isArray(addresses) ? addresses : []}
       />
 
       <Modal

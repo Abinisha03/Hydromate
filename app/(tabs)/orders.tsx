@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet, View, Text, SafeAreaView, Platform, StatusBar,
-  TouchableOpacity, Alert, Modal, TextInput, ScrollView, FlatList
+  TouchableOpacity, Alert, Modal, TextInput, ScrollView, FlatList,
+  Animated
 } from 'react-native';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -33,6 +34,7 @@ export default function OrdersScreen() {
   const [activeTab, setActiveTab] = useState('PENDING');
   const [currentPage, setCurrentPage] = useState(1);
   const [bannerVisible, setBannerVisible] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
   const ITEMS_PER_PAGE = 3;
 
   // Edit modal state
@@ -50,14 +52,31 @@ export default function OrdersScreen() {
   const updateOrder = useMutation(api.orders.updateOrder);
 
   useEffect(() => {
-    if (success === 'true') setBannerVisible(true);
+    if (success === 'true') {
+      setBannerVisible(true);
+      Animated.sequence([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.delay(4000),
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        })
+      ]).start(() => setBannerVisible(false));
+    }
   }, [success]);
 
   useEffect(() => {
-    if (activeTab !== 'PENDING') setBannerVisible(false);
-    else if (success === 'true') setBannerVisible(true);
+    if (activeTab !== 'PENDING') {
+      setBannerVisible(false);
+      fadeAnim.setValue(0);
+    }
     setCurrentPage(1);
-  }, [activeTab, success]);
+  }, [activeTab]);
 
   // ── Cancel ──────────────────────────────────────────────────────────────
   const handleCancelOrder = (orderId: any) => {
@@ -147,22 +166,12 @@ export default function OrdersScreen() {
       {/* Action buttons — only for PENDING */}
       {item.status.toUpperCase() === 'PENDING' && (
         <View style={styles.actionRow}>
-          {/* Edit */}
-          <TouchableOpacity
-            style={styles.editIconBtn}
-            onPress={(e) => { e.stopPropagation(); openEditModal(item); }}
-          >
-            <MaterialIcons name="edit" size={16} color={COLORS.white} />
-            <Text style={styles.actionBtnText}>Edit</Text>
-          </TouchableOpacity>
-
           {/* Cancel */}
           <TouchableOpacity
             style={styles.cancelIconBtn}
             onPress={(e) => { e.stopPropagation(); handleCancelOrder(item._id); }}
           >
-            <MaterialIcons name="cancel" size={16} color={COLORS.white} />
-            <Text style={styles.actionBtnText}>Cancel</Text>
+            <MaterialIcons name="cancel" size={20} color={COLORS.white} />
           </TouchableOpacity>
         </View>
       )}
@@ -261,11 +270,11 @@ export default function OrdersScreen() {
         />
 
         {/* Success banner */}
-        {bannerVisible && filteredOrders.length > 0 && activeTab === 'PENDING' && (
-          <View style={styles.successBanner}>
-            <MaterialIcons name="water-drop" size={16} color={COLORS.primary} style={{ marginRight: 10, opacity: 0.7 }} />
+        {bannerVisible && (
+          <Animated.View style={[styles.successBanner, { opacity: fadeAnim }]}>
+            <MaterialIcons name="check-circle" size={18} color={COLORS.primary} style={{ marginRight: 10 }} />
             <Text style={styles.successText}>Your order has been placed successfully.</Text>
-          </View>
+          </Animated.View>
         )}
 
         {/* Pagination */}

@@ -144,23 +144,33 @@ export default function OrderDetailsScreen() {
            
            <View style={styles.detailRow}>
              <Text style={styles.label}>Building Name</Text>
-             <Text style={styles.value}>{order.buildingName || 'N/A'}</Text>
+             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollValueContainer}>
+               <Text style={styles.value}>{order.buildingName || 'N/A'}</Text>
+             </ScrollView>
            </View>
            <View style={styles.detailRow}>
              <Text style={styles.label}>Door / Floor No</Text>
-             <Text style={styles.value}>{order.doorNo}{order.floorNo ? ` / Floor ${order.floorNo}` : ''}</Text>
+             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollValueContainer}>
+               <Text style={styles.value}>{order.doorNo}{order.floorNo ? ` / Floor ${order.floorNo}` : ''}</Text>
+             </ScrollView>
            </View>
            <View style={styles.detailRow}>
              <Text style={styles.label}>Street / Area</Text>
-             <Text style={styles.value}>{order.streetName}, {order.area}</Text>
+             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollValueContainer}>
+                <Text style={styles.value}>{order.streetName}, {order.area}</Text>
+             </ScrollView>
            </View>
            <View style={styles.detailRow}>
              <Text style={styles.label}>City / Location</Text>
-             <Text style={styles.value}>{order.location}</Text>
+             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollValueContainer}>
+                <Text style={styles.value}>{order.location}</Text>
+             </ScrollView>
            </View>
            <View style={styles.detailRow}>
              <Text style={styles.label}>Pincode</Text>
-             <Text style={styles.value}>{order.pincode}</Text>
+             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollValueContainer}>
+                <Text style={styles.value}>{order.pincode}</Text>
+             </ScrollView>
            </View>
         </View>
 
@@ -300,11 +310,11 @@ const styles = StyleSheet.create({
   },
   detailRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: scale(10),
+    alignItems: 'flex-start',
   },
   label: {
+    width: scale(100),
     fontSize: scale(12),
     color: COLORS.text,
     opacity: 0.6,
@@ -314,6 +324,10 @@ const styles = StyleSheet.create({
     fontSize: scale(12),
     color: COLORS.text,
     fontWeight: '700',
+    textAlign: 'right',
+  },
+  scrollValueContainer: {
+    flex: 1,
   },
   statusBadge: {
     backgroundColor: '#F0FDF4',
