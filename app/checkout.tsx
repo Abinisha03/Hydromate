@@ -63,72 +63,66 @@ export default function CheckoutScreen() {
   const handleSave = async () => {
     const { name, phone, buildingName, streetNo, gateNo, floorNo, doorNo, streetName, area, location, pincode } = form;
 
-    // 1. Name validation (REQUIRED): 3-30 characters, only letters
+    // 1. Name validation: 3-30 characters, only letters
     if (!name || name.length < 3 || name.length > 30 || !/^[a-zA-Z\s]+$/.test(name)) {
       showAlert('Invalid Name', 'Name must be 3-30 characters and contain only letters.');
       return;
     }
 
-    // 2. Mobile Number validation (REQUIRED): Exactly 10 digits
+    // 2. Mobile Number validation: Exactly 10 digits
     if (!phone || phone.length !== 10 || !/^\d{10}$/.test(phone)) {
       showAlert('Invalid Mobile', 'Mobile number must be exactly 10 digits.');
       return;
     }
 
-    // 3. Building Name validation (Optional): 3-50 characters, letters + numbers
-    if (buildingName && (buildingName.length < 3 || buildingName.length > 50 || !/^[a-zA-Z0-9\s-]+$/.test(buildingName))) {
-      showAlert('Invalid Building', 'Building Name must be 3-50 characters (letters, numbers and hyphens only).');
+    // 3. Building Name validation: 3-50 characters, letters + numbers
+    if (!buildingName || buildingName.length < 3 || buildingName.length > 50 || !/^[a-zA-Z0-9\s]+$/.test(buildingName)) {
+      showAlert('Invalid Building', 'Building Name must be 3-50 characters (letters and numbers only).');
       return;
     }
 
-    // 4. Street No validation (Optional): 1-10 characters, numbers + letters
-    if (streetNo && (streetNo.length < 1 || streetNo.length > 10 || !/^[a-zA-Z0-9\s/-]+$/.test(streetNo))) {
-      showAlert('Invalid Street No', 'Street No must be 1-10 characters (numbers and letters only).');
+    // 4. Street No validation: 1-6 digits, numbers only
+    if (!streetNo || streetNo.length < 1 || streetNo.length > 6 || !/^\d+$/.test(streetNo)) {
+      showAlert('Invalid Street No', 'Street No must be 1-6 digits (numbers only).');
       return;
     }
 
-    // 5. Gate No validation (Optional): 1-10 characters, letters + numbers
-    if (gateNo && (gateNo.length < 1 || gateNo.length > 10 || !/^[a-zA-Z0-9\s-]+$/.test(gateNo))) {
+    // 5. Gate No validation: 1-10 characters, letters + numbers
+    if (!gateNo || gateNo.length < 1 || gateNo.length > 10 || !/^[a-zA-Z0-9\s]+$/.test(gateNo)) {
       showAlert('Invalid Gate No', 'Gate No must be 1-10 characters (letters and numbers only).');
       return;
     }
 
-    // 6. Floor No validation (Optional): 0-100 range, 1-3 digits
-    if (floorNo) {
-      const floorNum = parseInt(floorNo, 10);
-      if (isNaN(floorNum) || floorNum < 0 || floorNum > 100 || floorNo.length > 3) {
-        showAlert('Invalid Floor No', 'Floor No must be a number between 0 and 100 (max 3 digits).');
-        return;
-      }
-    }
-
-    // 7. Door No validation (Optional): 1-10 characters
-    if (doorNo && (doorNo.length < 1 || doorNo.length > 10 || !/^[a-zA-Z0-9\s/-]+$/.test(doorNo))) {
-      showAlert('Invalid Door No', 'Door No must be 1-10 characters (e.g., 201 or 12/A).');
+    // 6. Floor No validation: 0-100 range, 1-3 digits
+    const floorNum = parseInt(floorNo, 10);
+    if (floorNo === '' || isNaN(floorNum) || floorNum < 0 || floorNum > 100 || floorNo.length > 3) {
+      showAlert('Invalid Floor No', 'Floor No must be a number between 0 and 100 (max 3 digits).');
       return;
     }
 
-    // 8. Street Name validation (REQUIRED): 3-50 characters, letters only
-    if (!streetName || streetName.length < 3 || streetName.length > 50 || !/^[a-zA-Z\s]+$/.test(streetName)) {
+    // 7. Door No validation: 1-1000 range, 1-4 digits
+    const doorNum = parseInt(doorNo, 10);
+    if (doorNo === '' || isNaN(doorNum) || doorNum < 1 || doorNum > 1000 || doorNo.length > 4) {
+      showAlert('Invalid Door No', 'Door No must be a number between 1 and 1000 (max 4 digits).');
+      return;
+    }
+
+    // 8. Street Name validation (Optional): 3-50 characters, letters only
+    if (streetName && (streetName.length < 3 || streetName.length > 50 || !/^[a-zA-Z\s]+$/.test(streetName))) {
       showAlert('Invalid Street Name', 'Street Name must be 3-50 characters and contain only letters.');
       return;
     }
 
-    // 9. Area validation (REQUIRED): 3-50 characters
-    if (!area || area.length < 3 || area.length > 50) {
+    // 9. Area validation (Optional): 3-50 characters
+    if (area && (area.length < 3 || area.length > 50)) {
       showAlert('Invalid Area', 'Area must be 3-50 characters.');
       return;
     }
 
-    // 10. Location validation (REQUIRED): 3-150 characters
-    if (!location || location.length < 3 || location.length > 150) {
-      showAlert('Invalid Location', 'Full Location must be 3-150 characters.');
-      return;
-    }
-
-    // 11. Pincode validation (REQUIRED): Exactly 6 digits
-    if (!pincode || pincode.length !== 6 || !/^\d{6}$/.test(pincode)) {
-      showAlert('Invalid Pincode', 'Pincode must be exactly 6 digits.');
+    // 10. Location validation: 10-150 characters, must include 6-digit pincode
+    const combinedAddress = `${location} ${pincode}`.trim();
+    if (combinedAddress.length < 10 || combinedAddress.length > 150 || !/\d{6}/.test(combinedAddress)) {
+      showAlert('Invalid Location', 'Full Location must be 10-150 characters and include a 6-digit pincode.');
       return;
     }
 
@@ -212,7 +206,7 @@ export default function CheckoutScreen() {
                 placeholder="e.g. Wellness Heights"
                 placeholderTextColor="#A0AEC0"
                 value={form.buildingName}
-                onChangeText={(v) => updateForm('buildingName', v.replace(/[^a-zA-Z0-9\s-]/g, '').slice(0, 50))}
+                onChangeText={(v) => updateForm('buildingName', v.replace(/[^a-zA-Z0-9\s]/g, '').slice(0, 50))}
               />
             </View>
 
@@ -224,7 +218,8 @@ export default function CheckoutScreen() {
                   placeholder="00"
                   placeholderTextColor="#A0AEC0"
                   value={form.streetNo}
-                  onChangeText={(v) => updateForm('streetNo', v.replace(/[^a-zA-Z0-9\s/-]/g, '').slice(0, 10))}
+                  onChangeText={(v) => updateForm('streetNo', v.replace(/[^0-9]/g, '').slice(0, 6))}
+                  keyboardType="numeric"
                 />
               </View>
               <View style={[styles.inputGroup, { width: '48%' }]}>
@@ -234,7 +229,7 @@ export default function CheckoutScreen() {
                   placeholder="00"
                   placeholderTextColor="#A0AEC0"
                   value={form.gateNo}
-                  onChangeText={(v) => updateForm('gateNo', v.replace(/[^a-zA-Z0-9\s-]/g, '').slice(0, 10))}
+                  onChangeText={(v) => updateForm('gateNo', v.replace(/[^a-zA-Z0-9\s]/g, '').slice(0, 10))}
                 />
               </View>
             </View>
@@ -255,10 +250,11 @@ export default function CheckoutScreen() {
                 <Text style={styles.inputLabel}>Door No</Text>
                 <TextInput
                   style={styles.inputHalf}
-                  placeholder="8/218A"
+                  placeholder="101"
                   placeholderTextColor="#A0AEC0"
                   value={form.doorNo}
-                  onChangeText={(v) => updateForm('doorNo', v.replace(/[^a-zA-Z0-9\s/-]/g, '').slice(0, 10))}
+                  onChangeText={(v) => updateForm('doorNo', v.replace(/[^0-9]/g, '').slice(0, 4))}
+                  keyboardType="numeric"
                 />
               </View>
             </View>

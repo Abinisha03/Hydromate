@@ -185,69 +185,62 @@ export default function AddressModal({ visible, onClose, initialData, onSuccess,
       return;
     }
 
-    // 3. Building Name validation: Optional, 3-50 characters, letters + numbers
-    if (buildingName && (buildingName.length < 3 || buildingName.length > 50 || !/^[a-zA-Z0-9\s-]+$/.test(buildingName))) {
-      const msg = 'Building Name must be 3-50 characters (letters, numbers and hyphens only).';
+    // 3. Building Name validation: 3-50 characters, letters + numbers
+    if (!buildingName || buildingName.length < 3 || buildingName.length > 50 || !/^[a-zA-Z0-9\s]+$/.test(buildingName)) {
+      const msg = 'Building Name must be 3-50 characters (letters and numbers only).';
       if (Platform.OS === 'web') window.alert(msg); else Alert.alert('Invalid Building', msg);
       return;
     }
 
-    // 4. Street No validation: Optional, 1-10 characters, numbers + letters
-    if (streetNo && (streetNo.length < 1 || streetNo.length > 10 || !/^[a-zA-Z0-9\s/-]+$/.test(streetNo))) {
-      const msg = 'Street No must be 1-10 characters (numbers and letters only).';
+    // 4. Street No validation: 1-6 digits, numbers only
+    if (!streetNo || streetNo.length < 1 || streetNo.length > 6 || !/^\d+$/.test(streetNo)) {
+      const msg = 'Street No must be 1-6 digits (numbers only).';
       if (Platform.OS === 'web') window.alert(msg); else Alert.alert('Invalid Street No', msg);
       return;
     }
 
-    // 5. Gate No validation: Optional, 1-10 characters, letters + numbers
-    if (gateNo && (gateNo.length < 1 || gateNo.length > 10 || !/^[a-zA-Z0-9\s-]+$/.test(gateNo))) {
+    // 5. Gate No validation: 1-10 characters, letters + numbers
+    if (!gateNo || gateNo.length < 1 || gateNo.length > 10 || !/^[a-zA-Z0-9\s]+$/.test(gateNo)) {
       const msg = 'Gate No must be 1-10 characters (letters and numbers only).';
       if (Platform.OS === 'web') window.alert(msg); else Alert.alert('Invalid Gate No', msg);
       return;
     }
 
-    // 6. Floor No validation: Optional, 0-100 range, 1-3 digits
-    if (floorNo) {
-      const floorNum = parseInt(floorNo, 10);
-      if (isNaN(floorNum) || floorNum < 0 || floorNum > 100 || floorNo.length > 3) {
-        const msg = 'Floor No must be a number between 0 and 100 (max 3 digits).';
-        if (Platform.OS === 'web') window.alert(msg); else Alert.alert('Invalid Floor No', msg);
-        return;
-      }
+    // 6. Floor No validation: 0-100 range, 1-3 digits
+    const floorNum = parseInt(floorNo, 10);
+    if (floorNo === '' || isNaN(floorNum) || floorNum < 0 || floorNum > 100 || floorNo.length > 3) {
+      const msg = 'Floor No must be a number between 0 and 100 (max 3 digits).';
+      if (Platform.OS === 'web') window.alert(msg); else Alert.alert('Invalid Floor No', msg);
+      return;
     }
 
-    // 7. Door No validation: Optional, 1-1000 range, 1-10 characters
-    if (doorNo && (doorNo.length < 1 || doorNo.length > 10 || !/^[a-zA-Z0-9\s/-]+$/.test(doorNo))) {
-      const msg = 'Door No must be 1-10 characters (e.g., 201 or 12/A).';
+    // 7. Door No validation: 1-1000 range, 1-4 digits
+    const doorNum = parseInt(doorNo, 10);
+    if (doorNo === '' || isNaN(doorNum) || doorNum < 1 || doorNum > 1000 || doorNo.length > 4) {
+      const msg = 'Door No must be a number between 1 and 1000 (max 4 digits).';
       if (Platform.OS === 'web') window.alert(msg); else Alert.alert('Invalid Door No', msg);
       return;
     }
 
-    // 8. Street Name validation (REQUIRED): 3-50 characters, letters only
-    if (!streetName || streetName.length < 3 || streetName.length > 50 || !/^[a-zA-Z\s]+$/.test(streetName)) {
+    // 8. Street Name validation (Optional): 3-50 characters, letters only
+    if (streetName && (streetName.length < 3 || streetName.length > 50 || !/^[a-zA-Z\s]+$/.test(streetName))) {
       const msg = 'Street Name must be 3-50 characters and contain only letters.';
       if (Platform.OS === 'web') window.alert(msg); else Alert.alert('Invalid Street Name', msg);
       return;
     }
 
-    // 9. Area validation (REQUIRED): 3-50 characters
-    if (!area || area.length < 3 || area.length > 50) {
+    // 9. Area validation (Optional): 3-50 characters
+    if (area && (area.length < 3 || area.length > 50)) {
       const msg = 'Area must be 3-50 characters.';
       if (Platform.OS === 'web') window.alert(msg); else Alert.alert('Invalid Area', msg);
       return;
     }
 
-    // 10. Location validation (REQUIRED): 3-150 characters
-    if (!location || location.length < 3 || location.length > 150) {
-      const msg = 'Full Address (Location) must be 3-150 characters.';
+    // 10. Location validation: 10-150 characters, must include pincode
+    const combinedAddress = `${location} ${pincode}`.trim();
+    if (combinedAddress.length < 10 || combinedAddress.length > 150 || !/\d{6}/.test(combinedAddress)) {
+      const msg = 'Full Address (Location + Pincode) must be 10-150 characters and include a valid 6-digit pincode.';
       if (Platform.OS === 'web') window.alert(msg); else Alert.alert('Invalid Location', msg);
-      return;
-    }
-
-    // Pincode validation: Exactly 6 digits
-    if (!pincode || pincode.length !== 6 || !/^\d{6}$/.test(pincode)) {
-      const msg = 'Pincode must be exactly 6 digits.';
-      if (Platform.OS === 'web') window.alert(msg); else Alert.alert('Invalid Pincode', msg);
       return;
     }
 
@@ -311,7 +304,7 @@ export default function AddressModal({ visible, onClose, initialData, onSuccess,
                 placeholder="Building Name" 
                 placeholderTextColor="#108678" 
                 value={formData.buildingName} 
-                onChangeText={(v) => setFormData(p => ({ ...p, buildingName: v.replace(/[^a-zA-Z0-9\s-]/g, '').slice(0, 50) }))} 
+                onChangeText={(v) => setFormData(p => ({ ...p, buildingName: v.replace(/[^a-zA-Z0-9\s]/g, '').slice(0, 50) }))} 
               />
               
               <View style={styles.formRow}>
@@ -320,14 +313,15 @@ export default function AddressModal({ visible, onClose, initialData, onSuccess,
                   placeholder="Street No" 
                   placeholderTextColor="#108678" 
                   value={formData.streetNo} 
-                  onChangeText={(v) => setFormData(p => ({ ...p, streetNo: v.replace(/[^a-zA-Z0-9\s/-]/g, '').slice(0, 10) }))} 
+                  onChangeText={(v) => setFormData(p => ({ ...p, streetNo: v.replace(/[^0-9]/g, '').slice(0, 6) }))} 
+                  keyboardType="numeric"
                 />
                 <TextInput 
                   style={styles.halfInput} 
                   placeholder="Gate No" 
                   placeholderTextColor="#108678" 
                   value={formData.gateNo} 
-                  onChangeText={(v) => setFormData(p => ({ ...p, gateNo: v.replace(/[^a-zA-Z0-9\s-]/g, '').slice(0, 10) }))} 
+                  onChangeText={(v) => setFormData(p => ({ ...p, gateNo: v.replace(/[^a-zA-Z0-9\s]/g, '').slice(0, 10) }))} 
                 />
               </View>
 
@@ -345,7 +339,8 @@ export default function AddressModal({ visible, onClose, initialData, onSuccess,
                   placeholder="Door No" 
                   placeholderTextColor="#108678" 
                   value={formData.doorNo} 
-                  onChangeText={(v) => setFormData(p => ({ ...p, doorNo: v.replace(/[^a-zA-Z0-9\s/-]/g, '').slice(0, 10) }))} 
+                  onChangeText={(v) => setFormData(p => ({ ...p, doorNo: v.replace(/[^0-9]/g, '').slice(0, 4) }))} 
+                  keyboardType="numeric"
                 />
               </View>
 
