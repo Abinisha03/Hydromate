@@ -83,10 +83,12 @@ export default defineSchema({
 
   staffInvites: defineTable({
     inviteCode: v.string(),
+    email: v.string(),
     name: v.string(),
-    phone: v.string(),
     createdBy: v.string(),
-    status: v.string(), // "pending" | "accepted"
+    status: v.string(), // "pending" | "accepted" | "expired"
     createdAt: v.string(),
-  }).index("by_code", ["inviteCode"]),
+  })
+    .index("by_email", ["email"])
+    .index("by_code", ["inviteCode"]),
 });

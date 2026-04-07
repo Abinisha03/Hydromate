@@ -40,12 +40,22 @@ function InitialLayout() {
     isSignedIn ? {} : "skip"
   );
 
+  const hasPendingInvite = useQuery(
+    api.invites.checkPendingInvite,
+    isSignedIn ? {} : "skip"
+  );
+  
+  const convexUser = useQuery(
+    api.users.getCurrentUser,
+    isSignedIn ? {} : "skip"
+  );
+
   const [hasStoredUser, setHasStoredUser] = useState(false);
   const [isReady, setIsReady] = useState(false);
   
-  const role = user?.publicMetadata?.role || 'user';
+  const email = user?.primaryEmailAddress?.emailAddress;
+  const role = convexUser?.role || user?.publicMetadata?.role || (email === 'abinishaa271@gmail.com' ? 'admin' : 'user');
 
-  // Store user in Convex when they sign in
   useEffect(() => {
     if (!isLoaded || !isSignedIn) {
       setHasStoredUser(false);
@@ -81,28 +91,33 @@ function InitialLayout() {
       if (!isSignedIn && !inAuthGroup) {
         // Not signed in → send to sign-in
         router.replace('/(auth)/sign-in');
-      } else if (isSignedIn && (inAuthGroup || isRoot)) {
-        if (role === 'admin') {
+      } else if (isSignedIn) {
+        if (role === 'admin' && segments[0] !== '(admin)') {
           router.replace('/(admin)');
-        } else if (role === 'staff') {
+        } else if (role === 'staff' && segments[0] !== '(staff)') {
           router.replace('/(staff)');
-        } else {
-          // Signed in but still on auth screen or splash screen → check if new user
-          if (hasStoredUser && addresses !== undefined) {
-            if (Array.isArray(addresses) && addresses.length === 0) {
-              // New user with no addresses → address page
-              router.replace('/checkout');
-            } else {
-              router.replace('/(tabs)');
+        } else if (role !== 'admin' && role !== 'staff' && (inAuthGroup || isRoot)) {
+          // Signed in but still on auth screen or splash screen → check pending invites
+          if (hasPendingInvite === true && segments[0] !== 'verify-invite') {
+            router.replace('/verify-invite');
+          } else if (hasStoredUser && addresses !== undefined && hasPendingInvite !== undefined) {
+            // Only proceed if we definitively know there are no pending invites
+            if (hasPendingInvite === false && segments[0] !== 'verify-invite') {
+              if (Array.isArray(addresses) && addresses.length === 0) {
+                // New user with no addresses → address page
+                router.replace('/checkout');
+              } else {
+                router.replace('/(tabs)');
+              }
             }
           }
-          // If addresses are loading, we don't redirect yet.
+          // If addresses or invites are loading, we don't redirect yet.
         }
       }
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [isLoaded, isSignedIn, segments, hasStoredUser, addresses, role]);
+  }, [isLoaded, isSignedIn, segments, hasStoredUser, addresses, role, hasPendingInvite]);
 
   // Loading screen while Clerk initializes
   if (!isLoaded || !isReady) {

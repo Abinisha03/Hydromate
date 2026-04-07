@@ -104,9 +104,11 @@ function AssignStaffModal({
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={modalStyles.staffName}>{staff.name}</Text>
-                    {staff.phone && (
+                    {staff.email ? (
+                      <Text style={modalStyles.staffPhone}>{staff.email}</Text>
+                    ) : staff.phone ? (
                       <Text style={modalStyles.staffPhone}>{staff.phone}</Text>
-                    )}
+                    ) : null}
                   </View>
                   <MaterialIcons name="chevron-right" size={22} color={COLORS.primary} />
                 </TouchableOpacity>
@@ -127,21 +129,32 @@ function AddStaffModal({
   visible: boolean;
   onClose: () => void;
 }) {
+  const createInvite = useMutation(api.invites.createInvite);
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [generated, setGenerated] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const inviteMessage = `🚰 *HydroMate Staff Invite*\n\nHi ${name}!\n\nYou've been invited to join HydroMate as a Delivery Staff member.\n\n📱 Download the app and sign up with your phone: *${phone}*\n\n🔑 Your invite code: *${code}*\n\nAfter signing up, your admin will activate your staff access.\n\n— HydroMate Team`;
+  const inviteMessage = `🚰 *HydroMate Staff Invite*\n\nHi ${name}!\n\nYou've been invited to join HydroMate as a Delivery Staff member.\n\n📱 Download the app and sign up using your email: *${email}*\n\n🔑 Your invite code: *${code}*\n\nRight after you sign in, the app will ask for this code. Enter it to activate your staff dashboard instantly!\n\n— HydroMate Team`;
 
-  const handleGenerate = () => {
-    if (!name.trim() || !phone.trim()) {
-      Alert.alert('Required', 'Please enter name and phone number.');
+  const handleGenerate = async () => {
+    if (!name.trim() || !email.trim()) {
+      Alert.alert('Required', 'Please enter name and email address.');
       return;
     }
     const newCode = `HM-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-    setCode(newCode);
-    setGenerated(true);
+    
+    setIsLoading(true);
+    try {
+      await createInvite({ name: name.trim(), email: email.trim(), inviteCode: newCode });
+      setCode(newCode);
+      setGenerated(true);
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCopy = async () => {
@@ -160,7 +173,7 @@ function AddStaffModal({
   };
 
   const handleClose = () => {
-    setName(''); setPhone(''); setCode(''); setGenerated(false);
+    setName(''); setEmail(''); setCode(''); setGenerated(false);
     onClose();
   };
 
@@ -185,21 +198,31 @@ function AddStaffModal({
               onChangeText={setName}
             />
 
-            <Text style={modalStyles.label}>Phone Number</Text>
+            <Text style={modalStyles.label}>Email Address</Text>
             <TextInput
               style={modalStyles.input}
-              placeholder="Enter phone number"
+              placeholder="Enter email address"
               placeholderTextColor={COLORS.gray}
-              keyboardType="phone-pad"
-              maxLength={10}
-              value={phone}
-              onChangeText={setPhone}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
             />
 
             {!generated ? (
-              <TouchableOpacity style={modalStyles.generateBtn} onPress={handleGenerate}>
-                <MaterialIcons name="link" size={18} color="#fff" style={{ marginRight: 8 }} />
-                <Text style={modalStyles.generateBtnText}>GENERATE INVITE</Text>
+              <TouchableOpacity
+                style={modalStyles.generateBtn}
+                onPress={handleGenerate}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <MaterialIcons name="link" size={18} color="#fff" style={{ marginRight: 8 }} />
+                    <Text style={modalStyles.generateBtnText}>GENERATE INVITE</Text>
+                  </>
+                )}
               </TouchableOpacity>
             ) : (
               <View style={modalStyles.inviteBox}>
@@ -477,10 +500,10 @@ function StaffTab() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.staffCardName}>{staff.name}</Text>
-                {staff.phone && (
+                {(staff.email || staff.phone) && (
                   <View style={styles.staffPhoneRow}>
-                    <MaterialIcons name="phone" size={12} color={COLORS.primary} />
-                    <Text style={styles.staffPhoneText}>{staff.phone}</Text>
+                    <MaterialIcons name={staff.email ? "email" : "phone"} size={12} color={COLORS.primary} />
+                    <Text style={styles.staffPhoneText}>{staff.email || staff.phone}</Text>
                   </View>
                 )}
               </View>
