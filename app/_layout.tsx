@@ -40,9 +40,11 @@ function InitialLayout() {
     isSignedIn ? {} : "skip"
   );
 
+  const email = user?.primaryEmailAddress?.emailAddress;
+
   const hasPendingInvite = useQuery(
     api.invites.checkPendingInvite,
-    isSignedIn ? {} : "skip"
+    (isSignedIn && email) ? { email } : "skip"
   );
   
   const convexUser = useQuery(
@@ -53,7 +55,6 @@ function InitialLayout() {
   const [hasStoredUser, setHasStoredUser] = useState(false);
   const [isReady, setIsReady] = useState(false);
   
-  const email = user?.primaryEmailAddress?.emailAddress;
   const role = convexUser?.role || user?.publicMetadata?.role || (email === 'abinishaa271@gmail.com' ? 'admin' : 'user');
 
   useEffect(() => {

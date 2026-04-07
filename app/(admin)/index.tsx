@@ -165,10 +165,13 @@ function AddStaffModal({
     }
   };
 
-  const handleWhatsApp = () => {
-    const msg = encodeURIComponent(inviteMessage);
-    Linking.openURL(`whatsapp://send?text=${msg}`).catch(() =>
-      Alert.alert('WhatsApp not installed', 'Please copy and share manually.')
+  const handleEmail = () => {
+    const subject = encodeURIComponent('HydroMate Staff Invitation');
+    const body = encodeURIComponent(inviteMessage);
+    // Use Gmail web URL to strictly use Gmail instead of the OS default mail app like Outlook
+    const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${subject}&body=${body}`;
+    Linking.openURL(url).catch(() =>
+      Alert.alert('Browser error', 'Could not open Gmail.')
     );
   };
 
@@ -238,18 +241,18 @@ function AddStaffModal({
                     <Text style={modalStyles.shareBtnText}>Share</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[modalStyles.shareBtn, { backgroundColor: '#25D366' }]}
-                    onPress={handleWhatsApp}
+                    style={[modalStyles.shareBtn, { backgroundColor: '#3B82F6' }]}
+                    onPress={handleEmail}
                   >
-                    <FontAwesome5 name="whatsapp" size={16} color="#fff" />
-                    <Text style={[modalStyles.shareBtnText, { color: '#fff' }]}>WhatsApp</Text>
+                    <MaterialIcons name="email" size={16} color="#fff" />
+                    <Text style={[modalStyles.shareBtnText, { color: '#fff' }]}>Send Email</Text>
                   </TouchableOpacity>
                 </View>
 
                 <View style={modalStyles.noteBox}>
                   <MaterialIcons name="info-outline" size={14} color={COLORS.info} />
                   <Text style={modalStyles.noteText}>
-                    After they sign up, set their role to "staff" in the Clerk dashboard to activate their account.
+                    The staff member will be automatically activated when they sign up and enter this code.
                   </Text>
                 </View>
               </View>
@@ -417,6 +420,7 @@ function OrderCard({ order }: { order: any }) {
 // ─── Orders Tab ───────────────────────────────────────────────────────────────
 function OrdersTab() {
   const orders = useQuery(api.orders.getAllOrders);
+  const [filter, setFilter] = useState<'All' | 'Pending' | 'Assigned' | 'Delivered'>('All');
 
   if (orders === undefined) {
     return (
@@ -432,37 +436,57 @@ function OrdersTab() {
   const delivered = orders.filter(o => o.status === 'Delivered').length;
   const assigned = orders.filter(o => o.status === 'Assigned').length;
 
+  const filteredOrders = orders.filter(o => {
+    if (filter === 'All') return true;
+    return o.status === filter;
+  });
+
   return (
     <View style={{ flex: 1 }}>
       {/* Summary Chips */}
       <View style={styles.summaryRow}>
-        <View style={[styles.summaryChip, { backgroundColor: COLORS.accent }]}>
+        <TouchableOpacity 
+          style={[styles.summaryChip, { backgroundColor: filter === 'All' ? '#D1F2EB' : COLORS.accent, borderWidth: filter === 'All' ? 2 : 0, borderColor: '#1ABC9C' }]}
+          onPress={() => setFilter('All')}
+        >
           <Text style={styles.summaryNum}>{total}</Text>
           <Text style={styles.summaryLabel}>Total</Text>
-        </View>
-        <View style={[styles.summaryChip, { backgroundColor: '#FFF5E6' }]}>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.summaryChip, { backgroundColor: filter === 'Pending' ? '#FAD7A1' : '#FFF5E6', borderWidth: filter === 'Pending' ? 2 : 0, borderColor: '#F39C12' }]}
+          onPress={() => setFilter('Pending')}
+        >
           <Text style={[styles.summaryNum, { color: '#C05621' }]}>{pending}</Text>
           <Text style={[styles.summaryLabel, { color: '#C05621' }]}>Pending</Text>
-        </View>
-        <View style={[styles.summaryChip, { backgroundColor: '#EBF8FF' }]}>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.summaryChip, { backgroundColor: filter === 'Assigned' ? '#AED6F1' : '#EBF8FF', borderWidth: filter === 'Assigned' ? 2 : 0, borderColor: '#3498DB' }]}
+          onPress={() => setFilter('Assigned')}
+        >
           <Text style={[styles.summaryNum, { color: '#2B6CB0' }]}>{assigned}</Text>
           <Text style={[styles.summaryLabel, { color: '#2B6CB0' }]}>Assigned</Text>
-        </View>
-        <View style={[styles.summaryChip, { backgroundColor: '#C6F6D5' }]}>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.summaryChip, { backgroundColor: filter === 'Delivered' ? '#A9DFBF' : '#C6F6D5', borderWidth: filter === 'Delivered' ? 2 : 0, borderColor: '#27AE60' }]}
+          onPress={() => setFilter('Delivered')}
+        >
           <Text style={[styles.summaryNum, { color: '#22543D' }]}>{delivered}</Text>
           <Text style={[styles.summaryLabel, { color: '#22543D' }]}>Delivered</Text>
-        </View>
+        </TouchableOpacity>
       </View>
 
       {/* Order List */}
       <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-        {orders.length === 0 ? (
+        {filteredOrders.length === 0 ? (
           <View style={styles.emptyStateBox}>
             <FontAwesome5 name="water" size={40} color={COLORS.border} />
-            <Text style={styles.emptyStateText}>No orders yet.</Text>
+            <Text style={styles.emptyStateText}>No orders match this status.</Text>
           </View>
         ) : (
-          orders.map((order) => <OrderCard key={order._id} order={order} />)
+          filteredOrders.map((order) => <OrderCard key={order._id} order={order} />)
         )}
       </ScrollView>
     </View>

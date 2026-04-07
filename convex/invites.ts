@@ -46,12 +46,12 @@ export const createInvite = mutation({
 });
 
 export const checkPendingInvite = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { email: v.string() },
+  handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity || !identity.email) return false;
+    if (!identity) return false;
 
-    const emailToken = identity.email.toLowerCase();
+    const emailToken = args.email.trim().toLowerCase();
 
     const pending = await ctx.db
       .query("staffInvites")
@@ -66,12 +66,13 @@ export const checkPendingInvite = query({
 export const verifyInvite = mutation({
   args: {
     inviteCode: v.string(),
+    email: v.string(),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity || !identity.email) throw new Error("Not authenticated");
+    if (!identity) throw new Error("Not authenticated");
 
-    const emailToken = identity.email.toLowerCase();
+    const emailToken = args.email.trim().toLowerCase();
 
     const invite = await ctx.db
       .query("staffInvites")
@@ -108,7 +109,7 @@ export const verifyInvite = mutation({
          clerkId: identity.subject,
          tokenIdentifier: identity.tokenIdentifier,
          name: identity.name ?? "Staff User",
-         email: identity.email ?? "",
+         email: emailToken,
          imageUrl: identity.pictureUrl ?? undefined,
          role: "staff",
        });

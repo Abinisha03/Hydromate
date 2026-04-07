@@ -10,6 +10,8 @@ import { api } from '@/convex/_generated/api';
 import { scale } from '@/utils/responsive';
 import BackgroundAnimation from '@/components/BackgroundAnimation';
 
+import { useUser } from '@clerk/clerk-expo';
+
 const COLORS = {
   primary: '#2EC4B6',
   secondary: '#0F9D8A',
@@ -22,6 +24,7 @@ const COLORS = {
 
 export default function VerifyInviteScreen() {
   const router = useRouter();
+  const { user } = useUser();
   const verifyInvite = useMutation(api.invites.verifyInvite);
   
   const [code, setCode] = useState('');
@@ -33,9 +36,15 @@ export default function VerifyInviteScreen() {
       return;
     }
 
+    const email = user?.primaryEmailAddress?.emailAddress;
+    if (!email) {
+      Alert.alert('Error', 'Wait for your email to load.');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      await verifyInvite({ inviteCode: code.trim().toUpperCase() });
+      await verifyInvite({ inviteCode: code.trim().toUpperCase(), email });
       Alert.alert('Success!', 'Your account has been upgraded to Delivery Staff.', [
         { text: 'Go to Dashboard', onPress: () => router.replace('/(staff)') }
       ]);
