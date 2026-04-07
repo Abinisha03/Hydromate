@@ -143,3 +143,16 @@ export const getStaffMembers = query({
   },
 });
 
+// Remove staff access by resetting their role to "user"
+export const removeStaff = mutation({
+  args: { staffId: v.id("users") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    // Revert role to user
+    await ctx.db.patch(args.staffId, { role: "user" });
+    return { success: true };
+  },
+});
+

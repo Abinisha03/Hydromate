@@ -508,7 +508,29 @@ function OrdersTab() {
 // ─── Staff Tab ────────────────────────────────────────────────────────────────
 function StaffTab() {
   const staffList = useQuery(api.users.getStaffMembers);
+  const removeStaff = useMutation(api.users.removeStaff);
   const [addModal, setAddModal] = useState(false);
+
+  const confirmRemove = (staffId: string, staffName: string) => {
+    Alert.alert(
+      "Remove Staff",
+      `Are you sure you want to remove ${staffName} from the delivery staff?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await removeStaff({ staffId: staffId as any });
+            } catch (e: any) {
+              Alert.alert("Error", e.message);
+            }
+          }
+        }
+      ]
+    );
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -546,6 +568,12 @@ function StaffTab() {
               <View style={styles.staffRoleBadge}>
                 <Text style={styles.staffRoleText}>STAFF</Text>
               </View>
+              <TouchableOpacity
+                style={{ marginLeft: 10, padding: 5 }}
+                onPress={() => confirmRemove(staff._id as any, staff.name)}
+              >
+                <MaterialIcons name="delete-outline" size={22} color="#E53E3E" />
+              </TouchableOpacity>
             </View>
           ))
         )}
