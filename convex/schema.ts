@@ -85,6 +85,7 @@ export default defineSchema({
     inviteCode: v.string(),
     email: v.string(),
     name: v.string(),
+    phone: v.optional(v.string()), // Added phone here
     createdBy: v.string(),
     status: v.string(), // "pending" | "accepted" | "expired"
     createdAt: v.string(),

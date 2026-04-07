@@ -132,22 +132,23 @@ function AddStaffModal({
   const createInvite = useMutation(api.invites.createInvite);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [generated, setGenerated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const inviteMessage = `🚰 *HydroMate Staff Invite*\n\nHi ${name}!\n\nYou've been invited to join HydroMate as a Delivery Staff member.\n\n📱 Download the app and sign up using your email: *${email}*\n\n🔑 Your invite code: *${code}*\n\nRight after you sign in, the app will ask for this code. Enter it to activate your staff dashboard instantly!\n\n— HydroMate Team`;
+  const inviteMessage = `🚰 *HydroMate Staff Invite*\n\nHi ${name}!\n\nYou've been invited to join HydroMate as a Delivery Staff member.\n\n📱 Download the app and sign up using your email: *${email}*\n\n🔑 Your invite code: *${code}*\n\nRight after you sign in, the app will ask for this code and your phone number. Enter them to activate your staff dashboard instantly!\n\n— HydroMate Team`;
 
   const handleGenerate = async () => {
-    if (!name.trim() || !email.trim()) {
-      Alert.alert('Required', 'Please enter name and email address.');
+    if (!name.trim() || !email.trim() || phone.trim().length < 10) {
+      Alert.alert('Required', 'Please enter name, email, and a valid phone number.');
       return;
     }
     const newCode = `HM-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     
     setIsLoading(true);
     try {
-      await createInvite({ name: name.trim(), email: email.trim(), inviteCode: newCode });
+      await createInvite({ name: name.trim(), email: email.trim(), inviteCode: newCode, phone: phone.trim() });
       setCode(newCode);
       setGenerated(true);
     } catch (e: any) {
@@ -210,6 +211,17 @@ function AddStaffModal({
               autoCapitalize="none"
               value={email}
               onChangeText={setEmail}
+            />
+
+            <Text style={modalStyles.label}>Phone Number</Text>
+            <TextInput
+              style={modalStyles.input}
+              placeholder="Enter phone number"
+              placeholderTextColor={COLORS.gray}
+              keyboardType="phone-pad"
+              maxLength={10}
+              value={phone}
+              onChangeText={setPhone}
             />
 
             {!generated ? (

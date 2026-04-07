@@ -28,11 +28,12 @@ export default function VerifyInviteScreen() {
   const verifyInvite = useMutation(api.invites.verifyInvite);
   
   const [code, setCode] = useState('');
+  const [phone, setPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleVerify = async () => {
-    if (!code.trim()) {
-      Alert.alert('Required', 'Please enter your invite code.');
+    if (!code.trim() || !phone.trim() || phone.trim().length < 10) {
+      Alert.alert('Required', 'Please enter a valid invite code and phone number.');
       return;
     }
 
@@ -44,7 +45,7 @@ export default function VerifyInviteScreen() {
 
     setIsLoading(true);
     try {
-      await verifyInvite({ inviteCode: code.trim().toUpperCase(), email });
+      await verifyInvite({ inviteCode: code.trim().toUpperCase(), email, phone: phone.trim() });
       Alert.alert('Success!', 'Your account has been upgraded to Delivery Staff.', [
         { text: 'Go to Dashboard', onPress: () => router.replace('/(staff)') }
       ]);
@@ -72,7 +73,7 @@ export default function VerifyInviteScreen() {
           <Text style={styles.title}>Staff Verification</Text>
           <Text style={styles.subtitle}>
             We noticed you have a pending Staff Invite for your email address. 
-            Please enter your unique invite code below to activate your account.
+            Please enter your unique invite code and phone number to activate your account.
           </Text>
 
           <View style={styles.inputContainer}>
@@ -87,6 +88,19 @@ export default function VerifyInviteScreen() {
             />
           </View>
 
+          <View style={styles.inputContainer}>
+            <MaterialIcons name="phone" size={20} color={COLORS.secondary} style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Your Phone Number"
+              placeholderTextColor={COLORS.gray}
+              keyboardType="phone-pad"
+              maxLength={10}
+              value={phone}
+              onChangeText={setPhone}
+            />
+          </View>
+
           <TouchableOpacity 
             style={[styles.verifyBtn, isLoading && { opacity: 0.7 }]} 
             onPress={handleVerify}
@@ -96,7 +110,7 @@ export default function VerifyInviteScreen() {
               <ActivityIndicator color={COLORS.white} />
             ) : (
               <>
-                <Text style={styles.verifyBtnText}>VERIFY INVITE CODE</Text>
+                <Text style={styles.verifyBtnText}>VERIFY & JOIN</Text>
                 <MaterialIcons name="arrow-forward" size={18} color={COLORS.white} />
               </>
             )}

@@ -6,6 +6,7 @@ export const createInvite = mutation({
     name: v.string(),
     email: v.string(),
     inviteCode: v.string(),
+    phone: v.optional(v.string()) // Added phone here
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -27,6 +28,7 @@ export const createInvite = mutation({
       await ctx.db.patch(existing._id, {
         inviteCode: args.inviteCode,
         name: args.name,
+        ...(args.phone ? { phone: args.phone } : {}),
         createdAt: new Date().toISOString(),
       });
       return existing._id;
@@ -36,6 +38,7 @@ export const createInvite = mutation({
       inviteCode: args.inviteCode,
       email: emailTokens,
       name: args.name,
+      ...(args.phone ? { phone: args.phone } : {}),
       createdBy: identity.tokenIdentifier,
       status: "pending",
       createdAt: new Date().toISOString(),
@@ -67,6 +70,7 @@ export const verifyInvite = mutation({
   args: {
     inviteCode: v.string(),
     email: v.string(),
+    phone: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -102,16 +106,22 @@ export const verifyInvite = mutation({
     const user = userTokens || clerkUsers;
 
     if (user) {
-      await ctx.db.patch(user._id, { role: "staff" });
+      await ctx.db.patch(user._id, { 
+        role: "staff", 
+        name: invite.name, 
+        email: emailToken,
+        ...(args.phone ? { phone: args.phone } : {}) 
+      });
     } else {
        // Should never happen since InitialLayout strictly calls storeUser
        await ctx.db.insert("users", {
          clerkId: identity.subject,
          tokenIdentifier: identity.tokenIdentifier,
-         name: identity.name ?? "Staff User",
+         name: invite.name,
          email: emailToken,
          imageUrl: identity.pictureUrl ?? undefined,
          role: "staff",
+         ...(args.phone ? { phone: args.phone } : {}) 
        });
     }
 
