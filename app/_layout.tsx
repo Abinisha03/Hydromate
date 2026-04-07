@@ -2,7 +2,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
-import { ClerkProvider, ClerkLoaded, useAuth } from '@clerk/clerk-expo';
+import { ClerkProvider, ClerkLoaded, useAuth, useUser } from '@clerk/clerk-expo';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { ConvexReactClient, useMutation, useQuery } from 'convex/react';
 import { tokenCache } from '@/utils/cache';
@@ -28,6 +28,7 @@ const convex = new ConvexReactClient(convexUrl);
 // Auth guard that handles routing and user sync
 function InitialLayout() {
   const { isLoaded, isSignedIn } = useAuth();
+  const { user } = useUser();
   const segments = useSegments();
   const router = useRouter();
   const colorScheme = useColorScheme();
@@ -41,6 +42,8 @@ function InitialLayout() {
 
   const [hasStoredUser, setHasStoredUser] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  
+  const role = user?.publicMetadata?.role || 'user';
 
   // Store user in Convex when they sign in
   useEffect(() => {
@@ -79,21 +82,27 @@ function InitialLayout() {
         // Not signed in → send to sign-in
         router.replace('/(auth)/sign-in');
       } else if (isSignedIn && (inAuthGroup || isRoot)) {
-        // Signed in but still on auth screen or splash screen → check if new user
-        if (hasStoredUser && addresses !== undefined) {
-          if (Array.isArray(addresses) && addresses.length === 0) {
-            // New user with no addresses → address page
-            router.replace('/checkout');
-          } else {
-            router.replace('/(tabs)');
+        if (role === 'admin') {
+          router.replace('/(admin)');
+        } else if (role === 'staff') {
+          router.replace('/(staff)');
+        } else {
+          // Signed in but still on auth screen or splash screen → check if new user
+          if (hasStoredUser && addresses !== undefined) {
+            if (Array.isArray(addresses) && addresses.length === 0) {
+              // New user with no addresses → address page
+              router.replace('/checkout');
+            } else {
+              router.replace('/(tabs)');
+            }
           }
+          // If addresses are loading, we don't redirect yet.
         }
-        // If addresses are loading, we don't redirect yet.
       }
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [isLoaded, isSignedIn, segments, hasStoredUser, addresses]);
+  }, [isLoaded, isSignedIn, segments, hasStoredUser, addresses, role]);
 
   // Loading screen while Clerk initializes
   if (!isLoaded || !isReady) {
@@ -117,6 +126,8 @@ function InitialLayout() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(admin)" options={{ headerShown: false }} />
+        <Stack.Screen name="(staff)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         <Stack.Screen name="checkout" options={{ presentation: 'modal', title: 'Complete Order' }} />
         <Stack.Screen name="book-water" options={{ title: 'Book Water' }} />

@@ -10,6 +10,7 @@ export default defineSchema({
     imageUrl: v.optional(v.string()),
     displayName: v.optional(v.string()),
     phone: v.optional(v.string()),
+    role: v.optional(v.string()),
   })
     .index("by_clerkId", ["clerkId"])
     .index("by_tokenIdentifier", ["tokenIdentifier"]),
@@ -37,7 +38,16 @@ export default defineSchema({
     otp: v.string(),
     supplierName: v.string(),
     supplierPhone: v.string(),
-  }).index("by_user", ["userId"]),
+    // Staff assignment fields
+    assignedStaffId: v.optional(v.string()),
+    assignedStaffName: v.optional(v.string()),
+    deliveredAt: v.optional(v.string()),
+    // Customer info (denormalized for admin view)
+    customerName: v.optional(v.string()),
+    customerPhone: v.optional(v.string()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_staff", ["assignedStaffId"]),
 
   addresses: defineTable({
     userId: v.string(),
@@ -64,4 +74,19 @@ export default defineSchema({
     status: v.string(),
     date: v.string(),
   }).index("by_user", ["userId"]),
+
+  pricing: defineTable({
+    waterPrice: v.number(),
+    bottlePrice: v.number(),
+    expressCharge: v.number(),
+  }),
+
+  staffInvites: defineTable({
+    inviteCode: v.string(),
+    name: v.string(),
+    phone: v.string(),
+    createdBy: v.string(),
+    status: v.string(), // "pending" | "accepted"
+    createdAt: v.string(),
+  }).index("by_code", ["inviteCode"]),
 });

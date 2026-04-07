@@ -8,6 +8,8 @@ export const storeUser = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
+    const role = (identity as any).role as string | undefined;
+
     let existing = await ctx.db
       .query("users")
       .withIndex("by_tokenIdentifier", (q) =>
@@ -28,6 +30,7 @@ export const storeUser = mutation({
         name: identity.name ?? existing.name,
         email: identity.email ?? existing.email,
         imageUrl: identity.pictureUrl ?? existing.imageUrl,
+        role: role ?? existing.role,
       });
       return existing._id;
     }
@@ -38,6 +41,7 @@ export const storeUser = mutation({
       name: identity.name ?? "User",
       email: identity.email ?? "",
       imageUrl: identity.pictureUrl ?? undefined,
+      role: role,
     });
 
     return userId;
@@ -126,3 +130,16 @@ export const userExists = query({
     return !!byClerk;
   },
 });
+
+// Get all staff members for admin use
+export const getStaffMembers = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+
+    const allUsers = await ctx.db.query("users").take(200);
+    return allUsers.filter((u) => u.role === "staff");
+  },
+});
+

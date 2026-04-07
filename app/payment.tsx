@@ -112,6 +112,8 @@ export default function PaymentScreen() {
         area: selectedAddress.area || '',
         location: selectedAddress.location || '',
         noBottleReturn: params.noBottleReturn === 'true',
+        customerName: selectedAddress.name || user?.fullName || undefined,
+        customerPhone: selectedAddress.phone || undefined,
       });
       setShowSuccess(true);
     } catch (error: any) {

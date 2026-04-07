@@ -1,6 +1,8 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+// ─── USER FUNCTIONS ───────────────────────────────────────────────────────────
+
 export const createOrder = mutation({
   args: {
     quantity: v.number(),
@@ -18,6 +20,8 @@ export const createOrder = mutation({
     area: v.optional(v.string()),
     location: v.optional(v.string()),
     noBottleReturn: v.boolean(),
+    customerName: v.optional(v.string()),
+    customerPhone: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -62,6 +66,8 @@ export const createOrder = mutation({
       otp,
       supplierName: "Ganesh",
       supplierPhone: "8438005206",
+      customerName: args.customerName,
+      customerPhone: args.customerPhone,
     });
 
     return id;
@@ -104,7 +110,6 @@ export const cancelOrder = mutation({
     if (!identity) throw new Error("Not authenticated");
 
     const order = await ctx.db.get(args.orderId);
-    // FIXED: use tokenIdentifier (not subject) — must match how createOrder stores userId
     if (!order || order.userId !== identity.tokenIdentifier) {
       throw new Error("Order not found or access denied");
     }
@@ -138,7 +143,6 @@ export const updateOrder = mutation({
       throw new Error("Only pending orders can be edited");
     }
 
-    // Recalculate totals
     const waterPrice = 35;
     const bottlePrice = args.noBottleReturn ? args.quantity * 200 : 0;
     const expressCharge = args.pincode.includes("91176129") ? args.quantity * 75 : 0;
@@ -154,6 +158,132 @@ export const updateOrder = mutation({
       totalAmount,
     });
 
+    return { success: true };
+  },
+});
+
+// ─── ADMIN FUNCTIONS ──────────────────────────────────────────────────────────
+
+export const getAllOrders = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+
+    return await ctx.db
+      .query("orders")
+      .order("desc")
+      .take(200);
+  },
+});
+
+export const assignStaff = mutation({
+  args: {
+    orderId: v.id("orders"),
+    staffId: v.string(),
+    staffName: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    await ctx.db.patch(args.orderId, {
+      assignedStaffId: args.staffId,
+      assignedStaffName: args.staffName,
+      status: "Assigned",
+      supplierName: args.staffName,
+    });
+    return { success: true };
+  },
+});
+
+export const approveOrder = mutation({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    await ctx.db.patch(args.orderId, { status: "Approved" });
+    return { success: true };
+  },
+});
+
+export const rejectOrder = mutation({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    await ctx.db.patch(args.orderId, { status: "Rejected" });
+    return { success: true };
+  },
+});
+
+// ─── STAFF FUNCTIONS ──────────────────────────────────────────────────────────
+
+export const getStaffOrders = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+
+    return await ctx.db
+      .query("orders")
+      .withIndex("by_staff", (q) => q.eq("assignedStaffId", identity.tokenIdentifier))
+      .order("desc")
+      .take(100);
+  },
+});
+
+export const acceptOrder = mutation({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const order = await ctx.db.get(args.orderId);
+    if (!order || order.assignedStaffId !== identity.tokenIdentifier) {
+      throw new Error("Order not found or access denied");
+    }
+
+    await ctx.db.patch(args.orderId, { status: "Accepted" });
+    return { success: true };
+  },
+});
+
+export const markOutForDelivery = mutation({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const order = await ctx.db.get(args.orderId);
+    if (!order || order.assignedStaffId !== identity.tokenIdentifier) {
+      throw new Error("Order not found or access denied");
+    }
+
+    await ctx.db.patch(args.orderId, { status: "Out for Delivery" });
+    return { success: true };
+  },
+});
+
+export const markDelivered = mutation({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const order = await ctx.db.get(args.orderId);
+    if (!order || order.assignedStaffId !== identity.tokenIdentifier) {
+      throw new Error("Order not found or access denied");
+    }
+
+    const deliveredAt = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+
+    await ctx.db.patch(args.orderId, {
+      status: "Delivered",
+      deliveredAt,
+    });
     return { success: true };
   },
 });

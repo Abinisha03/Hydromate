@@ -11,6 +11,7 @@
 import type * as addresses from "../addresses.js";
 import type * as complaints from "../complaints.js";
 import type * as orders from "../orders.js";
+import type * as pricing from "../pricing.js";
 import type * as users from "../users.js";
 
 import type {
@@ -23,6 +24,7 @@ declare const fullApi: ApiFromModules<{
   addresses: typeof addresses;
   complaints: typeof complaints;
   orders: typeof orders;
+  pricing: typeof pricing;
   users: typeof users;
 }>;
 
