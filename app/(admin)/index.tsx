@@ -55,11 +55,11 @@ function AssignStaffModal({
   const assignStaff = useMutation(api.orders.assignStaff);
   const [assigning, setAssigning] = useState(false);
 
-  const handleAssign = async (staffId: string, staffName: string) => {
+  const handleAssign = async (staffId: string, staffName: string, staffPhone?: string) => {
     if (!orderId) return;
     setAssigning(true);
     try {
-      await assignStaff({ orderId, staffId, staffName });
+      await assignStaff({ orderId, staffId, staffName, staffPhone });
       Alert.alert('Success', `Order assigned to ${staffName}`);
       onClose();
     } catch (e) {
@@ -96,7 +96,7 @@ function AssignStaffModal({
                 <TouchableOpacity
                   key={staff._id}
                   style={modalStyles.staffRow}
-                  onPress={() => handleAssign(staff.tokenIdentifier ?? staff.clerkId, staff.name)}
+                  onPress={() => handleAssign(staff.tokenIdentifier ?? staff.clerkId, staff.name, staff.phone || staff.email)}
                   disabled={assigning}
                 >
                   <View style={modalStyles.staffAvatar}>
@@ -378,7 +378,7 @@ function OrderCard({ order }: { order: any }) {
       {/* Action Buttons */}
       {isActionable && (
         <View style={styles.actionRow}>
-          {isPending && (
+          {(isPending || order.status === 'Approved') && (
             <TouchableOpacity
               style={[styles.actionBtn, { backgroundColor: COLORS.info }]}
               onPress={() => setAssignModal(true)}
@@ -432,7 +432,7 @@ function OrderCard({ order }: { order: any }) {
 // ─── Orders Tab ───────────────────────────────────────────────────────────────
 function OrdersTab() {
   const orders = useQuery(api.orders.getAllOrders);
-  const [filter, setFilter] = useState<'All' | 'Pending' | 'Assigned' | 'Delivered'>('All');
+  const [filter, setFilter] = useState<'All' | 'Pending' | 'Active' | 'Delivered'>('All');
 
   if (orders === undefined) {
     return (
@@ -446,10 +446,11 @@ function OrdersTab() {
   const total = orders.length;
   const pending = orders.filter(o => o.status === 'Pending').length;
   const delivered = orders.filter(o => o.status === 'Delivered').length;
-  const assigned = orders.filter(o => o.status === 'Assigned').length;
+  const active = orders.filter(o => ['Assigned', 'Accepted', 'Out for Delivery'].includes(o.status)).length;
 
   const filteredOrders = orders.filter(o => {
     if (filter === 'All') return true;
+    if (filter === 'Active') return ['Assigned', 'Accepted', 'Out for Delivery'].includes(o.status);
     return o.status === filter;
   });
 
@@ -474,11 +475,11 @@ function OrdersTab() {
         </TouchableOpacity>
         
         <TouchableOpacity 
-          style={[styles.summaryChip, { backgroundColor: filter === 'Assigned' ? '#AED6F1' : '#EBF8FF', borderWidth: filter === 'Assigned' ? 2 : 0, borderColor: '#3498DB' }]}
-          onPress={() => setFilter('Assigned')}
+          style={[styles.summaryChip, { backgroundColor: filter === 'Active' ? '#AED6F1' : '#EBF8FF', borderWidth: filter === 'Active' ? 2 : 0, borderColor: '#3498DB' }]}
+          onPress={() => setFilter('Active')}
         >
-          <Text style={[styles.summaryNum, { color: '#2B6CB0' }]}>{assigned}</Text>
-          <Text style={[styles.summaryLabel, { color: '#2B6CB0' }]}>Assigned</Text>
+          <Text style={[styles.summaryNum, { color: '#2B6CB0' }]}>{active}</Text>
+          <Text style={[styles.summaryLabel, { color: '#2B6CB0' }]}>Active</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
@@ -505,31 +506,103 @@ function OrdersTab() {
   );
 }
 
+// ─── Staff Details Modal ──────────────────────────────────────────────────────
+function StaffDetailsModal({
+  visible,
+  staff,
+  onClose,
+}: {
+  visible: boolean;
+  staff: any;
+  onClose: () => void;
+}) {
+  const staffIdentifier = staff?.tokenIdentifier ?? staff?.clerkId ?? "";
+  const stats = useQuery(api.orders.getStaffStats, staffIdentifier ? { staffIdentifier } : "skip");
+
+  if (!staff) return null;
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={modalStyles.overlay}>
+        <View style={modalStyles.sheet}>
+          <View style={modalStyles.header}>
+            <Text style={modalStyles.title}>Staff Details</Text>
+            <TouchableOpacity onPress={onClose}>
+              <MaterialIcons name="close" size={24} color={COLORS.text} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={{ alignItems: 'center', marginBottom: 20 }}>
+              <View style={[modalStyles.staffAvatar, { width: 64, height: 64, borderRadius: 32 }]}>
+                <MaterialIcons name="person" size={40} color="#fff" />
+              </View>
+              <Text style={[modalStyles.staffName, { fontSize: 20, marginTop: 10 }]}>{staff.name}</Text>
+              <Text style={modalStyles.staffPhone}>{staff.email || staff.phone || 'No contact info'}</Text>
+              <View style={[styles.staffRoleBadge, { marginTop: 10 }]}>
+                <Text style={styles.staffRoleText}>DELIVERY STAFF</Text>
+              </View>
+            </View>
+
+            <Text style={modalStyles.label}>Order Statistics</Text>
+            {stats === undefined ? (
+              <ActivityIndicator color={COLORS.primary} style={{ marginTop: 20 }} />
+            ) : (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+                <View style={{ flex: 1, backgroundColor: '#EBF8FF', padding: 15, borderRadius: 12, alignItems: 'center', marginHorizontal: 5 }}>
+                  <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#2B6CB0' }}>{stats.total}</Text>
+                  <Text style={{ fontSize: 12, color: '#2B6CB0', marginTop: 5 }}>Total Assigned</Text>
+                </View>
+                <View style={{ flex: 1, backgroundColor: '#FAD7A1', padding: 15, borderRadius: 12, alignItems: 'center', marginHorizontal: 5 }}>
+                  <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#C05621' }}>{stats.active}</Text>
+                  <Text style={{ fontSize: 12, color: '#C05621', marginTop: 5 }}>Active</Text>
+                </View>
+                <View style={{ flex: 1, backgroundColor: '#C6F6D5', padding: 15, borderRadius: 12, alignItems: 'center', marginHorizontal: 5 }}>
+                  <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#22543D' }}>{stats.delivered}</Text>
+                  <Text style={{ fontSize: 12, color: '#22543D', marginTop: 5 }}>Delivered</Text>
+                </View>
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 // ─── Staff Tab ────────────────────────────────────────────────────────────────
 function StaffTab() {
   const staffList = useQuery(api.users.getStaffMembers);
   const removeStaff = useMutation(api.users.removeStaff);
   const [addModal, setAddModal] = useState(false);
+  const [detailsModal, setDetailsModal] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState<any>(null);
 
   const confirmRemove = (staffId: string, staffName: string) => {
-    Alert.alert(
-      "Remove Staff",
-      `Are you sure you want to remove ${staffName} from the delivery staff?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Remove",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await removeStaff({ staffId: staffId as any });
-            } catch (e: any) {
-              Alert.alert("Error", e.message);
+    if (Platform.OS === 'web') {
+      const ok = window.confirm(`Are you sure you want to remove ${staffName} from the delivery staff?`);
+      if (ok) {
+        removeStaff({ staffId: staffId as any }).catch(e => Alert.alert("Error", e.message));
+      }
+    } else {
+      Alert.alert(
+        "Remove Staff",
+        `Are you sure you want to remove ${staffName} from the delivery staff?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Remove",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                await removeStaff({ staffId: staffId as any });
+              } catch (e: any) {
+                Alert.alert("Error", e.message);
+              }
             }
           }
-        }
-      ]
-    );
+        ]
+      );
+    }
   };
 
   return (
@@ -568,18 +641,34 @@ function StaffTab() {
               <View style={styles.staffRoleBadge}>
                 <Text style={styles.staffRoleText}>STAFF</Text>
               </View>
-              <TouchableOpacity
-                style={{ marginLeft: 10, padding: 5 }}
-                onPress={() => confirmRemove(staff._id as any, staff.name)}
-              >
-                <MaterialIcons name="delete-outline" size={22} color="#E53E3E" />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <TouchableOpacity
+                  style={{ marginLeft: 10, padding: 5 }}
+                  onPress={() => {
+                    setSelectedStaff(staff);
+                    setDetailsModal(true);
+                  }}
+                >
+                  <MaterialIcons name="visibility" size={22} color={COLORS.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ marginLeft: 5, padding: 5 }}
+                  onPress={() => confirmRemove(staff._id as any, staff.name)}
+                >
+                  <MaterialIcons name="delete-outline" size={22} color="#E53E3E" />
+                </TouchableOpacity>
+              </View>
             </View>
           ))
         )}
       </ScrollView>
 
       <AddStaffModal visible={addModal} onClose={() => setAddModal(false)} />
+      <StaffDetailsModal
+        visible={detailsModal}
+        staff={selectedStaff}
+        onClose={() => setDetailsModal(false)}
+      />
     </View>
   );
 }

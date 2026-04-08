@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   StyleSheet, View, Text, ScrollView, SafeAreaView, StatusBar,
-  TouchableOpacity, ActivityIndicator, Alert, Linking,
+  TouchableOpacity, ActivityIndicator, Alert, Linking, Platform, Modal, TextInput
 } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useAuth, useUser } from '@clerk/clerk-expo';
@@ -46,6 +46,10 @@ function StaffOrderCard({ order }: { order: any }) {
   const status = order.status as string;
   const statusC = statusColor(status);
 
+  const [deliverModalVisible, setDeliverModalVisible] = useState(false);
+  const [otpInput, setOtpInput] = useState('');
+  const [paymentMode, setPaymentMode] = useState(order.paymentMode || 'COD');
+
   const openMaps = () => {
     const query = encodeURIComponent(
       [order.buildingName, order.streetName, order.area, order.location, order.pincode]
@@ -56,7 +60,7 @@ function StaffOrderCard({ order }: { order: any }) {
     );
   };
 
-  const doAction = async (action: string) => {
+  const doAction = async (action: string, payload?: any) => {
     setLoading(action);
     try {
       switch (action) {
@@ -67,7 +71,8 @@ function StaffOrderCard({ order }: { order: any }) {
           await markOutForDelivery({ orderId: order._id as Id<'orders'> });
           break;
         case 'delivered':
-          await markDelivered({ orderId: order._id as Id<'orders'> });
+          await markDelivered({ orderId: order._id as Id<'orders'>, ...payload });
+          setDeliverModalVisible(false);
           break;
       }
     } catch (e) {
@@ -78,14 +83,9 @@ function StaffOrderCard({ order }: { order: any }) {
   };
 
   const confirmDeliver = () => {
-    Alert.alert(
-      'Mark as Delivered',
-      `Confirm delivery for Order #${order.orderId}?\n\nMake sure the customer has received their order.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Confirm', style: 'default', onPress: () => doAction('delivered') },
-      ]
-    );
+    setOtpInput('');
+    setPaymentMode(order.paymentMode || 'COD');
+    setDeliverModalVisible(true);
   };
 
   const isDelivered = status === 'Delivered';
@@ -152,12 +152,6 @@ function StaffOrderCard({ order }: { order: any }) {
         )}
       </View>
 
-      {/* OTP */}
-      <View style={styles.otpRow}>
-        <MaterialIcons name="lock-outline" size={14} color={COLORS.gray} />
-        <Text style={styles.otpLabel}>Delivery OTP</Text>
-        <Text style={styles.otpValue}>{order.otp}</Text>
-      </View>
 
       {/* Order Meta */}
       <View style={styles.metaRow}>
@@ -244,6 +238,68 @@ function StaffOrderCard({ order }: { order: any }) {
           )}
         </View>
       )}
+
+      {/* OTP Delivery Verification Modal */}
+      <Modal visible={deliverModalVisible} animationType="fade" transparent onRequestClose={() => setDeliverModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Verify Delivery</Text>
+            <Text style={styles.modalSub}>Ask the customer for their 4-digit OTP to confirm this delivery.</Text>
+
+            <Text style={styles.modalLabel}>Enter Customer OTP</Text>
+            <TextInput
+              style={styles.otpSingleInput}
+              keyboardType="number-pad"
+              maxLength={4}
+              value={otpInput}
+              onChangeText={setOtpInput}
+              placeholder="0000"
+              placeholderTextColor={COLORS.gray}
+            />
+
+            <Text style={styles.modalLabel}>Payment Method Collected</Text>
+            <View style={styles.paymentRow}>
+              <TouchableOpacity
+                style={[styles.paymentBtn, paymentMode === 'COD' && styles.paymentBtnActive]}
+                onPress={() => setPaymentMode('COD')}
+              >
+                <Text style={[styles.paymentBtnText, paymentMode === 'COD' && styles.paymentBtnTextActive]}>Cash (COD)</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.paymentBtn, paymentMode === 'Online' && styles.paymentBtnActive]}
+                onPress={() => setPaymentMode('Online')}
+              >
+                <Text style={[styles.paymentBtnText, paymentMode === 'Online' && styles.paymentBtnTextActive]}>Online / UPI</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalActionRow}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setDeliverModalVisible(false)}
+                disabled={!!loading}
+              >
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.verifyBtn, otpInput.length !== 4 && { opacity: 0.6 }]}
+                onPress={() => doAction('delivered', { otp: otpInput, paymentMode })}
+                disabled={!!loading || otpInput.length !== 4}
+              >
+                {loading === 'delivered' ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <MaterialIcons name="verified-user" size={16} color="#fff" />
+                    <Text style={styles.verifyBtnText}>Verify & Deliver</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -257,7 +313,29 @@ export default function StaffDashboard() {
   const pending   = orders?.filter(o => ['Assigned', 'Accepted', 'Out for Delivery'].includes(o.status)) ?? [];
   const delivered = orders?.filter(o => o.status === 'Delivered') ?? [];
 
-  const [showDelivered, setShowDelivered] = useState(false);
+  const [filter, setFilter] = useState<'All' | 'Active' | 'Delivered'>('All');
+
+  const handleSignOut = () => {
+    if (Platform.OS === 'web') {
+      const ok = window.confirm("Are you sure you want to log out?");
+      if (ok) {
+        signOut();
+      }
+    } else {
+      Alert.alert(
+        "Log Out",
+        "Are you sure you want to log out?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Log Out", style: "destructive", onPress: () => signOut() },
+        ]
+      );
+    }
+  };
+
+  let displayOrders = orders ?? [];
+  if (filter === 'Active') displayOrders = pending;
+  if (filter === 'Delivered') displayOrders = delivered;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -276,7 +354,7 @@ export default function StaffDashboard() {
             </Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.signOutBtn} onPress={() => signOut()}>
+        <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
           <MaterialIcons name="logout" size={18} color={COLORS.white} />
         </TouchableOpacity>
       </View>
@@ -284,20 +362,29 @@ export default function StaffDashboard() {
       {/* Stats Bar */}
       {orders !== undefined && (
         <View style={styles.statsBar}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNum}>{orders.length}</Text>
+          <TouchableOpacity 
+            style={[styles.statItem, filter === 'All' && { opacity: 1 }]} 
+            onPress={() => setFilter('All')}
+          >
+            <Text style={[styles.statNum, filter === 'All' && { textDecorationLine: 'underline' }]}>{orders.length}</Text>
             <Text style={styles.statLabel}>Total</Text>
-          </View>
+          </TouchableOpacity>
           <View style={[styles.statDivider]} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statNum, { color: '#C05621' }]}>{pending.length}</Text>
+          <TouchableOpacity 
+            style={[styles.statItem, filter === 'Active' && { opacity: 1 }]} 
+            onPress={() => setFilter('Active')}
+          >
+            <Text style={[styles.statNum, { color: '#C05621' }, filter === 'Active' && { textDecorationLine: 'underline' }]}>{pending.length}</Text>
             <Text style={styles.statLabel}>Active</Text>
-          </View>
+          </TouchableOpacity>
           <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statNum, { color: COLORS.success }]}>{delivered.length}</Text>
+          <TouchableOpacity 
+            style={[styles.statItem, filter === 'Delivered' && { opacity: 1 }]} 
+            onPress={() => setFilter('Delivered')}
+          >
+            <Text style={[styles.statNum, { color: COLORS.success }, filter === 'Delivered' && { textDecorationLine: 'underline' }]}>{delivered.length}</Text>
             <Text style={styles.statLabel}>Delivered</Text>
-          </View>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -313,48 +400,26 @@ export default function StaffDashboard() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Active Deliveries */}
+          {/* Deliveries Section */}
           <Text style={styles.sectionTitle}>
-            <MaterialIcons name="local-shipping" size={14} color={COLORS.secondary} />
-            {'  '}Active Deliveries
+            <MaterialIcons name={filter === 'Delivered' ? 'done-all' : filter === 'Active' ? 'local-shipping' : 'list'} size={14} color={COLORS.secondary} />
+            {'  '}{filter === 'All' ? 'All Deliveries' : filter === 'Active' ? 'Active Deliveries' : 'Completed Deliveries'}
           </Text>
 
-          {pending.length === 0 ? (
+          {displayOrders.length === 0 ? (
             <View style={styles.emptyBox}>
               <MaterialIcons name="inbox" size={48} color={COLORS.border} />
-              <Text style={styles.emptyTitle}>No active orders</Text>
+              <Text style={styles.emptyTitle}>No orders found</Text>
               <Text style={styles.emptySubtitle}>
-                When the admin assigns an order to you, it will appear here in real time.
+                {filter === 'All' 
+                  ? 'When the admin assigns an order to you, it will appear here in real time.' 
+                  : filter === 'Active' 
+                  ? 'No active orders right now.' 
+                  : 'No delivered orders yet.'}
               </Text>
             </View>
           ) : (
-            pending.map(order => <StaffOrderCard key={order._id} order={order} />)
-          )}
-
-          {/* Delivered Section */}
-          {delivered.length > 0 && (
-            <>
-              <TouchableOpacity
-                style={styles.sectionToggle}
-                onPress={() => setShowDelivered(prev => !prev)}
-              >
-                <View style={styles.sectionTitleRow}>
-                  <MaterialIcons name="done-all" size={14} color={COLORS.success} />
-                  <Text style={[styles.sectionTitle, { color: COLORS.success, marginBottom: 0, marginLeft: scale(6) }]}>
-                    Completed ({delivered.length})
-                  </Text>
-                </View>
-                <MaterialIcons
-                  name={showDelivered ? 'expand-less' : 'expand-more'}
-                  size={20}
-                  color={COLORS.success}
-                />
-              </TouchableOpacity>
-
-              {showDelivered && delivered.map(order => (
-                <StaffOrderCard key={order._id} order={order} />
-              ))}
-            </>
+            displayOrders.map(order => <StaffOrderCard key={order._id} order={order} />)
           )}
         </ScrollView>
       )}
@@ -637,4 +702,25 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accent,
   },
   mapsFullBtnText: { fontSize: scale(12), fontWeight: '900', color: COLORS.secondary },
+
+  // Modal Actions
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(27,58,58,0.7)', justifyContent: 'center', padding: scale(20) },
+  modalCard: { backgroundColor: '#fff', borderRadius: scale(24), padding: scale(24), elevation: 10 },
+  modalTitle: { fontSize: scale(18), fontWeight: '900', color: COLORS.secondary, marginBottom: scale(8), textAlign: 'center' },
+  modalSub: { fontSize: scale(12), color: COLORS.gray, textAlign: 'center', marginBottom: scale(20), lineHeight: scale(18) },
+  modalLabel: { fontSize: scale(12), fontWeight: '800', color: COLORS.text, marginBottom: scale(8) },
+  otpSingleInput: { 
+    height: scale(55), borderRadius: scale(12), backgroundColor: '#F8FAFC', borderWidth: 1.5, borderColor: COLORS.border, 
+    fontSize: scale(24), fontWeight: '900', textAlign: 'center', color: COLORS.primary, letterSpacing: scale(10), marginBottom: scale(20) 
+  },
+  paymentRow: { flexDirection: 'row', gap: scale(10), marginBottom: scale(24) },
+  paymentBtn: { flex: 1, paddingVertical: scale(12), borderRadius: scale(12), borderWidth: 1.5, borderColor: COLORS.border, alignItems: 'center', backgroundColor: '#F8FAFC' },
+  paymentBtnActive: { borderColor: COLORS.primary, backgroundColor: '#F0FDF4' },
+  paymentBtnText: { fontSize: scale(12), fontWeight: '800', color: COLORS.gray },
+  paymentBtnTextActive: { color: COLORS.primary },
+  modalActionRow: { flexDirection: 'row', gap: scale(12) },
+  cancelBtn: { flex: 1, paddingVertical: scale(14), borderRadius: scale(14), backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
+  cancelBtnText: { fontSize: scale(13), fontWeight: '800', color: COLORS.gray },
+  verifyBtn: { flex: 1.5, paddingVertical: scale(14), borderRadius: scale(14), backgroundColor: COLORS.success, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: scale(6) },
+  verifyBtnText: { fontSize: scale(13), fontWeight: '900', color: '#fff' },
 });

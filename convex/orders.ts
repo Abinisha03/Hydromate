@@ -162,6 +162,25 @@ export const updateOrder = mutation({
   },
 });
 
+export const getStaffStats = query({
+  args: { staffIdentifier: v.string() },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return { total: 0, active: 0, delivered: 0 };
+
+    const orders = await ctx.db
+      .query("orders")
+      .withIndex("by_staff", (q) => q.eq("assignedStaffId", args.staffIdentifier))
+      .collect();
+
+    return {
+      total: orders.length,
+      active: orders.filter((o) => ["Assigned", "Accepted", "Out for Delivery"].includes(o.status)).length,
+      delivered: orders.filter((o) => o.status === "Delivered").length,
+    };
+  },
+});
+
 // ─── ADMIN FUNCTIONS ──────────────────────────────────────────────────────────
 
 export const getAllOrders = query({
@@ -182,17 +201,24 @@ export const assignStaff = mutation({
     orderId: v.id("orders"),
     staffId: v.string(),
     staffName: v.string(),
+    staffPhone: v.optional(v.string()), // Added staffPhone
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
-    await ctx.db.patch(args.orderId, {
+    const patchData: any = {
       assignedStaffId: args.staffId,
       assignedStaffName: args.staffName,
       status: "Assigned",
       supplierName: args.staffName,
-    });
+    };
+    
+    if (args.staffPhone) {
+      patchData.supplierPhone = args.staffPhone;
+    }
+
+    await ctx.db.patch(args.orderId, patchData);
     return { success: true };
   },
 });
@@ -268,7 +294,11 @@ export const markOutForDelivery = mutation({
 });
 
 export const markDelivered = mutation({
-  args: { orderId: v.id("orders") },
+  args: { 
+    orderId: v.id("orders"),
+    otp: v.string(),
+    paymentMode: v.string()
+  },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
@@ -278,11 +308,16 @@ export const markDelivered = mutation({
       throw new Error("Order not found or access denied");
     }
 
+    if (order.otp !== args.otp) {
+      throw new Error("Invalid Delivery OTP. Please ask the customer for the correct OTP.");
+    }
+
     const deliveredAt = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
 
     await ctx.db.patch(args.orderId, {
       status: "Delivered",
       deliveredAt,
+      paymentMode: args.paymentMode,
     });
     return { success: true };
   },

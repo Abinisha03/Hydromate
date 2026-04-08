@@ -149,12 +149,38 @@ export default function OrdersScreen() {
 
   // ── Filtering & pagination ────────────────────────────────────────────────
   const tabs = ['PENDING', 'COMPLETED', 'CANCEL'];
-  const filteredOrders = orders?.filter(o => o.status.toUpperCase() === activeTab) || [];
+  const filteredOrders = orders?.filter(o => {
+    const s = o.status.toUpperCase();
+    if (activeTab === 'PENDING') {
+      return ['PENDING', 'APPROVED', 'ASSIGNED', 'ACCEPTED', 'OUT FOR DELIVERY'].includes(s);
+    }
+    if (activeTab === 'COMPLETED') {
+      return s === 'DELIVERED';
+    }
+    if (activeTab === 'CANCEL') {
+      return ['CANCEL', 'REJECTED'].includes(s);
+    }
+    return false;
+  }) || [];
+
   const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE);
   const paginatedOrders = filteredOrders.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
+
+  const getStatusColor = (status: string) => {
+    switch (status.toUpperCase()) {
+      case 'PENDING': return COLORS.primary;
+      case 'CANCEL': case 'REJECTED': return COLORS.danger;
+      case 'DELIVERED': return '#22C55E';
+      case 'APPROVED': return '#0EA5E9';
+      case 'ASSIGNED': return '#8B5CF6';
+      case 'ACCEPTED': return '#8B5CF6';
+      case 'OUT FOR DELIVERY': return '#F59E0B';
+      default: return COLORS.text;
+    }
+  };
 
   // ── Order card ──────────────────────────────────────────────────────────
   const renderOrderItem = ({ item }: { item: any }) => (
@@ -176,6 +202,40 @@ export default function OrdersScreen() {
         </View>
       )}
 
+      {/* Top Banners */}
+      {item.status.toUpperCase() === 'APPROVED' && (
+        <View style={{ backgroundColor: '#F0F9FF', padding: 10, borderRadius: 10, marginBottom: 12, borderWidth: 1, borderColor: '#BAE6FD' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+            <MaterialIcons name="check-circle" size={16} color="#0284C7" style={{ marginRight: 6 }} />
+            <Text style={{ color: '#0369A1', fontSize: 13, fontWeight: '800' }}>Order Approved!</Text>
+          </View>
+          <Text style={{ color: '#0369A1', fontSize: 12, fontWeight: '600', paddingLeft: 22 }}>
+            Your order has been acknowledged. We will assign a delivery partner shortly.
+          </Text>
+        </View>
+      )}
+
+      {['ASSIGNED', 'ACCEPTED', 'OUT FOR DELIVERY'].includes(item.status.toUpperCase()) && item.assignedStaffName && (
+        <View style={{ backgroundColor: '#FAF5FF', padding: 12, borderRadius: 10, marginBottom: 12, borderWidth: 1, borderColor: '#E9D5FF' }}>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: '#7E22CE', marginBottom: 6, letterSpacing: 0.5 }}>DELIVERY PARTNER ASSIGNED</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#E9D5FF', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+              <MaterialIcons name="person" size={20} color="#9333EA" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: '900', color: '#6B21A8' }}>{item.assignedStaffName}</Text>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: '#9333EA', marginTop: 2 }}>{item.supplierPhone || 'No contact found'}</Text>
+            </View>
+            {item.supplierPhone && (
+              <TouchableOpacity onPress={() => import('react-native').then(m => m.Linking.openURL(`tel:${item.supplierPhone}`))} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#9333EA', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, elevation: 2 }}>
+                <MaterialIcons name="phone" size={14} color="#FFF" style={{ marginRight: 6 }} />
+                <Text style={{ color: '#FFF', fontSize: 13, fontWeight: '800' }}>Call</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      )}
+
       <View style={styles.orderRow}>
         <Text style={styles.orderLabel}>Order Id</Text>
         <Text style={styles.colon}>:</Text>
@@ -185,11 +245,9 @@ export default function OrdersScreen() {
       <View style={styles.orderRow}>
         <Text style={styles.orderLabel}>Order Status</Text>
         <Text style={styles.colon}>:</Text>
-        <Text style={[styles.orderValue, {
-          color: item.status.toUpperCase() === 'PENDING' ? COLORS.primary
-               : item.status.toUpperCase() === 'CANCEL' ? COLORS.danger
-               : '#22C55E'
-        }]}>{item.status}</Text>
+        <Text style={[styles.orderValue, { color: getStatusColor(item.status) }]}>
+          {item.status}
+        </Text>
       </View>
 
       <View style={styles.orderRow}>
