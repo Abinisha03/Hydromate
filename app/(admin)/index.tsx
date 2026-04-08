@@ -169,10 +169,9 @@ function AddStaffModal({
   const handleEmail = () => {
     const subject = encodeURIComponent('HydroMate Staff Invitation');
     const body = encodeURIComponent(inviteMessage);
-    // Use Gmail web URL to strictly use Gmail instead of the OS default mail app like Outlook
-    const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${subject}&body=${body}`;
+    const url = `mailto:${email}?subject=${subject}&body=${body}`;
     Linking.openURL(url).catch(() =>
-      Alert.alert('Browser error', 'Could not open Gmail.')
+      Alert.alert('Email error', 'Could not open email app.')
     );
   };
 
