@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
 // ─── USER FUNCTIONS ───────────────────────────────────────────────────────────
@@ -313,7 +313,7 @@ export const markDelivered = mutation({
     }
 
     if (order.otp !== args.otp) {
-      throw new Error("Invalid Delivery OTP. Please ask the customer for the correct OTP.");
+      throw new ConvexError("Invalid Delivery OTP. Please ask the customer for the correct OTP.");
     }
 
     const deliveredAt = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });

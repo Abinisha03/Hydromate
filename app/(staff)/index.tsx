@@ -48,6 +48,7 @@ function StaffOrderCard({ order }: { order: any }) {
 
   const [deliverModalVisible, setDeliverModalVisible] = useState(false);
   const [otpInput, setOtpInput] = useState('');
+  const [otpError, setOtpError] = useState('');
   const [paymentMode, setPaymentMode] = useState(order.paymentMode || 'COD');
 
   const openMaps = () => {
@@ -76,10 +77,11 @@ function StaffOrderCard({ order }: { order: any }) {
           break;
       }
     } catch (e: any) {
-      if (e.message && e.message.includes("Invalid Delivery OTP")) {
-        Alert.alert('Incorrect OTP', 'Please enter the correct OTP.');
+      const errorMsg = e.data || e.message || "";
+      if (typeof errorMsg === 'string' && errorMsg.includes("Invalid Delivery OTP")) {
+        setOtpError('Incorrect OTP. Please check and try again.');
       } else {
-        Alert.alert('Error', e.message || "An unexpected error occurred");
+        Alert.alert('Error', typeof errorMsg === 'string' ? errorMsg : "An unexpected error occurred");
       }
     } finally {
       setLoading(null);
@@ -88,6 +90,7 @@ function StaffOrderCard({ order }: { order: any }) {
 
   const confirmDeliver = () => {
     setOtpInput('');
+    setOtpError('');
     setPaymentMode(order.paymentMode || 'COD');
     setDeliverModalVisible(true);
   };
@@ -252,14 +255,20 @@ function StaffOrderCard({ order }: { order: any }) {
 
             <Text style={styles.modalLabel}>Enter Customer OTP</Text>
             <TextInput
-              style={styles.otpSingleInput}
+              style={[styles.otpSingleInput, otpError ? { borderColor: COLORS.danger, borderWidth: 1 } : {}]}
               keyboardType="number-pad"
               maxLength={4}
               value={otpInput}
-              onChangeText={setOtpInput}
+              onChangeText={(text) => {
+                setOtpInput(text);
+                if (otpError) setOtpError('');
+              }}
               placeholder="0000"
               placeholderTextColor={COLORS.gray}
             />
+            {!!otpError && (
+              <Text style={{ color: COLORS.danger, fontSize: 13, marginTop: 4, marginBottom: 8, textAlign: 'center', fontWeight: '500' }}>{otpError}</Text>
+            )}
 
             <Text style={styles.modalLabel}>Payment Method Collected</Text>
             <View style={styles.paymentRow}>
