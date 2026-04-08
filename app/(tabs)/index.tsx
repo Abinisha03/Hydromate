@@ -148,9 +148,13 @@ export default function HomeScreen() {
     // to strictly select it from the home page dropdown.
   }, [defaultAddress]);
 
-  const waterPrice = 35;
-  const bottlePricePerUnit = 200;
-  const expressCharge = selectedPincodeValue === '91176129' ? (75 * quantity) : 0;
+  const pricing = useQuery(api.pricing.getPricing);
+
+  const waterPrice = pricing?.waterPrice || 35;
+  const bottlePricePerUnit = pricing?.bottlePrice || 200;
+  const expressChargePerUnit = pricing?.expressCharge || 75;
+
+  const expressCharge = selectedPincodeValue === '91176129' ? (expressChargePerUnit * quantity) : 0;
   const currentBottlePrice = hasNoBottle ? quantity * bottlePricePerUnit : 0;
   const totalPrice = (quantity * waterPrice) + currentBottlePrice + expressCharge;
 
@@ -382,18 +386,18 @@ export default function HomeScreen() {
           {/* Price Summary - Clean & Readable */}
           <View style={styles.priceContainer}>
             <View style={styles.priceRow}>
-              <Text style={styles.priceLabel}>Water Price : {quantity} X 35</Text>
+              <Text style={styles.priceLabel}>Water Price : {quantity} X {waterPrice}</Text>
               <Text style={styles.priceValue}>{"₹ " + (quantity * waterPrice)}</Text>
             </View>
             {hasNoBottle && (
               <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Bottle Price : {quantity} X 200</Text>
+                <Text style={styles.priceLabel}>Bottle Price : {quantity} X {bottlePricePerUnit}</Text>
                 <Text style={styles.priceValue}>₹ {currentBottlePrice}</Text>
               </View>
             )}
             {expressCharge > 0 && (
               <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Express Delivery : {quantity} X 75</Text>
+                <Text style={styles.priceLabel}>Express Delivery : {quantity} X {expressChargePerUnit}</Text>
                 <Text style={styles.priceValue}>{"₹ " + expressCharge}</Text>
               </View>
             )}

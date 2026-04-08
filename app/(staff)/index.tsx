@@ -75,8 +75,12 @@ function StaffOrderCard({ order }: { order: any }) {
           setDeliverModalVisible(false);
           break;
       }
-    } catch (e) {
-      Alert.alert('Error', (e as Error).message);
+    } catch (e: any) {
+      if (e.message && e.message.includes("Invalid Delivery OTP")) {
+        Alert.alert('Incorrect OTP', 'Please enter the correct OTP.');
+      } else {
+        Alert.alert('Error', e.message || "An unexpected error occurred");
+      }
     } finally {
       setLoading(null);
     }

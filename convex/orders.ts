@@ -143,9 +143,13 @@ export const updateOrder = mutation({
       throw new Error("Only pending orders can be edited");
     }
 
-    const waterPrice = 35;
-    const bottlePrice = args.noBottleReturn ? args.quantity * 200 : 0;
-    const expressCharge = args.pincode.includes("91176129") ? args.quantity * 75 : 0;
+    const pricing = await ctx.db.query("pricing").first();
+    const waterPrice = pricing?.waterPrice || 35;
+    const bottlePriceUnit = pricing?.bottlePrice || 200;
+    const expressChargeUnit = pricing?.expressCharge || 75;
+
+    const bottlePrice = args.noBottleReturn ? args.quantity * bottlePriceUnit : 0;
+    const expressCharge = args.pincode.includes("91176129") ? args.quantity * expressChargeUnit : 0;
     const totalAmount = args.quantity * waterPrice + bottlePrice + expressCharge;
 
     await ctx.db.patch(args.orderId, {
