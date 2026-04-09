@@ -126,8 +126,10 @@ function InitialLayout() {
       }
 
       // ── Regular user flow ──
-      // Only redirect if they're on auth/splash pages (don't redirect if they're already navigating)
-      if (inAuthGroup || isRoot || onVerifyInvite) {
+      // Only redirect if they're on auth/splash pages
+      // Do NOT redirect away from verify-invite — after verification the role
+      // updates to "staff" and the staff check above will handle it.
+      if (inAuthGroup || isRoot) {
         // Wait for invite check to finish loading
         if (hasPendingInvite === undefined) return;
 
