@@ -82,38 +82,58 @@ function InitialLayout() {
     if (!isLoaded) return;
 
     const inAuthGroup = segments[0] === '(auth)';
+    const inAdminGroup = segments[0] === '(admin)';
+    const inStaffGroup = segments[0] === '(staff)';
+    const inTabsGroup = segments[0] === '(tabs)';
+    const onVerifyInvite = segments[0] === 'verify-invite';
+    const isRoot = (segments as string[]).length === 0 || ((segments as string[]).length === 1 && segments[0] === 'index');
 
     const delay = isReady ? 0 : 800;
     const timer = setTimeout(() => {
       setIsReady(true);
 
-      const isRoot = (segments as string[]).length === 0 || ((segments as string[]).length === 1 && segments[0] === 'index');
+      if (!isSignedIn) {
+        // Not signed in → always send to sign-in (unless already there)
+        if (!inAuthGroup) {
+          router.replace('/(auth)/sign-in');
+        }
+        return;
+      }
 
-      if (!isSignedIn && !inAuthGroup) {
-        // Not signed in → send to sign-in
-        router.replace('/(auth)/sign-in');
-      } else if (isSignedIn) {
-        if (role === 'admin' && segments[0] !== '(admin)') {
+      // --- Signed in below ---
+
+      // Admin: always go to admin panel
+      if (role === 'admin') {
+        if (!inAdminGroup) {
           router.replace('/(admin)');
-        } else if (role === 'staff' && segments[0] !== '(staff)') {
+        }
+        return;
+      }
+
+      // Staff: always go to staff dashboard
+      if (role === 'staff') {
+        if (!inStaffGroup) {
           router.replace('/(staff)');
-        } else if (role !== 'admin' && role !== 'staff' && (inAuthGroup || isRoot)) {
-          // Signed in but still on auth screen or splash screen → check pending invites
-          if (hasPendingInvite === true && segments[0] !== 'verify-invite') {
-            router.replace('/verify-invite');
-          } else if (hasStoredUser && addresses !== undefined && hasPendingInvite !== undefined) {
-            // Only proceed if we definitively know there are no pending invites
-            if (hasPendingInvite === false && segments[0] !== 'verify-invite') {
-              if (Array.isArray(addresses) && addresses.length === 0) {
-                // New user with no addresses → address page
-                router.replace('/checkout');
-              } else {
-                router.replace('/(tabs)');
-              }
+        }
+        return;
+      }
+
+      // Regular user flow:
+      // If on auth screen or splash, redirect appropriately
+      if (inAuthGroup || isRoot) {
+        // Check for pending staff invite
+        if (hasPendingInvite === true && !onVerifyInvite) {
+          router.replace('/verify-invite');
+        } else if (hasStoredUser && addresses !== undefined && hasPendingInvite !== undefined) {
+          if (hasPendingInvite === false) {
+            if (Array.isArray(addresses) && addresses.length === 0) {
+              router.replace('/checkout');
+            } else {
+              router.replace('/(tabs)');
             }
           }
-          // If addresses or invites are loading, we don't redirect yet.
         }
+        // If addresses or invites are still loading, don't redirect yet.
       }
     }, delay);
 
@@ -144,6 +164,7 @@ function InitialLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(admin)" options={{ headerShown: false }} />
         <Stack.Screen name="(staff)" options={{ headerShown: false }} />
+        <Stack.Screen name="verify-invite" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         <Stack.Screen name="checkout" options={{ presentation: 'modal', title: 'Complete Order' }} />
         <Stack.Screen name="book-water" options={{ title: 'Book Water' }} />

@@ -176,20 +176,21 @@ function AddStaffModal({
       return;
     }
 
-    // Use standard mailto: URI — works on Android (opens Gmail or default mail app)
+    // On mobile: directly open mailto URL — Android resolves this to Gmail app
+    // NOTE: Do NOT use canOpenURL() — it returns false in Expo Go because
+    // the mailto scheme is not declared in AndroidManifest queries.
     const mailtoUrl = `mailto:${email}?subject=${subject}&body=${body}`;
 
     try {
-      const canOpen = await Linking.canOpenURL(mailtoUrl);
-      if (canOpen) {
-        await Linking.openURL(mailtoUrl);
-      } else {
-        // Fallback: open Gmail web compose in browser
+      await Linking.openURL(mailtoUrl);
+    } catch (e) {
+      // If mailto fails (no mail app installed), fall back to Gmail web
+      try {
         const gmailWebUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${subject}&body=${body}`;
         await Linking.openURL(gmailWebUrl);
+      } catch (e2) {
+        Alert.alert('Email error', 'Could not open email app. Please make sure you have a mail app installed.');
       }
-    } catch (e) {
-      Alert.alert('Email error', 'Could not open email app. Please make sure you have a mail app installed.');
     }
   };
 
