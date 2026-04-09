@@ -86,68 +86,61 @@ function InitialLayout() {
     const onVerifyInvite = segments[0] === 'verify-invite';
     const isRoot = (segments as string[]).length === 0 || ((segments as string[]).length === 1 && segments[0] === 'index');
 
-    const delay = isReady ? 0 : 800;
-    const timer = setTimeout(() => {
+    // ── 1. SPLASH: Check if user is logged in (Clerk) ──
+    if (!isSignedIn) {
+      // Not logged in → Force Login Screen
+      if (!inAuthGroup) {
+        router.replace('/(auth)/sign-in');
+      }
+      // Wait for router to stabilize at sign-in before clearing splash
+      const timer = setTimeout(() => setIsReady(true), 100);
+      return () => clearTimeout(timer);
+    }
+
+    // ── 2. LOGGED IN: Wait for Data & Role (Convex) ──
+    // We stay on the Splash screen (isReady = false) until these are loaded
+    if (convexUser === undefined || hasPendingInvite === undefined || !hasStoredUser) return;
+
+    // ── 3. ROLE-BASED NAVIGATION ──
+    const userRole = convexUser?.role || (email === 'abinishaa271@gmail.com' ? 'admin' : 'member');
+
+    // CASE A: ADMIN (Verified Admin Role or Admin Email)
+    if (userRole === 'admin' || email === 'abinishaa271@gmail.com') {
+      if (!inAdminGroup) {
+        router.replace('/(admin)');
+      }
       setIsReady(true);
+      return;
+    }
 
-      // ── 1. Not signed in → sign-in ──
-      if (!isSignedIn) {
-        if (!inAuthGroup) {
-          router.replace('/(auth)/sign-in');
-        }
-        return;
+    // CASE B: EXISTING STAFF (Verified Role)
+    if (userRole === 'staff') {
+      if (!inStaffGroup) {
+        router.replace('/(staff)');
       }
+      setIsReady(true);
+      return;
+    }
 
-      // ── 2. Wait for convexUser to load (critical for role check) ──
-      // undefined = query still loading, null = no user record yet (storeUser hasn't finished)
-      if (convexUser === undefined || (convexUser === null && !hasStoredUser)) return;
-
-      // ── 3. Determine role from DB (source of truth) ──
-      const userRole = convexUser?.role || (email === 'abinishaa271@gmail.com' ? 'admin' : 'user');
-
-      // ── 4. Admin → admin dashboard ──
-      if (userRole === 'admin') {
-        if (!inAdminGroup) {
-          router.replace('/(admin)');
-        }
-        return;
+    // CASE C: NEW STAFF (Pending invite check for regular members)
+    if (hasPendingInvite === true && userRole === 'member') {
+      // FORCE them to verify-invite screen
+      if (!onVerifyInvite) {
+        router.replace('/verify-invite');
       }
+      setIsReady(true);
+      return;
+    }
 
-      // ── 5. Staff (already verified) → staff dashboard ──
-      if (userRole === 'staff') {
-        if (!inStaffGroup) {
-          router.replace('/(staff)');
-        }
-        return;
-      }
-
-      // ── 6. Regular user flow ──
-      // Only redirect when on auth/splash screens (don't interrupt if already in tabs)
-      if (inAuthGroup || isRoot || onVerifyInvite) {
-        // Wait for invite check to load
-        if (hasPendingInvite === undefined) return;
-
-        // Has a pending staff invite → show verify-invite page
-        if (hasPendingInvite === true) {
-          if (!onVerifyInvite) {
-            router.replace('/verify-invite');
-          }
-          return;
-        }
-
-        // No pending invite → regular user, go to tabs or checkout
-        if (hasStoredUser && addresses !== undefined) {
-          if (Array.isArray(addresses) && addresses.length === 0) {
-            router.replace('/checkout');
-          } else {
-            router.replace('/(tabs)');
-          }
-        }
-        // If addresses still loading, wait...
-      }
-    }, delay);
-
-    return () => clearTimeout(timer);
+    // CASE D: NORMAL USER (No invite, Role is member)
+    if (inAuthGroup || isRoot || onVerifyInvite) {
+      router.replace('/(tabs)');
+    } else if (segments[0] === '(admin)' || segments[0] === '(staff)') {
+      // Safety: Prevent regular users from staying on admin/staff routes
+      router.replace('/(tabs)');
+    }
+    
+    setIsReady(true);
   }, [isLoaded, isSignedIn, segments, hasStoredUser, addresses, convexUser, hasPendingInvite]);
 
   // Loading screen while Clerk initializes

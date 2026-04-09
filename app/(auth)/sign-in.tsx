@@ -50,14 +50,6 @@ export default function SignInScreen() {
   const [isSignUpFlow, setIsSignUpFlow] = useState(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
-  // If user becomes signed in, navigate to tabs immediately
-  // (This handles the case where Clerk auth state changes after setActive)
-  useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      router.replace('/(tabs)');
-    }
-  }, [isLoaded, isSignedIn]);
-
   const showAlert = (title: string, message: string) => {
     if (Platform.OS === 'web') {
       window.alert(`${title}\n\n${message}`);
@@ -110,32 +102,57 @@ export default function SignInScreen() {
       await ensureSignedOut();
       const client = clerk.client;
 
-      // Try sign-in first (existing user)
+      // 1. Try sign-in first (for existing users)
       try {
         await client.signIn.create({ identifier: emailAddress });
+        console.log('SignIn created for existing user');
         const sIn = client.signIn;
         const factor = sIn.supportedFirstFactors?.find((f: any) => f.strategy === 'email_code');
+        
         if (factor) {
-          await sIn.prepareFirstFactor({ strategy: 'email_code', emailAddressId: (factor as any).emailAddressId });
+          await sIn.prepareFirstFactor({ 
+            strategy: 'email_code', 
+            emailAddressId: (factor as any).emailAddressId 
+          });
           setPendingVerification(true);
           setIsSignUpFlow(false);
           return;
         }
       } catch (signInErr: any) {
-        // Sign-in failed — try sign-up (new user)
+        console.log('SignIn attempt error:', signInErr);
+        
+        // ONLY proceed to sign-up if the user truly doesn't exist
+        const isUserNotFound = signInErr.errors?.some((e: any) => e.code === 'form_identifier_not_found');
+        
+        if (!isUserNotFound) {
+          // If the user exists but there's another issue (e.g. account locked, 
+          // or needs a different auth method), show the original error.
+          const msg = signInErr.errors?.[0]?.longMessage || signInErr.message || 'Check your email/details';
+          showAlert('Sign In Error', msg);
+          return;
+        }
       }
 
-      // Sign-up flow (new user)
-      await client.signUp.create({
-        emailAddress,
-        password: `Hydromate!${Math.random().toString(36).slice(-8)}`,
-        firstName: 'Hydromate',
-        lastName: 'User'
-      });
-      await client.signUp.prepareVerification({ strategy: 'email_code' });
-      setPendingVerification(true);
-      setIsSignUpFlow(true);
+      // 2. Sign-up flow (ONLY for brand new users)
+      console.log('Attempting sign-up for new user...');
+      try {
+        await client.signUp.create({
+          emailAddress,
+          // Temporary placeholder password (Clerk requires one if email/password strategy is enabled)
+          password: `HM!${Math.random().toString(36).slice(-10)}`,
+          firstName: 'User',
+          lastName: 'New'
+        });
+        await client.signUp.prepareVerification({ strategy: 'email_code' });
+        setPendingVerification(true);
+        setIsSignUpFlow(true);
+      } catch (signUpErr: any) {
+        console.error('SignUp error:', signUpErr);
+        const msg = signUpErr.errors?.[0]?.longMessage || signUpErr.message || 'Could not create account';
+        showAlert('Sign Up Error', msg);
+      }
     } catch (err: any) {
+      console.error('General Auth error:', err);
       const msg = err.errors?.[0]?.longMessage || err.message || 'Something went wrong';
       showAlert('Auth Error', msg);
     } finally {

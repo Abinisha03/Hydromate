@@ -114,8 +114,6 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-
-
           {/* ── Saved Addresses ──────────────────────────────────── */}
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionHeaderTitle}>Saved Addresses</Text>

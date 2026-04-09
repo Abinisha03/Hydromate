@@ -3,14 +3,14 @@ import {
   StyleSheet, View, Text, SafeAreaView, StatusBar,
   TextInput, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, Platform
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { scale } from '@/utils/responsive';
 import BackgroundAnimation from '@/components/BackgroundAnimation';
-
-import { useUser } from '@clerk/clerk-expo';
+import * as Haptics from 'expo-haptics';
+import { useUser, useClerk, useAuth } from '@clerk/clerk-expo';
 
 const COLORS = {
   primary: '#2EC4B6',
@@ -25,14 +25,41 @@ const COLORS = {
 export default function VerifyInviteScreen() {
   const router = useRouter();
   const { user } = useUser();
+  const { signOut } = useAuth();
   const verifyInvite = useMutation(api.invites.verifyInvite);
   
   const [code, setCode] = useState('');
   const [phone, setPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const handleSignOut = async () => {
+    try {
+      if (Platform.OS === 'web') {
+        if (!window.confirm('Are you sure you want to sign in with a different account?')) return;
+        console.log('Signing out from web...');
+      } else {
+        // Native platforms: use standard Alert
+        const confirmed = await new Promise((resolve) => {
+          Alert.alert('Switch Account', 'Sign in with a different account?', [
+            { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+            { text: 'Switch', style: 'destructive', onPress: () => resolve(true) }
+          ]);
+        });
+        if (!confirmed) return;
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+      
+      await signOut();
+      router.replace('/(auth)/sign-in');
+    } catch (err) {
+      console.error('Sign out error:', err);
+      Alert.alert('Error', 'Failed to sign out. Please try again.');
+    }
+  };
+
   const handleVerify = async () => {
     if (!code.trim() || !phone.trim() || phone.trim().length < 10) {
+      if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Required', 'Please enter a valid invite code and phone number.');
       return;
     }
@@ -44,12 +71,17 @@ export default function VerifyInviteScreen() {
     }
 
     setIsLoading(true);
+    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
     try {
       await verifyInvite({ inviteCode: code.trim().toUpperCase(), email, phone: phone.trim() });
+      if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
       Alert.alert('Success!', 'Your account has been upgraded to Delivery Staff.', [
         { text: 'Go to Dashboard', onPress: () => router.replace('/(staff)') }
       ]);
     } catch (e: any) {
+      if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Verification Failed', e.message);
     } finally {
       setIsLoading(false);
@@ -66,61 +98,66 @@ export default function VerifyInviteScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.card}>
-          <View style={styles.iconBox}>
-            <MaterialIcons name="local-shipping" size={40} color={COLORS.primary} />
+          <View style={styles.iconCircle}>
+            <FontAwesome5 name="id-badge" size={32} color={COLORS.primary} />
           </View>
           
           <Text style={styles.title}>Staff Verification</Text>
           <Text style={styles.subtitle}>
-            We noticed you have a pending Staff Invite for your email address. 
-            Please enter your unique invite code and phone number to activate your account.
+            Enter your unique invite code and phone number to activate your staff account.
           </Text>
 
-          <View style={styles.inputContainer}>
-            <MaterialIcons name="vpn-key" size={20} color={COLORS.secondary} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. HM-QUS6F4"
-              placeholderTextColor={COLORS.gray}
-              autoCapitalize="characters"
-              value={code}
-              onChangeText={setCode}
-            />
+          <View style={styles.form}>
+            <View style={styles.inputGroup}>
+              <View style={styles.inputWrapper}>
+                <MaterialIcons name="vpn-key" size={20} color={COLORS.secondary} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Invite Code (e.g. HM-QUS6F4)"
+                  placeholderTextColor={COLORS.gray}
+                  autoCapitalize="characters"
+                  value={code}
+                  onChangeText={setCode}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <View style={styles.inputWrapper}>
+                <MaterialIcons name="phone" size={20} color={COLORS.secondary} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Your Phone Number"
+                  placeholderTextColor={COLORS.gray}
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                  value={phone}
+                  onChangeText={setPhone}
+                />
+              </View>
+            </View>
+
+            <TouchableOpacity 
+              style={[styles.verifyBtn, isLoading && { opacity: 0.8 }]} 
+              onPress={handleVerify}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color={COLORS.white} />
+              ) : (
+                <Text style={styles.verifyBtnText}>VERIFY & JOIN TEAM</Text>
+              )}
+            </TouchableOpacity>
           </View>
 
-          <View style={styles.inputContainer}>
-            <MaterialIcons name="phone" size={20} color={COLORS.secondary} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Your Phone Number"
-              placeholderTextColor={COLORS.gray}
-              keyboardType="phone-pad"
-              maxLength={10}
-              value={phone}
-              onChangeText={setPhone}
-            />
-          </View>
+          <View style={styles.divider} />
 
           <TouchableOpacity 
-            style={[styles.verifyBtn, isLoading && { opacity: 0.7 }]} 
-            onPress={handleVerify}
-            disabled={isLoading}
+            style={styles.signOutBtn}
+            onPress={handleSignOut}
           >
-            {isLoading ? (
-              <ActivityIndicator color={COLORS.white} />
-            ) : (
-              <>
-                <Text style={styles.verifyBtnText}>VERIFY & JOIN</Text>
-                <MaterialIcons name="arrow-forward" size={18} color={COLORS.white} />
-              </>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.skipBtn}
-            onPress={() => router.replace('/(tabs)')}
-          >
-            <Text style={styles.skipBtnText}>I don't have a code, continue as customer.</Text>
+            <MaterialIcons name="logout" size={16} color={COLORS.gray} />
+            <Text style={styles.signOutBtnText}>Use a different account</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -144,39 +181,44 @@ const styles = StyleSheet.create({
     borderRadius: scale(24),
     padding: scale(24),
     width: '100%',
-    maxWidth: 400,
+    maxWidth: 380,
     alignItems: 'center',
-    elevation: 4,
+    elevation: 8,
     shadowColor: COLORS.secondary,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.1,
-    shadowRadius: 12,
+    shadowRadius: 15,
   },
-  iconBox: {
-    width: scale(80),
-    height: scale(80),
-    borderRadius: scale(40),
+  iconCircle: {
+    width: scale(64),
+    height: scale(64),
+    borderRadius: scale(20),
     backgroundColor: COLORS.accent,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: scale(20),
-    borderWidth: 4,
-    borderColor: '#F0FDF9',
   },
   title: {
     fontSize: scale(22),
     fontWeight: '900',
     color: COLORS.secondary,
-    marginBottom: scale(10),
+    marginBottom: scale(8),
   },
   subtitle: {
     fontSize: scale(13),
     color: COLORS.gray,
     textAlign: 'center',
-    lineHeight: scale(20),
+    lineHeight: scale(18),
     marginBottom: scale(24),
+    paddingHorizontal: scale(10),
   },
-  inputContainer: {
+  form: {
+    width: '100%',
+  },
+  inputGroup: {
+    marginBottom: scale(16),
+  },
+  inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.accent,
@@ -184,36 +226,30 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
     paddingHorizontal: scale(14),
-    paddingVertical: scale(4),
-    marginBottom: scale(24),
-    width: '100%',
+    height: scale(50),
   },
   inputIcon: {
     marginRight: scale(10),
   },
   input: {
     flex: 1,
-    height: scale(46),
-    fontSize: scale(16),
-    fontWeight: '800',
+    fontSize: scale(15),
+    fontWeight: '700',
     color: COLORS.text,
-    letterSpacing: 2,
   },
   verifyBtn: {
-    flexDirection: 'row',
     backgroundColor: COLORS.primary,
     width: '100%',
-    height: scale(50),
-    borderRadius: scale(14),
+    height: scale(52),
+    borderRadius: scale(16),
     alignItems: 'center',
     justifyContent: 'center',
-    gap: scale(10),
-    elevation: 2,
+    marginTop: scale(8),
+    elevation: 4,
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
-    shadowRadius: 4,
-    marginBottom: scale(16),
+    shadowRadius: 8,
   },
   verifyBtnText: {
     color: '#fff',
@@ -221,13 +257,20 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 1,
   },
-  skipBtn: {
-    padding: scale(10),
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    width: '100%',
+    marginVertical: scale(20),
   },
-  skipBtnText: {
+  signOutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(8),
+  },
+  signOutBtnText: {
     color: COLORS.gray,
     fontSize: scale(12),
-    fontWeight: '600',
-    textDecorationLine: 'underline',
+    fontWeight: '700',
   },
 });

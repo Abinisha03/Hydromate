@@ -51,9 +51,6 @@ export const createInvite = mutation({
 export const checkPendingInvite = query({
   args: { email: v.string() },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return false;
-
     const emailToken = args.email.trim().toLowerCase();
 
     const pending = await ctx.db
@@ -126,5 +123,16 @@ export const verifyInvite = mutation({
     }
 
     return { success: true };
+  },
+});
+
+export const getPendingInvites = query({
+  args: {},
+  handler: async (ctx) => {
+    const invites = await ctx.db
+      .query("staffInvites")
+      .filter((q) => q.eq(q.field("status"), "pending"))
+      .collect();
+    return invites.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   },
 });

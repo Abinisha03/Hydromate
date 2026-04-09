@@ -590,6 +590,7 @@ function StaffDetailsModal({
 // ─── Staff Tab ────────────────────────────────────────────────────────────────
 function StaffTab() {
   const staffList = useQuery(api.users.getStaffMembers);
+  const pendingInvites = useQuery(api.invites.getPendingInvites);
   const removeStaff = useMutation(api.users.removeStaff);
   const [addModal, setAddModal] = useState(false);
   const [detailsModal, setDetailsModal] = useState(false);
@@ -630,7 +631,39 @@ function StaffTab() {
         <Text style={styles.addStaffBtnText}>ADD STAFF MEMBER</Text>
       </TouchableOpacity>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
+        {/* Pending Invites Section */}
+        {pendingInvites && pendingInvites.length > 0 && (
+          <View style={{ marginBottom: 20 }}>
+            <View style={styles.sectionHeaderRow}>
+              <MaterialIcons name="hourglass-empty" size={16} color={COLORS.warning} />
+              <Text style={[styles.sectionHeaderTitle, { color: COLORS.warning, fontSize: scale(14) }]}>
+                Pending Invites ({pendingInvites.length})
+              </Text>
+            </View>
+            {pendingInvites.map((invite) => (
+              <View key={invite._id} style={[styles.staffCard, { borderColor: COLORS.warning, borderStyle: 'dashed' }]}>
+                <View style={[styles.staffCardAvatar, { backgroundColor: COLORS.warning }]}>
+                  <MaterialIcons name="mail" size={20} color="#fff" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.staffCardName}>{invite.name}</Text>
+                  <Text style={styles.staffPhoneText}>{invite.email}</Text>
+                </View>
+                <View style={[styles.staffRoleBadge, { backgroundColor: '#FFF5E6' }]}>
+                  <Text style={[styles.staffRoleText, { color: '#C05621' }]}>INVITED</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Existing Staff Section */}
+        <View style={styles.sectionHeaderRow}>
+          <MaterialIcons name="verified" size={16} color={COLORS.secondary} />
+          <Text style={[styles.sectionHeaderTitle, { fontSize: scale(14) }]}>Active Staff</Text>
+        </View>
+
         {staffList === undefined ? (
           <ActivityIndicator color={COLORS.primary} style={{ marginTop: 30 }} />
         ) : staffList.length === 0 ? (
@@ -979,6 +1012,19 @@ const styles = StyleSheet.create({
     borderRadius: scale(8),
   },
   statusText: { fontSize: scale(9), fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
+  // Section Headers
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(8),
+    marginBottom: scale(10),
+    marginTop: scale(10),
+  },
+  sectionHeaderTitle: {
+    fontSize: scale(15),
+    fontWeight: '900',
+    color: COLORS.secondary,
+  },
   detailsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
