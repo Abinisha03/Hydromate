@@ -166,13 +166,29 @@ function AddStaffModal({
     }
   };
 
-  const handleEmail = () => {
+  const handleEmail = async () => {
     const subject = encodeURIComponent('HydroMate Staff Invitation');
     const body = encodeURIComponent(inviteMessage);
-    const url = `mailto:${email}?subject=${subject}&body=${body}`;
-    Linking.openURL(url).catch(() =>
-      Alert.alert('Email error', 'Could not open email app.')
-    );
+    
+    if (Platform.OS === 'web') {
+      const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${subject}&body=${body}`;
+      window.open(url, '_blank');
+      return;
+    }
+
+    const gmailMobileUrl = `googlegmail:///co?to=${email}&subject=${subject}&body=${body}`;
+    const gmailWebUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${subject}&body=${body}`;
+
+    try {
+      const canOpen = await Linking.canOpenURL(gmailMobileUrl);
+      if (canOpen) {
+        await Linking.openURL(gmailMobileUrl);
+      } else {
+        await Linking.openURL(gmailWebUrl);
+      }
+    } catch (e) {
+      Alert.alert('Email error', 'Could not open email app.');
+    }
   };
 
   const handleClose = () => {
