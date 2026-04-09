@@ -82,6 +82,7 @@ function InitialLayout() {
     const inAuthGroup = segments[0] === '(auth)';
     const inAdminGroup = segments[0] === '(admin)';
     const inStaffGroup = segments[0] === '(staff)';
+    const inTabsGroup = segments[0] === '(tabs)';
     const onVerifyInvite = segments[0] === 'verify-invite';
     const isRoot = (segments as string[]).length === 0 || ((segments as string[]).length === 1 && segments[0] === 'index');
 
@@ -89,7 +90,7 @@ function InitialLayout() {
     const timer = setTimeout(() => {
       setIsReady(true);
 
-      // ── Not signed in → send to login ──
+      // ── 1. Not signed in → sign-in ──
       if (!isSignedIn) {
         if (!inAuthGroup) {
           router.replace('/(auth)/sign-in');
@@ -97,43 +98,36 @@ function InitialLayout() {
         return;
       }
 
-      // ── Signed in but data not ready yet → stay on splash/current screen ──
-      // Wait for convexUser to finish loading so we know the actual role.
-      // convexUser === undefined means "still loading from DB"
-      // convexUser === null means "user doesn't exist in DB yet" (storeUser hasn't run)
-      if (convexUser === undefined) return;
+      // ── 2. Wait for convexUser to load (critical for role check) ──
+      // undefined = query still loading, null = no user record yet (storeUser hasn't finished)
+      if (convexUser === undefined || (convexUser === null && !hasStoredUser)) return;
 
-      // Also wait for storeUser to complete
-      if (!hasStoredUser) return;
+      // ── 3. Determine role from DB (source of truth) ──
+      const userRole = convexUser?.role || (email === 'abinishaa271@gmail.com' ? 'admin' : 'user');
 
-      // ── All data loaded — determine role ──
-      const actualRole = convexUser?.role || user?.publicMetadata?.role || (email === 'abinishaa271@gmail.com' ? 'admin' : 'user');
-
-      // Admin → admin dashboard
-      if (actualRole === 'admin') {
+      // ── 4. Admin → admin dashboard ──
+      if (userRole === 'admin') {
         if (!inAdminGroup) {
           router.replace('/(admin)');
         }
         return;
       }
 
-      // Staff → staff dashboard (already verified invite)
-      if (actualRole === 'staff') {
+      // ── 5. Staff (already verified) → staff dashboard ──
+      if (userRole === 'staff') {
         if (!inStaffGroup) {
           router.replace('/(staff)');
         }
         return;
       }
 
-      // ── Regular user flow ──
-      // Only redirect if they're on auth/splash pages
-      // Do NOT redirect away from verify-invite — after verification the role
-      // updates to "staff" and the staff check above will handle it.
-      if (inAuthGroup || isRoot) {
-        // Wait for invite check to finish loading
+      // ── 6. Regular user flow ──
+      // Only redirect when on auth/splash screens (don't interrupt if already in tabs)
+      if (inAuthGroup || isRoot || onVerifyInvite) {
+        // Wait for invite check to load
         if (hasPendingInvite === undefined) return;
 
-        // Has a pending staff invite → show verify-invite screen
+        // Has a pending staff invite → show verify-invite page
         if (hasPendingInvite === true) {
           if (!onVerifyInvite) {
             router.replace('/verify-invite');
@@ -141,17 +135,15 @@ function InitialLayout() {
           return;
         }
 
-        // No pending invite → regular user
-        // Wait for addresses to load
-        if (addresses === undefined) return;
-
-        if (Array.isArray(addresses) && addresses.length === 0) {
-          // New user with no addresses → address page
-          router.replace('/checkout');
-        } else {
-          // Existing user → home
-          router.replace('/(tabs)');
+        // No pending invite → regular user, go to tabs or checkout
+        if (hasStoredUser && addresses !== undefined) {
+          if (Array.isArray(addresses) && addresses.length === 0) {
+            router.replace('/checkout');
+          } else {
+            router.replace('/(tabs)');
+          }
         }
+        // If addresses still loading, wait...
       }
     }, delay);
 

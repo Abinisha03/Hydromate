@@ -322,6 +322,9 @@ export default function StaffDashboard() {
   const { signOut } = useAuth();
   const { user } = useUser();
   const orders = useQuery(api.orders.getStaffOrders);
+  const convexUser = useQuery(api.users.getCurrentUser);
+
+  const staffName = convexUser?.name || convexUser?.displayName || user?.fullName || 'Delivery Partner';
 
   const pending   = orders?.filter(o => ['Assigned', 'Accepted', 'Out for Delivery'].includes(o.status)) ?? [];
   const delivered = orders?.filter(o => o.status === 'Delivered') ?? [];
@@ -363,7 +366,7 @@ export default function StaffDashboard() {
           <View>
             <Text style={styles.headerTitle}>Staff Dashboard</Text>
             <Text style={styles.headerSub}>
-              {user?.fullName || 'Delivery Partner'}
+              {staffName}
             </Text>
           </View>
         </View>

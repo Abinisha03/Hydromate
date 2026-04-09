@@ -25,12 +25,16 @@ export const storeUser = mutation({
     }
 
     if (existing) {
+      // Only update name if existing name is a generic default
+      // (don't overwrite names set during staff invite verification)
+      const shouldUpdateName = !existing.name || existing.name === 'User';
+      
       await ctx.db.patch(existing._id, {
         tokenIdentifier: identity.tokenIdentifier,
-        name: identity.name ?? existing.name,
+        name: shouldUpdateName ? (identity.name ?? existing.name) : existing.name,
         email: identity.email ?? existing.email,
         imageUrl: identity.pictureUrl ?? existing.imageUrl,
-        role: role ?? existing.role,
+        role: existing.role ?? role,
       });
       return existing._id;
     }
