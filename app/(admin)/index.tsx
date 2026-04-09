@@ -176,18 +176,20 @@ function AddStaffModal({
       return;
     }
 
-    const gmailMobileUrl = `googlegmail:///co?to=${email}&subject=${subject}&body=${body}`;
-    const gmailWebUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${subject}&body=${body}`;
+    // Use standard mailto: URI — works on Android (opens Gmail or default mail app)
+    const mailtoUrl = `mailto:${email}?subject=${subject}&body=${body}`;
 
     try {
-      const canOpen = await Linking.canOpenURL(gmailMobileUrl);
+      const canOpen = await Linking.canOpenURL(mailtoUrl);
       if (canOpen) {
-        await Linking.openURL(gmailMobileUrl);
+        await Linking.openURL(mailtoUrl);
       } else {
+        // Fallback: open Gmail web compose in browser
+        const gmailWebUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${subject}&body=${body}`;
         await Linking.openURL(gmailWebUrl);
       }
     } catch (e) {
-      Alert.alert('Email error', 'Could not open email app.');
+      Alert.alert('Email error', 'Could not open email app. Please make sure you have a mail app installed.');
     }
   };
 
