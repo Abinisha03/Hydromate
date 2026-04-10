@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, SafeAreaView, Platform, StatusBar, Modal, FlatList, Animated, Dimensions, TextInput, ImageBackground, Alert } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, SafeAreaView, Platform, StatusBar, Modal, FlatList, Animated, Dimensions, TextInput, Alert, Image as RNImage } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useClerk, useUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
@@ -282,10 +282,10 @@ export default function HomeScreen() {
               </View>
               <View style={styles.bannerImageWrapper}>
                 <View style={styles.bannerBgDecoration} />
-                <Image 
+                <RNImage 
                   source={require('@/assets/images/banner.png')} 
                   style={styles.bannerImage}
-                  contentFit="contain"
+                  resizeMode="contain"
                 />
               </View>
             </View>
@@ -301,10 +301,10 @@ export default function HomeScreen() {
               </View>
               <View style={styles.bannerImageWrapper}>
                 <View style={styles.bannerBgDecoration} />
-                <Image 
+                <RNImage 
                   source={require('@/assets/images/water_can.png')} 
                   style={styles.bannerImage}
-                  contentFit="contain"
+                  resizeMode="contain"
                 />
               </View>
             </View>
@@ -319,10 +319,10 @@ export default function HomeScreen() {
             <Text style={styles.orderTitle}>Select Quantity</Text>
           </View>
           
-          <Image 
+          <RNImage 
             source={require('@/assets/images/water_can.png')} 
             style={styles.productImage}
-            contentFit="contain"
+            resizeMode="contain"
           />
 
           {/* Stepper - Modern Mint Style */}
@@ -643,9 +643,12 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   bannerImage: {
-    width: '90%',
-    height: '90%',
+    width: '100%',
+    height: '100%',
     zIndex: 2,
+    position: 'absolute',
+    right: 0,
+    bottom: -scale(5),
   },
   paginationRow: {
     flexDirection: 'row',
