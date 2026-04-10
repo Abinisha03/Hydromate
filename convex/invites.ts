@@ -139,3 +139,16 @@ export const getPendingInvites = query({
     return invites.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   },
 });
+
+export const deleteInvite = mutation({
+  args: { inviteId: v.id("staffInvites") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+    
+    // Optional: check if identity is an admin
+    
+    await ctx.db.delete(args.inviteId);
+    return { success: true };
+  },
+});

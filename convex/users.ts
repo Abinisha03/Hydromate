@@ -154,7 +154,22 @@ export const removeStaff = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
-    // Revert role to user
+    // 1. Get user email to find associated invites
+    const user = await ctx.db.get(args.staffId);
+    if (user && user.email) {
+      // 2. Find and delete any pending invites for this email
+      const pendingInvites = await ctx.db
+        .query("staffInvites")
+        .withIndex("by_email", (q) => q.eq("email", user.email.toLowerCase()))
+        .filter((q) => q.eq(q.field("status"), "pending"))
+        .collect();
+      
+      for (const invite of pendingInvites) {
+        await ctx.db.delete(invite._id);
+      }
+    }
+
+    // 3. Revert role to user
     await ctx.db.patch(args.staffId, { role: "user" });
     return { success: true };
   },

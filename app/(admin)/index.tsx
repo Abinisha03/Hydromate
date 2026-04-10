@@ -625,9 +625,38 @@ function StaffTab() {
   const staffList = useQuery(api.users.getStaffMembers);
   const pendingInvites = useQuery(api.invites.getPendingInvites);
   const removeStaff = useMutation(api.users.removeStaff);
+  const deleteInvite = useMutation(api.invites.deleteInvite);
   const [addModal, setAddModal] = useState(false);
   const [detailsModal, setDetailsModal] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<any>(null);
+
+  const confirmDeleteInvite = (inviteId: any, inviteName: string) => {
+    if (Platform.OS === 'web') {
+      const ok = window.confirm(`Are you sure you want to revoke the invite for ${inviteName}?`);
+      if (ok) {
+        deleteInvite({ inviteId }).catch(e => Alert.alert("Error", e.message));
+      }
+    } else {
+      Alert.alert(
+        "Revoke Invite",
+        `Are you sure you want to revoke the invite for ${inviteName}?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Revoke",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                await deleteInvite({ inviteId });
+              } catch (e: any) {
+                Alert.alert("Error", e.message);
+              }
+            }
+          }
+        ]
+      );
+    }
+  };
 
   const confirmRemove = (staffId: string, staffName: string) => {
     if (Platform.OS === 'web') {
@@ -686,6 +715,12 @@ function StaffTab() {
                 <View style={[styles.staffRoleBadge, { backgroundColor: '#FFF5E6' }]}>
                   <Text style={[styles.staffRoleText, { color: '#C05621' }]}>INVITED</Text>
                 </View>
+                <TouchableOpacity
+                  style={{ marginLeft: 10, padding: 5 }}
+                  onPress={() => confirmDeleteInvite(invite._id, invite.name)}
+                >
+                  <MaterialIcons name="delete-outline" size={22} color="#E53E3E" />
+                </TouchableOpacity>
               </View>
             ))}
           </View>
