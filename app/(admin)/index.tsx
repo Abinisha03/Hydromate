@@ -5,8 +5,8 @@ import {
   Linking, Share, Platform,
 } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
-import { useAuth, useUser } from '@clerk/clerk-expo';
 import { useQuery, useMutation } from 'convex/react';
+import { useAuth, useUser } from '@clerk/clerk-expo';
 import { api } from '@/convex/_generated/api';
 import { scale } from '@/utils/responsive';
 import { Id } from '@/convex/_generated/dataModel';
@@ -129,6 +129,7 @@ function AddStaffModal({
   visible: boolean;
   onClose: () => void;
 }) {
+  const { isSignedIn, isLoaded: authLoaded } = useAuth();
   const createInvite = useMutation(api.invites.createInvite);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -140,62 +141,94 @@ function AddStaffModal({
   const inviteMessage = `🚰 *HydroMate Staff Invite*\n\nHi ${name}!\n\nYou've been invited to join HydroMate as a Delivery Staff member.\n\n📱 Download the app and sign up using your email: *${email}*\n\n🔑 Your invite code: *${code}*\n\nRight after you sign in, the app will ask for this code and your phone number. Enter them to activate your staff dashboard instantly!\n\n— HydroMate Team`;
 
   const handleGenerate = async () => {
-    if (!name.trim() || !email.trim() || phone.trim().length < 10) {
-      Alert.alert('Required', 'Please enter name, email, and a valid phone number.');
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+    const trimmedPhone = phone.trim();
+
+    if (!authLoaded) return;
+    if (!isSignedIn) {
+      Alert.alert('Session Error', 'Your login session is not recognized by Clerk. Please Sign Out and Sign In again to fix this.');
       return;
     }
+
+    if (!trimmedName || !trimmedEmail) {
+      Alert.alert('Required', 'Please enter Name and Email.');
+      return;
+    }
+
+    if (trimmedPhone.length > 0 && trimmedPhone.length < 10) {
+      Alert.alert('Invalid Phone', 'Phone number must be at least 10 digits.');
+      return;
+    }
+
     const newCode = `HM-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     
     setIsLoading(true);
     try {
-      await createInvite({ name: name.trim(), email: email.trim(), inviteCode: newCode, phone: phone.trim() });
+      console.log("[Invites] Starting generation...");
+      const result = await createInvite({ 
+        name: trimmedName, 
+        email: trimmedEmail, 
+        inviteCode: newCode, 
+        phone: trimmedPhone 
+      });
+      console.log("[Invites] Successfully created:", result);
+      
       setCode(newCode);
       setGenerated(true);
+
+      // Automated flow: If on web, try to open Gmail immediately
+      if (Platform.OS === 'web') {
+        handleEmail(newCode); 
+      }
     } catch (e: any) {
-      Alert.alert('Error', e.message);
+      console.error("[Invites] Generation failed:", e);
+      let errorMsg = e.message;
+      if (errorMsg.includes("Not authenticated")) {
+        errorMsg = "Authentication Error: Please Sign Out and Sign In again to refresh your session after the Clerk project switch.";
+      }
+      Alert.alert('Error', errorMsg);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleEmail = (overrideCode?: string) => {
+    const finalCode = overrideCode || code;
+    const finalMessage = `🚰 *HydroMate Staff Invite*\n\nHi ${name}!\n\nYou've been invited to join HydroMate as a Delivery Staff member.\n\n📱 Download the app and sign up using your email: *${email}*\n\n🔑 Your invite code: *${finalCode}*\n\nRight after you sign in, the app will ask for this code and your phone number. Enter them to activate your staff dashboard instantly!\n\n— HydroMate Team`;
+
+    const subject = encodeURIComponent('HydroMate Staff Invitation');
+    const body = encodeURIComponent(finalMessage);
+    
+    if (Platform.OS === 'web') {
+      const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${subject}&body=${body}`;
+      const win = window.open(url, '_blank');
+      if (!win) {
+        Alert.alert('Popup Blocked', 'Please allow popups for this site to open Gmail automatically, or click "Send Email" again.');
+      }
+      return;
+    }
+
+    const mailtoUrl = `mailto:${email}?subject=${subject}&body=${body}`;
+    Linking.openURL(mailtoUrl).catch(() => {
+        const gmailWebUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${subject}&body=${body}`;
+        Linking.openURL(gmailWebUrl);
+    });
+  };
+
   const handleCopy = async () => {
     try {
-      await Share.share({ message: inviteMessage });
+      await Share.share({ 
+        message: inviteMessage,
+        title: 'HydroMate Invitation'
+      });
     } catch (e) {
       Alert.alert('Error', 'Could not share invite.');
     }
   };
 
-  const handleEmail = async () => {
-    const subject = encodeURIComponent('HydroMate Staff Invitation');
-    const body = encodeURIComponent(inviteMessage);
-    
-    if (Platform.OS === 'web') {
-      const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${subject}&body=${body}`;
-      window.open(url, '_blank');
-      return;
-    }
-
-    // On mobile: directly open mailto URL — Android resolves this to Gmail app
-    // NOTE: Do NOT use canOpenURL() — it returns false in Expo Go because
-    // the mailto scheme is not declared in AndroidManifest queries.
-    const mailtoUrl = `mailto:${email}?subject=${subject}&body=${body}`;
-
-    try {
-      await Linking.openURL(mailtoUrl);
-    } catch (e) {
-      // If mailto fails (no mail app installed), fall back to Gmail web
-      try {
-        const gmailWebUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${subject}&body=${body}`;
-        await Linking.openURL(gmailWebUrl);
-      } catch (e2) {
-        Alert.alert('Email error', 'Could not open email app. Please make sure you have a mail app installed.');
-      }
-    }
-  };
-
   const handleClose = () => {
-    setName(''); setEmail(''); setCode(''); setGenerated(false);
+    setName(''); setEmail(''); setPhone(''); setCode(''); setGenerated(false);
     onClose();
   };
 
@@ -253,7 +286,7 @@ function AddStaffModal({
                 ) : (
                   <>
                     <MaterialIcons name="link" size={18} color="#fff" style={{ marginRight: 8 }} />
-                    <Text style={modalStyles.generateBtnText}>GENERATE INVITE</Text>
+                    <Text style={modalStyles.generateBtnText}>GENERATE & SEND INVITE</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -272,7 +305,7 @@ function AddStaffModal({
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[modalStyles.shareBtn, { backgroundColor: '#3B82F6' }]}
-                    onPress={handleEmail}
+                    onPress={() => handleEmail()}
                   >
                     <MaterialIcons name="email" size={16} color="#fff" />
                     <Text style={[modalStyles.shareBtnText, { color: '#fff' }]}>Send Email</Text>

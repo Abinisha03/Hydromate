@@ -10,7 +10,10 @@ export const createInvite = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    if (!identity) {
+      console.error("createInvite: No user identity found. Ensure auth.config.ts is synchronized with Clerk.");
+      throw new Error("Not authenticated: No user identity found in Convex.");
+    }
 
     const emailTokens = args.email.trim().toLowerCase();
 

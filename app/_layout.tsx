@@ -15,6 +15,13 @@ import { api } from '@/convex/_generated/api';
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 const convexUrl = process.env.EXPO_PUBLIC_CONVEX_URL!;
 
+// Session-level flag to allow skipping address setup until app restart
+let sessionSkipAddress = false;
+
+export const skipAddressSetup = () => {
+  sessionSkipAddress = true;
+};
+
 if (!publishableKey) {
   throw new Error('Missing EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY in .env');
 }
@@ -133,11 +140,29 @@ function InitialLayout() {
     }
 
     // CASE D: NORMAL USER (No invite, Role is member)
-    if (inAuthGroup || isRoot || onVerifyInvite) {
-      router.replace('/(tabs)');
-    } else if (segments[0] === '(admin)' || segments[0] === '(staff)') {
-      // Safety: Prevent regular users from staying on admin/staff routes
-      router.replace('/(tabs)');
+    if (userRole === 'member') {
+      // First, check if they need an address (and haven't skipped for this session)
+      if (addresses && addresses.length === 0 && !sessionSkipAddress) {
+        if (segments[0] !== 'add-address') {
+          router.replace('/add-address');
+          return;
+        }
+        setIsReady(true);
+        return;
+      }
+
+      // If they cancel/skip, mark it for the session
+      if (segments[0] === 'add-address' && addresses?.length === 0 && !isReady) {
+         // This handles the transition from add-address back to tabs if triggered by router.replace
+      }
+
+      // If they have addresses or are on the setup screen but shouldn't be
+      if (inAuthGroup || isRoot || onVerifyInvite || (segments[0] === 'add-address' && (addresses && addresses.length > 0 || sessionSkipAddress))) {
+        router.replace('/(tabs)');
+      } else if (segments[0] === '(admin)' || segments[0] === '(staff)') {
+        // Safety: Prevent regular users from staying on admin/staff routes
+        router.replace('/(tabs)');
+      }
     }
     
     setIsReady(true);
@@ -168,6 +193,7 @@ function InitialLayout() {
         <Stack.Screen name="(admin)" options={{ headerShown: false }} />
         <Stack.Screen name="(staff)" options={{ headerShown: false }} />
         <Stack.Screen name="verify-invite" options={{ headerShown: false }} />
+        <Stack.Screen name="add-address" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         <Stack.Screen name="checkout" options={{ presentation: 'modal', title: 'Complete Order' }} />
         <Stack.Screen name="book-water" options={{ title: 'Book Water' }} />
