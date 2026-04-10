@@ -11,7 +11,6 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_ZW5kbGVzcy1raXR0ZW4tMzQuY2xlcmsuYWNjb3VudHMuZGV2JA",
         "EXPO_PUBLIC_CONVEX_URL": "https://adventurous-zebra-81.convex.cloud"
       }
     },

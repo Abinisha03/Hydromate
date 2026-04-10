@@ -15,6 +15,10 @@ import { api } from '@/convex/_generated/api';
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 const convexUrl = process.env.EXPO_PUBLIC_CONVEX_URL!;
 
+console.log("=== BUILD VERIFICATION ===");
+console.log("EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY:", publishableKey);
+console.log("==========================");
+
 // Session-level flag to allow skipping address setup until app restart
 let sessionSkipAddress = false;
 
