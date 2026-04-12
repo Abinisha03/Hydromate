@@ -1,19 +1,24 @@
+import { api } from '@/convex/_generated/api';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { tokenCache } from '@/utils/cache';
+import { ClerkLoaded, ClerkProvider, useAuth, useUser } from '@clerk/clerk-expo';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { ConvexReactClient, useMutation, useQuery } from 'convex/react';
+import { ConvexProviderWithClerk } from 'convex/react-clerk';
+import { Image } from 'expo-image';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-import { ClerkProvider, ClerkLoaded, useAuth, useUser } from '@clerk/clerk-expo';
-import { ConvexProviderWithClerk } from 'convex/react-clerk';
-import { ConvexReactClient, useMutation, useQuery } from 'convex/react';
-import { tokenCache } from '@/utils/cache';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useEffect, useState } from 'react';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
-import { Image } from 'expo-image';
-import { api } from '@/convex/_generated/api';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import 'react-native-reanimated';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 const convexUrl = process.env.EXPO_PUBLIC_CONVEX_URL!;
+
+// DEBUG: Check which Clerk key is being used
+console.log('--- CLERK AUTH DEBUG ---');
+console.log('FULL CLERK KEY:', publishableKey);
+console.log('------------------------');
 
 // Session-level flag to allow skipping address setup until app restart
 let sessionSkipAddress = false;
@@ -53,7 +58,7 @@ function InitialLayout() {
     api.invites.checkPendingInvite,
     (isSignedIn && email) ? { email } : "skip"
   );
-  
+
   const convexUser = useQuery(
     api.users.getCurrentUser,
     isSignedIn ? {} : "skip"
@@ -153,7 +158,7 @@ function InitialLayout() {
 
       // If they cancel/skip, mark it for the session
       if (segments[0] === 'add-address' && addresses?.length === 0 && !isReady) {
-         // This handles the transition from add-address back to tabs if triggered by router.replace
+        // This handles the transition from add-address back to tabs if triggered by router.replace
       }
 
       // If they have addresses or are on the setup screen but shouldn't be
@@ -164,7 +169,7 @@ function InitialLayout() {
         router.replace('/(tabs)');
       }
     }
-    
+
     setIsReady(true);
   }, [isLoaded, isSignedIn, segments, hasStoredUser, addresses, convexUser, hasPendingInvite]);
 
@@ -172,8 +177,8 @@ function InitialLayout() {
   if (!isLoaded || !isReady) {
     return (
       <View style={loadingStyles.container}>
-        <Image 
-          source={require('@/assets/images/logo.png')} 
+        <Image
+          source={require('@/assets/images/logo.png')}
           style={loadingStyles.logo}
           contentFit="contain"
         />
