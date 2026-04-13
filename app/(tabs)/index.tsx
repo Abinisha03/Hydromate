@@ -60,6 +60,8 @@ export default function HomeScreen() {
   const [activeSlide, setActiveSlide] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
 
+  const goHome = () => router.replace('/home');
+
   // Auto-scroll Carousel
   useEffect(() => {
     // Only auto-scroll if container has measured its width successfully
@@ -186,7 +188,7 @@ export default function HomeScreen() {
     { label: 'Contact Us', icon: 'headset-mic', action: () => navTo('/contact' as any) },
     { label: 'Terms & Condition', icon: 'assignment', action: () => navTo('/terms' as any) },
     { label: 'About us', icon: 'info', action: () => navTo('/about' as any) },
-    { label: 'Logout', icon: 'exit-to-app', action: () => signOut() },
+    { label: 'Logout', icon: 'exit-to-app', action: async () => { await signOut(); router.replace('/home'); } },
   ];
 
   const handleBuyNow = () => {
@@ -237,7 +239,9 @@ export default function HomeScreen() {
           </View>
         </View>
         
-        <View style={{ width: scale(32) }} /> 
+        <TouchableOpacity style={styles.menuBtn} onPress={goHome} id="user-home-btn">
+          <MaterialIcons name="home" size={24} color={COLORS.white} />
+        </TouchableOpacity>
       </View>
 
       {/* Compact Left-Aligned Location Bar */}

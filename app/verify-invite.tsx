@@ -90,31 +90,35 @@ export default function VerifyInviteScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.accent} />
-      <BackgroundAnimation />
+      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
       
+      {/* Premium Background Elements */}
+      <View style={{ position: 'absolute', top: -100, left: -100, width: 300, height: 300, borderRadius: 150, backgroundColor: COLORS.primary, opacity: 0.05, zIndex: -1 }} />
+      <View style={{ position: 'absolute', bottom: -50, right: -80, width: 250, height: 250, borderRadius: 125, backgroundColor: COLORS.secondary, opacity: 0.03, zIndex: -1 }} />
+
       <KeyboardAvoidingView 
         style={styles.container} 
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.card}>
           <View style={styles.iconCircle}>
-            <FontAwesome5 name="id-badge" size={32} color={COLORS.primary} />
+            <MaterialIcons name="verified-user" size={36} color={COLORS.secondary} />
           </View>
           
-          <Text style={styles.title}>Staff Verification</Text>
+          <Text style={styles.title}>Team Activation</Text>
           <Text style={styles.subtitle}>
-            Enter your unique invite code and phone number to activate your staff account.
+            Enter the unique credentials from your invitation to join the HydroMate delivery network.
           </Text>
 
           <View style={styles.form}>
             <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Invite Code</Text>
               <View style={styles.inputWrapper}>
-                <MaterialIcons name="vpn-key" size={20} color={COLORS.secondary} style={styles.inputIcon} />
+                <MaterialIcons name="vpn-key" size={20} color={COLORS.primary} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Invite Code (e.g. HM-QUS6F4)"
-                  placeholderTextColor={COLORS.gray}
+                  placeholder="e.g. HM-XXXXXX"
+                  placeholderTextColor="#A0AEC0"
                   autoCapitalize="characters"
                   value={code}
                   onChangeText={setCode}
@@ -123,13 +127,14 @@ export default function VerifyInviteScreen() {
             </View>
 
             <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Phone Number</Text>
               <View style={styles.inputWrapper}>
-                <MaterialIcons name="phone" size={20} color={COLORS.secondary} style={styles.inputIcon} />
+                <MaterialIcons name="phone-iphone" size={20} color={COLORS.primary} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Your Phone Number"
-                  placeholderTextColor={COLORS.gray}
-                  keyboardType="phone-pad"
+                  placeholder="10-digit mobile number"
+                  placeholderTextColor="#A0AEC0"
+                  keyboardType="number-pad"
                   maxLength={10}
                   value={phone}
                   onChangeText={setPhone}
@@ -145,7 +150,10 @@ export default function VerifyInviteScreen() {
               {isLoading ? (
                 <ActivityIndicator color={COLORS.white} />
               ) : (
-                <Text style={styles.verifyBtnText}>VERIFY & JOIN TEAM</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                   <Text style={styles.verifyBtnText}>ACTIVATE ACCOUNT</Text>
+                   <MaterialIcons name="arrow-forward" size={18} color="#fff" />
+                </View>
               )}
             </TouchableOpacity>
           </View>
@@ -156,7 +164,7 @@ export default function VerifyInviteScreen() {
             style={styles.signOutBtn}
             onPress={handleSignOut}
           >
-            <MaterialIcons name="logout" size={16} color={COLORS.gray} />
+            <MaterialIcons name="account-circle" size={18} color={COLORS.gray} />
             <Text style={styles.signOutBtnText}>Use a different account</Text>
           </TouchableOpacity>
         </View>
@@ -168,7 +176,7 @@ export default function VerifyInviteScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.accent,
+    backgroundColor: '#F8FAFC',
   },
   container: {
     flex: 1,
@@ -178,99 +186,113 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: COLORS.white,
-    borderRadius: scale(24),
-    padding: scale(24),
+    borderRadius: scale(32),
+    padding: scale(28),
     width: '100%',
-    maxWidth: 380,
+    maxWidth: 400,
     alignItems: 'center',
-    elevation: 8,
+    elevation: 10,
     shadowColor: COLORS.secondary,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.1,
-    shadowRadius: 15,
+    shadowRadius: 24,
   },
   iconCircle: {
-    width: scale(64),
-    height: scale(64),
-    borderRadius: scale(20),
-    backgroundColor: COLORS.accent,
+    width: scale(72),
+    height: scale(72),
+    borderRadius: scale(24),
+    backgroundColor: '#F0FDF4',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: scale(20),
+    marginBottom: scale(24),
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
   },
   title: {
-    fontSize: scale(22),
+    fontSize: scale(24),
     fontWeight: '900',
     color: COLORS.secondary,
     marginBottom: scale(8),
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: scale(13),
+    fontSize: scale(14),
     color: COLORS.gray,
     textAlign: 'center',
-    lineHeight: scale(18),
-    marginBottom: scale(24),
+    lineHeight: scale(20),
+    marginBottom: scale(32),
     paddingHorizontal: scale(10),
+    fontWeight: '500',
   },
   form: {
     width: '100%',
   },
   inputGroup: {
-    marginBottom: scale(16),
+    marginBottom: scale(20),
+  },
+  inputLabel: {
+    fontSize: scale(12),
+    fontWeight: '800',
+    color: COLORS.secondary,
+    marginBottom: scale(8),
+    marginLeft: scale(4),
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.accent,
-    borderRadius: scale(14),
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: scale(14),
-    height: scale(50),
+    backgroundColor: '#F1F5F9',
+    borderRadius: scale(16),
+    borderWidth: 2,
+    borderColor: 'transparent',
+    paddingHorizontal: scale(16),
+    height: scale(56),
   },
   inputIcon: {
-    marginRight: scale(10),
+    marginRight: scale(12),
   },
   input: {
     flex: 1,
-    fontSize: scale(15),
+    fontSize: scale(16),
     fontWeight: '700',
     color: COLORS.text,
   },
   verifyBtn: {
     backgroundColor: COLORS.primary,
     width: '100%',
-    height: scale(52),
-    borderRadius: scale(16),
+    height: scale(56),
+    borderRadius: scale(18),
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: scale(8),
+    marginTop: scale(12),
     elevation: 4,
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
   },
   verifyBtnText: {
     color: '#fff',
-    fontSize: scale(14),
+    fontSize: scale(15),
     fontWeight: '900',
     letterSpacing: 1,
   },
   divider: {
     height: 1,
-    backgroundColor: COLORS.border,
+    backgroundColor: '#F1F5F9',
     width: '100%',
-    marginVertical: scale(20),
+    marginVertical: scale(24),
   },
   signOutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(8),
+    gap: scale(10),
+    paddingVertical: scale(8),
   },
   signOutBtnText: {
     color: COLORS.gray,
-    fontSize: scale(12),
+    fontSize: scale(14),
     fontWeight: '700',
   },
 });

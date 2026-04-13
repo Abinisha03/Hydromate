@@ -326,3 +326,13 @@ export const markDelivered = mutation({
     return { success: true };
   },
 });
+export const adminDeleteOrder = mutation({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    await ctx.db.delete(args.orderId);
+    return { success: true };
+  },
+});

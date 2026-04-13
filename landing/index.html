@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HydroMate — Smart Water Delivery Management System</title>
+  <meta name="description" content="HydroMate is a smart water can delivery management system with real-time order tracking, staff management, and pricing control. Serving Tirunelveli, Tamil Nadu." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════
+       NAVBAR
+  ══════════════════════════════════════════ -->
+  <header class="navbar" id="navbar">
+    <div class="nav-inner">
+      <a class="nav-logo" href="#hero">
+        <div class="nav-logo-icon">
+          <svg width="18" height="22" viewBox="0 0 18 22" fill="none"><path d="M9 0C9 0 0 8.5 0 13.5C0 18.2 4.03 22 9 22C13.97 22 18 18.2 18 13.5C18 8.5 9 0 9 0Z" fill="white"/></svg>
+        </div>
+        <div class="nav-logo-text">
+          <span class="nav-brand">HydroMate</span>
+          <span class="nav-tagline">Pure Care. Pure Hydration.</span>
+        </div>
+      </a>
+
+      <nav class="nav-links" id="nav-links">
+        <a href="#hero" class="nav-link active">Home</a>
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#how-it-works" class="nav-link">How It Works</a>
+        <a href="#pricing" class="nav-link">Pricing</a>
+        <a href="#contact" class="nav-link">Contact</a>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="#contact" class="nav-phone">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6.18 6.18l.96-.96a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          +91 96341 72580
+        </a>
+        <a href="/sign-in" class="btn btn-outline" id="nav-login-btn">Login</a>
+        <a href="/sign-in" class="btn btn-primary" id="nav-started-btn">Get Started</a>
+      </div>
+
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════
+       HERO
+  ══════════════════════════════════════════ -->
+  <section class="hero" id="hero">
+    <div class="hero-bg-blob blob-1"></div>
+    <div class="hero-bg-blob blob-2"></div>
+    <div class="hero-bg-blob blob-3"></div>
+
+    <div class="hero-inner container">
+      <!-- LEFT CONTENT -->
+      <div class="hero-content" id="hero-content">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          Understand the importance of hydration
+        </div>
+
+        <h1 class="hero-title">
+          Smart &amp; Reliable<br/>
+          <span class="hero-title-accent">Water Delivery</span><br/>
+          Management
+        </h1>
+
+        <p class="hero-sub">
+          HydroMate gives you full control over water can delivery — track orders in real time, manage your delivery team, and set prices with ease. Built for water businesses in Tirunelveli.
+        </p>
+
+        <!-- Live stats chips -->
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <span class="hero-stat-num" data-target="69">0</span>+
+            <span class="hero-stat-label">Orders Managed</span>
+          </div>
+          <div class="hero-stat-divider"></div>
+          <div class="hero-stat">
+            <span class="hero-stat-num" data-target="12">0</span>
+            <span class="hero-stat-label">Active Deliveries</span>
+          </div>
+          <div class="hero-stat-divider"></div>
+          <div class="hero-stat">
+            <span class="hero-stat-num" data-target="4">0</span>
+            <span class="hero-stat-label">Pending Orders</span>
+          </div>
+        </div>
+
+        <div class="hero-cta">
+          <a href="/sign-in" class="btn btn-primary btn-lg" id="hero-get-started">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            Get Started Free
+          </a>
+          <a href="#how-it-works" class="btn btn-ghost btn-lg" id="hero-learn-more">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+            See How It Works
+          </a>
+        </div>
+
+        <div class="hero-trust">
+          <div class="trust-item"><svg width="14" height="14" fill="#2EC4B6" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/></svg> Real-time tracking</div>
+          <div class="trust-item"><svg width="14" height="14" fill="#2EC4B6" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/></svg> OTP-verified delivery</div>
+          <div class="trust-item"><svg width="14" height="14" fill="#2EC4B6" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/></svg> Role-based access</div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Phone Mockup -->
+      <div class="hero-visual" id="hero-visual">
+        <div class="phone-frame">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <!-- App header -->
+            <div class="app-header">
+              <div class="app-header-left">
+                <div class="app-avatar">A</div>
+                <div>
+                  <div class="app-brand">HydroMate</div>
+                  <div class="app-role">Admin Dashboard</div>
+                </div>
+              </div>
+              <div class="app-bell">
+                <svg width="16" height="16" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                <span class="app-bell-dot"></span>
+              </div>
+            </div>
+            <!-- Stats grid -->
+            <div class="app-stats">
+              <div class="app-stat-card">
+                <div class="app-stat-icon gray-icon">
+                  <svg width="14" height="14" fill="none" stroke="#64748B" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                </div>
+                <div class="app-stat-num gray-num" data-target="69">0</div>
+                <div class="app-stat-label">TOTAL</div>
+              </div>
+              <div class="app-stat-card pending-card">
+                <div class="app-stat-icon orange-icon">
+                  <svg width="14" height="14" fill="none" stroke="#D97706" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <div class="app-stat-num orange-num" data-target="4">0</div>
+                <div class="app-stat-label">PENDING</div>
+              </div>
+              <div class="app-stat-card active-card">
+                <div class="app-stat-icon blue-icon">
+                  <svg width="14" height="14" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                </div>
+                <div class="app-stat-num blue-num" data-target="12">0</div>
+                <div class="app-stat-label">ACTIVE</div>
+              </div>
+              <div class="app-stat-card done-card">
+                <div class="app-stat-icon green-icon">
+                  <svg width="14" height="14" fill="none" stroke="#16A34A" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                </div>
+                <div class="app-stat-num green-num" data-target="6">0</div>
+                <div class="app-stat-label">DONE</div>
+              </div>
+            </div>
+            <!-- Recent orders -->
+            <div class="app-orders-label">RECENT ORDERS</div>
+            <div class="app-order-card">
+              <div class="app-order-top">
+                <span class="app-order-id">#41480</span>
+                <span class="status-pending">Pending</span>
+              </div>
+              <div class="app-order-name">Sakthima</div>
+              <div class="app-order-detail">1 × 20L Can · ₹235</div>
+              <div class="app-order-addr">📍 Neru, North Street, Tirunelveli</div>
+              <div class="app-order-actions">
+                <button class="app-btn-assign">Assign</button>
+                <button class="app-btn-approve">Approve</button>
+              </div>
+            </div>
+            <div class="app-order-card">
+              <div class="app-order-top">
+                <span class="app-order-id">#38291</span>
+                <span class="status-delivery">Out for Delivery</span>
+              </div>
+              <div class="app-order-name">Priya R.</div>
+              <div class="app-order-detail">2 × 20L Can · ₹270</div>
+            </div>
+          </div>
+        </div>
+        <!-- Floating chips -->
+        <div class="float-chip chip-top">
+          <svg width="14" height="14" fill="none" stroke="#16A34A" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+          Order Delivered!
+        </div>
+        <div class="float-chip chip-bottom">
+          <svg width="14" height="14" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          12 Active Deliveries
+        </div>
+        <!-- Background water drop decoration -->
+        <div class="hero-water-drop drop-1"></div>
+        <div class="hero-water-drop drop-2"></div>
+      </div>
+    </div>
+
+    <!-- Wave divider -->
+    <div class="hero-wave">
+      <svg viewBox="0 0 1440 80" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0,40 C360,80 1080,0 1440,40 L1440,80 L0,80 Z" fill="#F0F4F8"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       SYSTEM STATS BAND
+  ══════════════════════════════════════════ -->
+  <section class="stats-band" id="stats">
+    <div class="container">
+      <div class="stats-band-grid">
+        <div class="stat-band-item fade-up">
+          <div class="stat-band-icon teal-icon-bg">
+            <svg width="26" height="26" fill="none" stroke="#2EC4B6" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          </div>
+          <div class="stat-band-num" data-target="69">0</div>
+          <div class="stat-band-label">Total Orders</div>
+          <div class="stat-band-desc">All time system orders</div>
+          <div class="stat-bar-wrap"><div class="stat-bar" style="width:69%; background:#2EC4B6"></div></div>
+        </div>
+        <div class="stat-band-item fade-up" style="animation-delay:0.1s">
+          <div class="stat-band-icon orange-icon-bg">
+            <svg width="26" height="26" fill="none" stroke="#D97706" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="stat-band-num pending-c" data-target="4">0</div>
+          <div class="stat-band-label">Pending Orders</div>
+          <div class="stat-band-desc">Awaiting admin approval</div>
+          <div class="stat-bar-wrap"><div class="stat-bar" style="width:20%; background:#D97706"></div></div>
+        </div>
+        <div class="stat-band-item fade-up" style="animation-delay:0.2s">
+          <div class="stat-band-icon blue-icon-bg">
+            <svg width="26" height="26" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          </div>
+          <div class="stat-band-num active-c" data-target="12">0</div>
+          <div class="stat-band-label">Active Deliveries</div>
+          <div class="stat-band-desc">Out for delivery now</div>
+          <div class="stat-bar-wrap"><div class="stat-bar" style="width:55%; background:#2563EB"></div></div>
+        </div>
+        <div class="stat-band-item fade-up" style="animation-delay:0.3s">
+          <div class="stat-band-icon green-icon-bg">
+            <svg width="26" height="26" fill="none" stroke="#16A34A" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+          </div>
+          <div class="stat-band-num done-c" data-target="6">0</div>
+          <div class="stat-band-label">Completed Orders</div>
+          <div class="stat-band-desc">Successfully delivered</div>
+          <div class="stat-bar-wrap"><div class="stat-bar" style="width:30%; background:#16A34A"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       FEATURES
+  ══════════════════════════════════════════ -->
+  <section class="features" id="features">
+    <div class="container">
+      <div class="section-eyebrow fade-up">WHAT'S INCLUDED</div>
+      <h2 class="section-title fade-up">Maximum Purity of Control</h2>
+      <div class="wavy-line">
+        <svg width="60" height="14" viewBox="0 0 60 14"><path d="M2 7 Q7.5 1 13 7 Q18.5 13 24 7 Q29.5 1 35 7 Q40.5 13 46 7 Q51.5 1 57 7" stroke="#2EC4B6" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card fade-up">
+          <div class="feature-icon-wrap teal-bg">
+            <svg width="32" height="32" fill="none" stroke="#2EC4B6" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 12 2 2 4-4"/></svg>
+          </div>
+          <h3 class="feature-title">Order Management</h3>
+          <p class="feature-desc">Track every customer order from placement to delivery. View order details, cost breakdowns, and delivery addresses. Approve, assign, or reject orders with a single tap.</p>
+          <div class="feature-tags">
+            <span class="ftag">Approve / Reject</span>
+            <span class="ftag">Assign Staff</span>
+            <span class="ftag">Order History</span>
+          </div>
+          <a href="#" class="feature-read-more">Read More →</a>
+        </div>
+
+        <div class="feature-card fade-up" style="animation-delay:0.1s">
+          <div class="feature-icon-wrap blue-bg">
+            <svg width="32" height="32" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <h3 class="feature-title">Staff Management</h3>
+          <p class="feature-desc">Invite delivery staff via email, manage active team members, and view individual performance analytics. Full control over your delivery workforce.</p>
+          <div class="feature-tags">
+            <span class="ftag ftag-blue">Email Invites</span>
+            <span class="ftag ftag-blue">Staff Analytics</span>
+          </div>
+          <a href="#" class="feature-read-more">Read More →</a>
+        </div>
+
+        <div class="feature-card fade-up" style="animation-delay:0.2s">
+          <div class="feature-icon-wrap orange-bg">
+            <svg width="32" height="32" fill="none" stroke="#D97706" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <h3 class="feature-title">5-Step Pricing Control</h3>
+          <p class="feature-desc">Update water can price (₹35), empty container deposits (₹200), and express delivery charges in real time — no code, no delays.</p>
+          <div class="feature-tags">
+            <span class="ftag ftag-orange">Live Pricing</span>
+            <span class="ftag ftag-orange">Express Charges</span>
+          </div>
+          <a href="#" class="feature-read-more">Read More →</a>
+        </div>
+
+        <div class="feature-card fade-up" style="animation-delay:0.3s">
+          <div class="feature-icon-wrap teal-bg">
+            <svg width="32" height="32" fill="none" stroke="#2EC4B6" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <h3 class="feature-title">Real-Time Tracking</h3>
+          <p class="feature-desc">Monitor order status live — Pending, Assigned, Accepted, Out for Delivery, and Delivered. Every status change reflects instantly across all devices.</p>
+          <div class="feature-tags">
+            <span class="ftag">OTP Verify</span>
+            <span class="ftag">Live Status</span>
+          </div>
+          <a href="#" class="feature-read-more">Read More →</a>
+        </div>
+
+        <div class="feature-card fade-up" style="animation-delay:0.4s">
+          <div class="feature-icon-wrap green-bg">
+            <svg width="32" height="32" fill="none" stroke="#16A34A" stroke-width="2" viewBox="0 0 24 24"><rect x="5" y="1" width="14" height="22" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          </div>
+          <h3 class="feature-title">Mobile First Design</h3>
+          <p class="feature-desc">Built natively for mobile — works seamlessly on Android and iOS. Your team uses the app, your customers order through it, you manage from anywhere.</p>
+          <div class="feature-tags">
+            <span class="ftag ftag-green">Android</span>
+            <span class="ftag ftag-green">iOS Ready</span>
+          </div>
+          <a href="#" class="feature-read-more">Read More →</a>
+        </div>
+
+        <div class="feature-card feature-card-highlight fade-up" style="animation-delay:0.5s">
+          <div class="feature-icon-wrap white-bg">
+            <svg width="32" height="32" fill="none" stroke="#0F9D8A" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <h3 class="feature-title" style="color:#fff">Secure OTP Delivery</h3>
+          <p class="feature-desc" style="color:rgba(255,255,255,0.85)">Staff must enter a customer-provided 4-digit OTP before marking an order as delivered — ensuring secure, verified handoffs every single time.</p>
+          <div class="feature-tags">
+            <span class="ftag ftag-white">4-Digit OTP</span>
+            <span class="ftag ftag-white">Verified Delivery</span>
+          </div>
+          <a href="#" class="feature-read-more" style="color:rgba(255,255,255,0.8)">Read More →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       MOBILE APP SHOWCASE
+  ══════════════════════════════════════════ -->
+  <section class="app-section" id="app-section">
+    <div class="container">
+      <div class="app-section-header">
+        <div class="app-section-left fade-up">
+          <h2 class="app-section-title">Mobile App</h2>
+          <div class="wavy-line">
+            <svg width="60" height="14" viewBox="0 0 60 14"><path d="M2 7 Q7.5 1 13 7 Q18.5 13 24 7 Q29.5 1 35 7 Q40.5 13 46 7 Q51.5 1 57 7" stroke="#D97706" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+        <div class="app-section-right fade-up">
+          <p>HydroMate is a complete mobile-native solution for water delivery businesses. Admins manage everything, staff track and verify deliveries, and customers order with ease — all from one unified platform.</p>
+        </div>
+      </div>
+
+      <div class="app-screens-grid">
+        <div class="app-screen-card fade-up">
+          <div class="app-screen-mockup screen-admin">
+            <div class="screen-top-bar"></div>
+            <div class="screen-content">
+              <div class="screen-header-bar">
+                <span class="screen-dot"></span>
+                <span class="screen-title-text">Admin Dashboard</span>
+              </div>
+              <div class="screen-stats-row">
+                <div class="sc-stat"><span class="sc-num" style="color:#1B3A3A">69</span><span class="sc-lbl">Total</span></div>
+                <div class="sc-stat"><span class="sc-num" style="color:#D97706">4</span><span class="sc-lbl">Pending</span></div>
+                <div class="sc-stat"><span class="sc-num" style="color:#2563EB">12</span><span class="sc-lbl">Active</span></div>
+                <div class="sc-stat"><span class="sc-num" style="color:#16A34A">6</span><span class="sc-lbl">Done</span></div>
+              </div>
+              <div class="sc-order-row"><span class="sc-order-id">#41480 Sakthima</span><span class="sc-badge pend-b">Pending</span></div>
+              <div class="sc-order-row"><span class="sc-order-id">#38291 Priya R.</span><span class="sc-badge ofd-b">Out for Del.</span></div>
+              <div class="sc-order-row"><span class="sc-order-id">#76709 Prathap</span><span class="sc-badge done-b">Approved</span></div>
+            </div>
+          </div>
+          <h4 class="screen-label">Admin Panel</h4>
+          <p class="screen-desc">Full order, staff &amp; pricing control</p>
+        </div>
+
+        <div class="app-screen-card fade-up" style="animation-delay:0.15s">
+          <div class="app-screen-mockup screen-staff">
+            <div class="screen-top-bar" style="background:#2563EB"></div>
+            <div class="screen-content">
+              <div class="screen-header-bar" style="background:linear-gradient(135deg,#2563EB,#1D4ED8)">
+                <span class="screen-dot"></span>
+                <span class="screen-title-text">Staff Portal</span>
+              </div>
+              <div class="sc-delivery-card">
+                <div class="sc-del-header"><span class="sc-order-id">#41480</span><span class="sc-badge pend-b">Assigned</span></div>
+                <div class="sc-del-name">Sakthima</div>
+                <div class="sc-del-addr">📍 Neru, North Street</div>
+                <div class="sc-del-amount">₹235 · 1×20L Can</div>
+              </div>
+              <div class="sc-action-row">
+                <div class="sc-action-btn" style="background:#2563EB; color:#fff">Accept</div>
+                <div class="sc-action-btn sc-action-outline">Navigate</div>
+              </div>
+              <div class="sc-otp-section">
+                <div class="sc-otp-label">OTP VERIFICATION</div>
+                <div class="sc-otp-boxes">
+                  <div class="sc-otp-box">·</div>
+                  <div class="sc-otp-box">·</div>
+                  <div class="sc-otp-box">·</div>
+                  <div class="sc-otp-box">·</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <h4 class="screen-label">Staff Dashboard</h4>
+          <p class="screen-desc">Assignments, navigation &amp; OTP verify</p>
+        </div>
+
+        <div class="app-screen-card fade-up" style="animation-delay:0.3s">
+          <div class="app-screen-mockup screen-user">
+            <div class="screen-top-bar" style="background:#16A34A"></div>
+            <div class="screen-content">
+              <div class="screen-header-bar" style="background:#0F9D8A">
+                <span class="screen-dot"></span>
+                <span class="screen-title-text">HYDROMATE</span>
+              </div>
+              <div class="sc-product-display">
+                <div class="sc-water-icon">💧</div>
+                <div class="sc-product-title">20L Can</div>
+                <div class="sc-product-price">₹35</div>
+              </div>
+              <div class="sc-qty-row">
+                <div class="sc-qty-btn">−</div>
+                <div class="sc-qty-val">1</div>
+                <div class="sc-qty-btn">+</div>
+              </div>
+              <div class="sc-total-row">
+                <span>Total</span>
+                <span style="color:#0F9D8A; font-weight:800">₹35</span>
+              </div>
+              <div class="sc-buy-btn">BUY NOW →</div>
+            </div>
+          </div>
+          <h4 class="screen-label">Customer App</h4>
+          <p class="screen-desc">Order water cans with ease</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       HOW IT WORKS
+  ══════════════════════════════════════════ -->
+  <section class="how-it-works" id="how-it-works">
+    <div class="container">
+      <div class="section-eyebrow fade-up">THE WORKFLOW</div>
+      <h2 class="section-title fade-up">How HydroMate Works</h2>
+      <div class="wavy-line fade-up">
+        <svg width="60" height="14" viewBox="0 0 60 14"><path d="M2 7 Q7.5 1 13 7 Q18.5 13 24 7 Q29.5 1 35 7 Q40.5 13 46 7 Q51.5 1 57 7" stroke="#2EC4B6" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>
+      </div>
+      <p class="section-sub fade-up">A simple, end-to-end delivery flow from order to doorstep</p>
+
+      <div class="steps-timeline">
+        <div class="timeline-line"></div>
+
+        <div class="step-item fade-up">
+          <div class="step-circle step-teal">
+            <span>01</span>
+          </div>
+          <div class="step-body">
+            <div class="step-icon-wrap teal-bg">
+              <svg width="28" height="28" fill="none" stroke="#2EC4B6" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+            </div>
+            <h3 class="step-title">Order Received</h3>
+            <p class="step-desc">Customer places a water can order via the mobile app. Admin sees it instantly in the dashboard as a Pending order.</p>
+          </div>
+        </div>
+
+        <div class="step-item fade-up" style="animation-delay:0.1s">
+          <div class="step-circle step-blue">
+            <span>02</span>
+          </div>
+          <div class="step-body">
+            <div class="step-icon-wrap blue-bg">
+              <svg width="28" height="28" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            </div>
+            <h3 class="step-title">Staff Assigned</h3>
+            <p class="step-desc">Admin approves and assigns the order to an available delivery staff member directly from the dashboard.</p>
+          </div>
+        </div>
+
+        <div class="step-item fade-up" style="animation-delay:0.2s">
+          <div class="step-circle step-orange">
+            <span>03</span>
+          </div>
+          <div class="step-body">
+            <div class="step-icon-wrap orange-bg">
+              <svg width="28" height="28" fill="none" stroke="#D97706" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            </div>
+            <h3 class="step-title">Water Delivered</h3>
+            <p class="step-desc">Staff accepts, picks up the cans, and navigates to the customer's address. Status updates in real time across all views.</p>
+          </div>
+        </div>
+
+        <div class="step-item fade-up" style="animation-delay:0.3s">
+          <div class="step-circle step-green">
+            <span>04</span>
+          </div>
+          <div class="step-body">
+            <div class="step-icon-wrap green-bg">
+              <svg width="28" height="28" fill="none" stroke="#16A34A" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <h3 class="step-title">Order Completed</h3>
+            <p class="step-desc">Staff enters the customer's 4-digit OTP to verify delivery. Order is marked Delivered and admin sees it instantly.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       PRICING
+  ══════════════════════════════════════════ -->
+  <section class="pricing" id="pricing">
+    <div class="container">
+      <div class="section-eyebrow fade-up">TRANSPARENT PRICING</div>
+      <h2 class="section-title fade-up">Know Exactly What Customers Pay</h2>
+      <div class="wavy-line fade-up">
+        <svg width="60" height="14" viewBox="0 0 60 14"><path d="M2 7 Q7.5 1 13 7 Q18.5 13 24 7 Q29.5 1 35 7 Q40.5 13 46 7 Q51.5 1 57 7" stroke="#2EC4B6" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>
+      </div>
+      <p class="section-sub fade-up">No hidden charges — just pure, simple pricing</p>
+
+      <div class="pricing-grid">
+        <div class="price-card price-card-main fade-up">
+          <div class="price-badge-wrap">
+            <span class="price-badge">Most Popular</span>
+          </div>
+          <div class="price-icon-wrap">
+            <svg width="36" height="36" fill="none" stroke="#2EC4B6" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C6 9 3 13.5 3 16.5a9 9 0 0 0 18 0C21 13.5 18 9 12 2z"/></svg>
+          </div>
+          <h3 class="price-title">Water Can (20L)</h3>
+          <div class="price-amount">₹<span class="price-big">35</span></div>
+          <p class="price-desc">Per 20-litre can of purified water delivered to your doorstep.</p>
+          <ul class="price-features">
+            <li>✅ 20-litre purified water</li>
+            <li>✅ OTP-verified delivery</li>
+            <li>✅ Cash on delivery (COD)</li>
+            <li>✅ Online payment accepted</li>
+          </ul>
+        </div>
+
+        <div class="price-card price-card-alt fade-up" style="animation-delay:0.1s">
+          <div class="price-icon-wrap" style="background:#EFF6FF">
+            <svg width="36" height="36" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          </div>
+          <h3 class="price-title">Empty Can Deposit</h3>
+          <div class="price-amount" style="color:#2563EB">₹<span class="price-big" style="color:#2563EB">200</span></div>
+          <p class="price-desc">Refundable deposit for new containers. Returned when the empty can is handed back.</p>
+          <ul class="price-features">
+            <li>✅ Fully refundable</li>
+            <li>✅ First-time order only</li>
+            <li>✅ Per can basis</li>
+          </ul>
+        </div>
+
+        <!-- Real order example -->
+        <div class="price-card price-example fade-up" style="animation-delay:0.2s">
+          <div class="price-example-header">
+            <svg width="18" height="18" fill="none" stroke="#0F9D8A" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+            Real Order Example
+          </div>
+          <div class="price-example-row">
+            <span>1 × Water Can (20L)</span>
+            <span>₹35</span>
+          </div>
+          <div class="price-example-row">
+            <span>Empty Can Deposit</span>
+            <span>₹200</span>
+          </div>
+          <div class="price-example-divider"></div>
+          <div class="price-example-total">
+            <span>Total Amount</span>
+            <span class="price-example-total-val">₹235</span>
+          </div>
+          <div class="price-example-note">Based on Order #41480 — Sakthima, Tirunelveli</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       CONTACT
+  ══════════════════════════════════════════ -->
+  <section class="contact" id="contact">
+    <div class="container">
+      <div class="contact-grid">
+        <div class="contact-info fade-up">
+          <h2 class="contact-title">Contact Information</h2>
+          <div class="wavy-line">
+            <svg width="60" height="14" viewBox="0 0 60 14"><path d="M2 7 Q7.5 1 13 7 Q18.5 13 24 7 Q29.5 1 35 7 Q40.5 13 46 7 Q51.5 1 57 7" stroke="#D97706" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>
+          </div>
+          <div class="contact-items">
+            <div class="contact-item">
+              <div class="contact-icon-wrap">
+                <svg width="18" height="18" fill="none" stroke="#2EC4B6" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6.18 6.18l.96-.96a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              </div>
+              <div><strong>Call Us</strong><br/>+91 96341 72580</div>
+            </div>
+            <div class="contact-item">
+              <div class="contact-icon-wrap">
+                <svg width="18" height="18" fill="none" stroke="#2EC4B6" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              </div>
+              <div><strong>E-mail</strong><br/>admin@hydromate.in</div>
+            </div>
+            <div class="contact-item">
+              <div class="contact-icon-wrap">
+                <svg width="18" height="18" fill="none" stroke="#2EC4B6" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <div><strong>Working Hours</strong><br/>Daily 6 AM – 8 PM</div>
+            </div>
+            <div class="contact-item">
+              <div class="contact-icon-wrap">
+                <svg width="18" height="18" fill="none" stroke="#2EC4B6" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              </div>
+              <div><strong>Service Area</strong><br/>Tirunelveli, Tamil Nadu</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="contact-form-wrap fade-up" style="animation-delay:0.15s">
+          <h2 class="contact-title">Send a Message</h2>
+          <div class="wavy-line">
+            <svg width="60" height="14" viewBox="0 0 60 14"><path d="M2 7 Q7.5 1 13 7 Q18.5 13 24 7 Q29.5 1 35 7 Q40.5 13 46 7 Q51.5 1 57 7" stroke="#D97706" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>
+          </div>
+          <form class="contact-form" id="contact-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Your Name</label>
+                <input type="text" placeholder="Enter your name" id="contact-name" />
+              </div>
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" placeholder="+91 00000 00000" id="contact-phone" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Email address</label>
+                <input type="email" placeholder="you@example.com" id="contact-email" />
+              </div>
+              <div class="form-group">
+                <label>Message</label>
+                <input type="text" placeholder="How can we help?" id="contact-msg" />
+              </div>
+            </div>
+            <button type="submit" class="btn btn-outline-gold" id="contact-submit">SUBMIT NOW</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       FOOTER
+  ══════════════════════════════════════════ -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <p>© 2026 HydroMate. All Rights Reserved. Built for water delivery businesses in Tirunelveli.</p>
+      <div class="footer-links">
+        <a href="#">Terms &amp; Condition</a>
+        <a href="#">Privacy Policy</a>
+        <a href="#contact">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Back to top -->
+  <button class="back-to-top" id="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>
