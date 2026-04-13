@@ -8,7 +8,8 @@ export const storeUser = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
-    const role = (identity as any).role as string | undefined;
+    const rawRole = (identity as any).role;
+    const role = rawRole === null ? undefined : (rawRole as string | undefined);
 
     let existing = await ctx.db
       .query("users")

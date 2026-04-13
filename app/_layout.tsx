@@ -85,7 +85,7 @@ function InitialLayout() {
     };
 
     syncUser();
-  }, [isLoaded, isSignedIn]);
+  }, [isLoaded, isSignedIn, storeUser]);
 
   // Auth-based routing
   useEffect(() => {
@@ -94,17 +94,17 @@ function InitialLayout() {
     const inAuthGroup = segments[0] === '(auth)';
     const inAdminGroup = segments[0] === '(admin)';
     const inStaffGroup = segments[0] === '(staff)';
-    const inTabsGroup = segments[0] === '(tabs)';
     const onVerifyInvite = segments[0] === 'verify-invite';
+    const onHomePage = segments[0] === 'home';
     const isRoot = (segments as string[]).length === 0 || ((segments as string[]).length === 1 && segments[0] === 'index');
 
     // ── 1. SPLASH: Check if user is logged in (Clerk) ──
     if (!isSignedIn) {
-      // Not logged in → Force Login Screen
-      if (!inAuthGroup) {
-        router.replace('/(auth)/sign-in');
+      // Not logged in → Show Landing Home Page (not sign-in directly)
+      if (!inAuthGroup && !onHomePage) {
+        router.replace('/home');
       }
-      // Wait for router to stabilize at sign-in before clearing splash
+      // Wait for router to stabilize before clearing splash
       const timer = setTimeout(() => setIsReady(true), 100);
       return () => clearTimeout(timer);
     }
@@ -118,7 +118,7 @@ function InitialLayout() {
 
     // CASE A: ADMIN (Verified Admin Role or Admin Email)
     if (userRole === 'admin' || email === 'abinishaa271@gmail.com') {
-      if (!inAdminGroup) {
+      if (!inAdminGroup && !onHomePage) {
         router.replace('/(admin)');
       }
       setIsReady(true);
@@ -127,7 +127,7 @@ function InitialLayout() {
 
     // CASE B: EXISTING STAFF (Verified Role)
     if (userRole === 'staff') {
-      if (!inStaffGroup) {
+      if (!inStaffGroup && !onHomePage) {
         router.replace('/(staff)');
       }
       setIsReady(true);
@@ -162,7 +162,8 @@ function InitialLayout() {
       }
 
       // If they have addresses or are on the setup screen but shouldn't be
-      if (inAuthGroup || isRoot || onVerifyInvite || (segments[0] === 'add-address' && (addresses && addresses.length > 0 || sessionSkipAddress))) {
+      // onHomePage is allowed — member tapped the Home button intentionally
+      if (!onHomePage && (inAuthGroup || isRoot || onVerifyInvite || (segments[0] === 'add-address' && (addresses && addresses.length > 0 || sessionSkipAddress)))) {
         router.replace('/(tabs)');
       } else if (segments[0] === '(admin)' || segments[0] === '(staff)') {
         // Safety: Prevent regular users from staying on admin/staff routes
@@ -171,20 +172,30 @@ function InitialLayout() {
     }
 
     setIsReady(true);
-  }, [isLoaded, isSignedIn, segments, hasStoredUser, addresses, convexUser, hasPendingInvite]);
+  }, [isLoaded, isSignedIn, segments, hasStoredUser, addresses, convexUser, hasPendingInvite, email, isReady, router]);
 
   // Loading screen while Clerk initializes
   if (!isLoaded || !isReady) {
     return (
       <View style={loadingStyles.container}>
-        <Image
-          source={require('@/assets/images/logo.png')}
-          style={loadingStyles.logo}
-          contentFit="contain"
-        />
+        {/* Background Motifs */}
+        <View style={{ position: 'absolute', top: -100, left: -100, width: 300, height: 300, borderRadius: 150, backgroundColor: '#2EC4B6', opacity: 0.05, zIndex: -1 }} />
+        <View style={{ position: 'absolute', bottom: -50, right: -80, width: 250, height: 250, borderRadius: 125, backgroundColor: '#0F9D8A', opacity: 0.05, zIndex: -1 }} />
+
+        <View style={loadingStyles.logoContainer}>
+          <Image
+            source={require('@/assets/images/logo.png')}
+            style={loadingStyles.logo}
+            contentFit="contain"
+          />
+        </View>
         <Text style={loadingStyles.brandTitle}>HYDROMATE</Text>
         <Text style={loadingStyles.brandSlogan}>Pure Care. Pure Hydration.</Text>
-        <ActivityIndicator size="large" color="#2EC4B6" style={{ marginTop: 24 }} />
+        
+        <View style={loadingStyles.footer}>
+          <ActivityIndicator size="small" color="#2EC4B6" />
+          <Text style={loadingStyles.loadingText}>Initializing Wellness...</Text>
+        </View>
       </View>
     );
   }
@@ -193,6 +204,7 @@ function InitialLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="home" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(admin)" options={{ headerShown: false }} />
@@ -225,27 +237,54 @@ export default function RootLayout() {
 const loadingStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#E8FFF9',
+    backgroundColor: '#F8FAFC',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  logoContainer: {
+    width: 140,
+    height: 140,
+    borderRadius: 40,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#0F9D8A',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 8,
+    marginBottom: 24,
+  },
   logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 20,
+    width: 100,
+    height: 100,
   },
   brandTitle: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '900',
     color: '#0F9D8A',
-    letterSpacing: 3,
+    letterSpacing: 4,
   },
   brandSlogan: {
     fontSize: 12,
     color: '#2EC4B6',
-    fontWeight: '700',
-    letterSpacing: 1,
-    marginTop: 4,
+    fontWeight: '800',
+    letterSpacing: 2,
+    marginTop: 6,
     textTransform: 'uppercase',
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 60,
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+  },
+  loadingText: {
+    fontSize: 12,
+    color: '#94A3B8',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
 });
