@@ -636,15 +636,21 @@ const s = StyleSheet.create({
   hero: {
     minHeight: IS_WEB ? 580 : undefined,
     backgroundColor: '#F0F6FF',
-    paddingVertical: scale(64), paddingHorizontal: scale(24),
+    paddingVertical: scale(48), paddingHorizontal: scale(20),
     flexDirection: IS_WEB && W > 900 ? 'row' : 'column',
-    alignItems: 'center', justifyContent: 'center',
+    alignItems: IS_WEB && W > 900 ? 'center' : 'flex-start',
+    justifyContent: 'center',
     gap: IS_WEB && W > 900 ? 60 : 0,
     overflow: 'hidden', position: 'relative',
   },
   heroBlob1: { position:'absolute', top:-100, right:-80,  width:420, height:420, borderRadius:210, backgroundColor:'rgba(46,196,182,0.09)' },
   heroBlob2: { position:'absolute', bottom:-80, left:-100, width:320, height:320, borderRadius:160, backgroundColor:'rgba(37,99,235,0.07)' },
-  heroContent: { flex: IS_WEB && W > 900 ? 1 : undefined, maxWidth: 580 },
+  heroContent: {
+    flex: IS_WEB && W > 900 ? 1 : undefined,
+    width: IS_WEB && W > 900 ? undefined : '100%',
+    maxWidth: 580,
+    flexShrink: 1,
+  },
 
   heroBadge: {
     flexDirection:'row', alignItems:'center', gap:scale(8),
@@ -670,12 +676,13 @@ const s = StyleSheet.create({
   heroStats: {
     flexDirection:'row', alignItems:'center',
     backgroundColor:C.white, borderRadius:scale(14), padding:scale(4),
-    borderWidth:1, borderColor:C.border, marginBottom:scale(24), alignSelf:'flex-start',
+    borderWidth:1, borderColor:C.border, marginBottom:scale(24),
+    alignSelf: IS_WEB ? 'flex-start' : 'stretch',
     shadowColor:'#000', shadowOffset:{width:0,height:3}, shadowOpacity:0.05, shadowRadius:8, elevation:3,
   },
-  heroStatItem:{ alignItems:'center', paddingHorizontal:scale(20), paddingVertical:scale(12) },
-  heroStatNum: { fontSize:IS_WEB?28:scale(22), fontWeight:'900', color:C.tealDk },
-  heroStatLabel:{ fontSize:scale(9), fontWeight:'700', color:C.gray, textTransform:'uppercase', letterSpacing:0.5, marginTop:2 },
+  heroStatItem:{ flex: 1, alignItems:'center', paddingHorizontal:scale(8), paddingVertical:scale(12) },
+  heroStatNum: { fontSize:IS_WEB?28:scale(20), fontWeight:'900', color:C.tealDk },
+  heroStatLabel:{ fontSize:scale(8), fontWeight:'700', color:C.gray, textTransform:'uppercase', letterSpacing:0.4, marginTop:2, textAlign:'center' },
   heroStatDiv:{ width:1, height:36, backgroundColor:C.border },
 
   ctaRow: { flexDirection:'row', gap:scale(12), marginBottom:scale(20), flexWrap:'wrap' },
