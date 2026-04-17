@@ -66,6 +66,22 @@ function InitialLayout() {
 
   const [hasStoredUser, setHasStoredUser] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+
+
+  // Safety timeout: Force app forward after 5 seconds if Convex data doesn't load
+  useEffect(() => {
+    // If not loading user data, mark as initialized immediately
+    if (!isSignedIn && isLoaded) {
+      setInitialized(true);
+      return;
+    }
+    const timeout = setTimeout(() => {
+      setInitialized(true);
+    }, 5000);
+    return () => clearTimeout(timeout);
+  }, [isLoaded, isSignedIn]);
+
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) {
@@ -79,7 +95,6 @@ function InitialLayout() {
         setHasStoredUser(true);
       } catch (e) {
         console.error("Failed to store user:", e);
-        // Still let them through — storeUser might fail on first render before token syncs
         setHasStoredUser(true);
       }
     };
@@ -98,25 +113,22 @@ function InitialLayout() {
     const onHomePage = segments[0] === 'home';
     const isRoot = (segments as string[]).length === 0 || ((segments as string[]).length === 1 && segments[0] === 'index');
 
-    // ── 1. SPLASH: Check if user is logged in (Clerk) ──
+    // ── 1. NOT SIGNED IN ──
     if (!isSignedIn) {
-      // Not logged in → Show Landing Home Page (not sign-in directly)
       if (!inAuthGroup && !onHomePage) {
         router.replace('/home');
       }
-      // Wait for router to stabilize before clearing splash
       const timer = setTimeout(() => setIsReady(true), 100);
       return () => clearTimeout(timer);
     }
 
-    // ── 2. LOGGED IN: Wait for Data & Role (Convex) ──
-    // We stay on the Splash screen (isReady = false) until these are loaded
-    if (convexUser === undefined || hasPendingInvite === undefined || !hasStoredUser) return;
+    // ── 2. SIGNED IN: Wait for Convex data (with 10s timeout fallback) ──
+    if (!initialized && (convexUser === undefined || hasPendingInvite === undefined || !hasStoredUser)) return;
 
     // ── 3. ROLE-BASED NAVIGATION ──
     const userRole = convexUser?.role || (email === 'abinishaa271@gmail.com' ? 'admin' : 'member');
 
-    // CASE A: ADMIN (Verified Admin Role or Admin Email)
+    // CASE A: ADMIN
     if (userRole === 'admin' || email === 'abinishaa271@gmail.com') {
       if (!inAdminGroup && !onHomePage) {
         router.replace('/(admin)');
@@ -125,7 +137,7 @@ function InitialLayout() {
       return;
     }
 
-    // CASE B: EXISTING STAFF (Verified Role)
+    // CASE B: EXISTING STAFF
     if (userRole === 'staff') {
       if (!inStaffGroup && !onHomePage) {
         router.replace('/(staff)');
@@ -134,9 +146,8 @@ function InitialLayout() {
       return;
     }
 
-    // CASE C: NEW STAFF (Pending invite check for regular members)
+    // CASE C: PENDING STAFF INVITE
     if (hasPendingInvite === true && userRole === 'member') {
-      // FORCE them to verify-invite screen
       if (!onVerifyInvite) {
         router.replace('/verify-invite');
       }
@@ -144,9 +155,8 @@ function InitialLayout() {
       return;
     }
 
-    // CASE D: NORMAL USER (No invite, Role is member)
+    // CASE D: NORMAL USER
     if (userRole === 'member') {
-      // First, check if they need an address (and haven't skipped for this session)
       if (addresses && addresses.length === 0 && !sessionSkipAddress) {
         if (segments[0] !== 'add-address') {
           router.replace('/add-address');
@@ -156,23 +166,15 @@ function InitialLayout() {
         return;
       }
 
-      // If they cancel/skip, mark it for the session
-      if (segments[0] === 'add-address' && addresses?.length === 0 && !isReady) {
-        // This handles the transition from add-address back to tabs if triggered by router.replace
-      }
-
-      // If they have addresses or are on the setup screen but shouldn't be
-      // onHomePage is allowed — member tapped the Home button intentionally
       if (!onHomePage && (inAuthGroup || isRoot || onVerifyInvite || (segments[0] === 'add-address' && (addresses && addresses.length > 0 || sessionSkipAddress)))) {
         router.replace('/(tabs)');
       } else if (segments[0] === '(admin)' || segments[0] === '(staff)') {
-        // Safety: Prevent regular users from staying on admin/staff routes
         router.replace('/(tabs)');
       }
     }
 
     setIsReady(true);
-  }, [isLoaded, isSignedIn, segments, hasStoredUser, addresses, convexUser, hasPendingInvite, email, isReady, router]);
+  }, [isLoaded, isSignedIn, segments, hasStoredUser, addresses, convexUser, hasPendingInvite, email, isReady, router, initialized]);
 
   // Loading screen while Clerk initializes
   if (!isLoaded || !isReady) {

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet, View, Text, ScrollView, SafeAreaView, StatusBar,
   TouchableOpacity, ActivityIndicator, Alert, Modal, TextInput,
-  Linking, Share, Platform, Animated
+  Linking, Share, Platform, Animated, KeyboardAvoidingView
 } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useQuery, useMutation } from 'convex/react';
@@ -134,7 +134,6 @@ function AddStaffModal({
   visible: boolean;
   onClose: () => void;
 }) {
-  const { isSignedIn, isLoaded: authLoaded } = useAuth();
   const createInvite = useMutation(api.invites.createInvite);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -143,157 +142,108 @@ function AddStaffModal({
   const [generated, setGenerated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const inviteMessage = `🚰 *HydroMate Staff Invite*\n\nHi ${name}!\n\nYou've been invited to join HydroMate as a Delivery Staff member.\n\n📱 Download the app and sign up using your email: *${email}*\n\n🔑 Your invite code: *${code}*\n\nRight after you sign in, the app will ask for this code and your phone number. Enter them to activate your staff dashboard instantly!\n\n— HydroMate Team`;
-
   const handleGenerate = async () => {
-    const trimmedName = name.trim();
-    const trimmedEmail = email.trim();
-    const trimmedPhone = phone.trim();
-
-    if (!authLoaded) return;
-    if (!isSignedIn) {
-      Alert.alert('Session Error', 'Please Sign Out and Sign In again to fix this.');
+    if (!name.trim()) { 
+      Alert.alert('Error', 'Name is required.'); 
+      return; 
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim() || !emailRegex.test(email.trim())) {
+      Alert.alert('Error', 'Please give correct mail id.');
       return;
     }
 
-    if (!trimmedName || !trimmedEmail) {
-      Alert.alert('Required', 'Please enter Name and Email.');
+    const phoneRegex = /^\d{10}$/;
+    if (!phone.trim() || !phoneRegex.test(phone.trim())) {
+      Alert.alert('Error', 'Please give correct phone number.');
       return;
     }
 
     const newCode = `HM-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-    
     setIsLoading(true);
     try {
-      await createInvite({ 
-        name: trimmedName, 
-        email: trimmedEmail, 
-        inviteCode: newCode, 
-        phone: trimmedPhone 
-      });
-      setCode(newCode);
-      setGenerated(true);
-
-      if (Platform.OS === 'web') {
-        handleEmail(newCode); 
-      }
-    } catch (e: any) {
-      Alert.alert('Error', e.message);
-    } finally {
-      setIsLoading(false);
-    }
+      await createInvite({ name: name.trim(), email: email.trim(), inviteCode: newCode, phone: phone.trim() });
+      setCode(newCode); setGenerated(true);
+    } catch (e: any) { Alert.alert('Error', e.message); } finally { setIsLoading(false); }
   };
 
-  const handleEmail = (overrideCode?: string) => {
-    const finalCode = overrideCode || code;
-    const finalMessage = `🚰 *HydroMate Staff Invite*\n\nHi ${name}!\n\nYou've been invited to join HydroMate as a Delivery Staff member.\n\n📱 Download the app and sign up using your email: *${email}*\n\n🔑 Your invite code: *${finalCode}*\n\nRight after you sign in, the app will ask for this code and your phone number. Enter them to activate your staff dashboard instantly!\n\n— HydroMate Team`;
-
-    const subject = encodeURIComponent('HydroMate Staff Invitation');
-    const body = encodeURIComponent(finalMessage);
-    
-    if (Platform.OS === 'web') {
-      const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${subject}&body=${body}`;
-      window.open(url, '_blank');
-      return;
-    }
-
-    const mailtoUrl = `mailto:${email}?subject=${subject}&body=${body}`;
-    Linking.openURL(mailtoUrl).catch(() => {
-        const gmailWebUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${subject}&body=${body}`;
-        Linking.openURL(gmailWebUrl);
-    });
-  };
-
-  const handleCopy = async () => {
-    try {
-      await Share.share({ message: inviteMessage, title: 'HydroMate Invitation' });
-    } catch (e) {
-      Alert.alert('Error', 'Could not share invite.');
-    }
-  };
-
-  const [scaleAnim] = useState(new Animated.Value(0.95));
-  const [opacityAnim] = useState(new Animated.Value(0));
-
-  React.useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.spring(scaleAnim, { toValue: 1, tension: 50, friction: 8, useNativeDriver: true }),
-        Animated.timing(opacityAnim, { toValue: 1, duration: 200, useNativeDriver: true })
-      ]).start();
-    } else {
-      scaleAnim.setValue(0.95);
-      opacityAnim.setValue(0);
-    }
-  }, [visible]);
-
-  const handleClose = () => {
-    setName(''); setEmail(''); setPhone(''); setCode(''); setGenerated(false);
-    onClose();
-  };
+  const handleClose = () => { setName(''); setEmail(''); setPhone(''); setCode(''); setGenerated(false); onClose(); };
 
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={handleClose}>
       <View style={modalStyles.overlay}>
-        <Animated.View style={[
-          modalStyles.sheet, 
-          { transform: [{ scale: scaleAnim }], opacity: opacityAnim, width: '90%', maxWidth: scale(420) }
-        ]}>
+        <View style={modalStyles.sheet}>
           <View style={modalStyles.header}>
             <Text style={modalStyles.title}>Add New Staff</Text>
-            <TouchableOpacity onPress={handleClose}>
-              <MaterialIcons name="close" size={24} color={COLORS.text} />
-            </TouchableOpacity>
+            <TouchableOpacity onPress={handleClose}><MaterialIcons name="close" size={20} color={COLORS.text} /></TouchableOpacity>
           </View>
-
-          <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: scale(450) }}>
-            <Text style={modalStyles.label}>Staff Name</Text>
-            <TextInput style={[modalStyles.input, { padding: scale(14) }]} placeholder="Enter full name" value={name} onChangeText={setName} />
-
-            <Text style={modalStyles.label}>Email Address</Text>
-            <TextInput style={[modalStyles.input, { padding: scale(14) }]} placeholder="Enter email" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
-
-            <Text style={modalStyles.label}>Phone Number</Text>
-            <TextInput style={[modalStyles.input, { padding: scale(14) }]} placeholder="Enter phone" keyboardType="phone-pad" maxLength={10} value={phone} onChangeText={setPhone} />
-
-            {!generated ? (
-              <TouchableOpacity style={[modalStyles.generateBtn, { height: scale(54) }]} onPress={handleGenerate} disabled={isLoading}>
-                {isLoading ? <ActivityIndicator color="#fff" /> : (
-                  <>
-                    <MaterialIcons name="send" size={18} color="#fff" style={{ marginRight: 8 }} />
-                    <Text style={modalStyles.generateBtnText}>GENERATE & SEND INVITE</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            ) : (
-              <View style={modalStyles.inviteBox}>
-                <View style={modalStyles.codeRow}>
-                  <MaterialIcons name="vpn-key" size={18} color={COLORS.secondary} />
-                  <Text style={modalStyles.codeText}>{code}</Text>
-                </View>
-                <Text style={modalStyles.invitePreview} numberOfLines={4}>{inviteMessage}</Text>
-
-                <View style={modalStyles.shareRow}>
-                  <TouchableOpacity style={modalStyles.shareBtn} onPress={handleCopy}>
-                    <MaterialIcons name="share" size={18} color={COLORS.secondary} />
-                    <Text style={modalStyles.shareBtnText}>Share</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[modalStyles.shareBtn, { backgroundColor: COLORS.secondary, borderColor: COLORS.secondary }]} onPress={() => handleEmail()}>
-                    <MaterialIcons name="email" size={18} color="#fff" />
-                    <Text style={[modalStyles.shareBtnText, { color: '#fff' }]}>Email</Text>
-                  </TouchableOpacity>
-                </View>
+          {!generated ? (
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+              <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                <Text style={modalStyles.label}>Staff Name</Text>
+                <TextInput style={modalStyles.input} placeholder="e.g. Karthi" value={name} onChangeText={setName} />
+                <Text style={modalStyles.label}>Email Address</Text>
+                <TextInput style={modalStyles.input} placeholder="Enter email address" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
+                <Text style={modalStyles.label}>Phone Number</Text>
+                <TextInput style={modalStyles.input} placeholder="Enter phone number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={10} />
+                <TouchableOpacity style={modalStyles.generateBtn} onPress={handleGenerate} disabled={isLoading}>
+                  {isLoading ? <ActivityIndicator color="#fff" /> : (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <MaterialIcons name="link" size={16} color="#fff" />
+                      <Text style={modalStyles.generateBtnText}>GENERATE INVITE</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
+            </KeyboardAvoidingView>
+          ) : (
+            <View style={modalStyles.inviteBox}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', marginBottom: 12 }}>
+                <MaterialIcons name="receipt" size={18} color={COLORS.secondary} />
+                <Text style={modalStyles.codeText}>{code}</Text>
               </View>
-            )}
-          </ScrollView>
-        </Animated.View>
+              <View style={{ backgroundColor: '#F9FAFB', padding: 14, borderRadius: 10, width: '100%', marginBottom: 16 }}>
+                 <Text style={{ fontSize: scale(10), fontWeight: '800', color: COLORS.text, marginBottom: 10 }}>🚰 HydroMate Staff Invite</Text>
+                 <Text style={{ fontSize: scale(10), color: COLORS.text, marginBottom: 6 }}>Hi {name}!</Text>
+                 <Text style={{ fontSize: scale(10), color: COLORS.text, marginBottom: 10 }}>You've been invited to join HydroMate as a Delivery Staff member.</Text>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 10, width: '100%' }}>
+                 <TouchableOpacity style={[modalStyles.shareBtn, { backgroundColor: '#fff', borderWidth: 1, borderColor: COLORS.primary }]} onPress={() => {
+                     const msg = `*HydroMate Staff Invite*\n\nHi ${name}!\n\nYou've been invited to join HydroMate as a Delivery Staff member.\n\n📱 Download the app and sign up using your email: *${email}*\n\n🔑 Your invite code: *${code}*\n\nRight after you sign in, the app will ask for this code and your phone number. Enter them to activate your staff dashboard instantly!\n\n- HydroMate Team`;
+                     Linking.openURL(`whatsapp://send?text=${encodeURIComponent(msg)}`).catch(() => {
+                         Share.share({ message: msg });
+                     });
+                     handleClose();
+                 }}>
+                    <MaterialIcons name="share" size={16} color={COLORS.primary} />
+                    <Text style={[modalStyles.shareBtnText, { color: COLORS.primary }]}>Share</Text>
+                 </TouchableOpacity>
+                 <TouchableOpacity style={[modalStyles.shareBtn, { backgroundColor: '#3B82F6', borderWidth: 1, borderColor: '#3B82F6' }]} onPress={() => {
+                     const msg = `*HydroMate Staff Invite*\n\nHi ${name}!\n\nYou've been invited to join HydroMate as a Delivery Staff member.\n\n📱 Download the app and sign up using your email: *${email}*\n\n🔑 Your invite code: *${code}*\n\nRight after you sign in, the app will ask for this code and your phone number. Enter them to activate your staff dashboard instantly!\n\n- HydroMate Team`;
+                     Linking.openURL(`mailto:${email}?subject=HydroMate Staff Invitation&body=${encodeURIComponent(msg)}`).catch(() => {
+                         Share.share({ message: msg });
+                     });
+                     handleClose();
+                 }}>
+                    <MaterialIcons name="email" size={16} color="#fff" />
+                    <Text style={[modalStyles.shareBtnText, { color: '#fff' }]}>Send Email</Text>
+                 </TouchableOpacity>
+              </View>
+              <View style={{ backgroundColor: '#EFF6FF', padding: 10, borderRadius: 8, marginTop: 16, flexDirection: 'row', alignItems: 'flex-start', gap: 6, width: '100%', borderWidth: 1, borderColor: '#BFDBFE' }}>
+                 <MaterialIcons name="info-outline" size={14} color="#3B82F6" style={{ marginTop: 1 }} />
+                 <Text style={{ fontSize: scale(8), color: '#1E40AF', flex: 1, lineHeight: 14 }}>The staff member will be automatically activated when they sign up and enter this code.</Text>
+              </View>
+            </View>
+          )}
+        </View>
       </View>
     </Modal>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ORDER CARD (COMPACT / EXPANDABLE HYBRID)
+// ORDER CARD (VERY COMPACT - IMAGE 1 STYLE)
 // ─────────────────────────────────────────────────────────────────────────────
 function OrderCard({ order, isExpanded, onToggle }: { order: any, isExpanded: boolean, onToggle: () => void }) {
   const [assignModal, setAssignModal] = useState(false);
@@ -303,79 +253,48 @@ function OrderCard({ order, isExpanded, onToggle }: { order: any, isExpanded: bo
   const [loading, setLoading] = useState<string | null>(null);
 
   const statusC = statusColor(order.status);
+  const isPending = order.status === 'Pending';
+  const isActionable = ['Pending', 'Assigned', 'Approved'].includes(order.status);
 
   const doApprove = async () => {
     setLoading('approve');
     try { await approveOrder({ orderId: order._id }); } catch (e) { Alert.alert('Error', (e as Error).message); } finally { setLoading(null); }
   };
-
   const doReject = async () => {
     setLoading('reject');
     try { await rejectOrder({ orderId: order._id }); } catch (e) { Alert.alert('Error', (e as Error).message); } finally { setLoading(null); }
   };
-
   const confirmDelete = () => {
-    const handle = async () => {
-      setLoading('delete');
-      try {
-        console.log("Attempting to delete order:", order._id);
-        const result = await deleteOrder({ orderId: order._id });
-        if (Platform.OS === 'web') {
-          window.alert('SUCCESS: Order has been permanently removed.');
-        } else {
-          Alert.alert('Deleted', 'Order has been permanently removed.');
-        }
-      } catch (e) {
-        const errorMsg = (e as Error).message;
-        console.error("Delete failed:", errorMsg);
-        if (Platform.OS === 'web') {
-          window.alert('ERROR: ' + errorMsg);
-        } else {
-          Alert.alert('Error', errorMsg);
-        }
-      } finally {
-        setLoading(null);
-      }
-    };
-
-    if (Platform.OS === 'web') {
-      if (window.confirm("ARE YOU SURE?\n\nThis will permanently delete Order #" + order.orderId.slice(-5) + ".\nThis action cannot be undone.")) {
-        handle();
-      }
-    } else {
-      Alert.alert(
-        "Delete Order?",
-        "This action is permanent and cannot be undone.",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Delete Permanently", style: "destructive", onPress: handle }
-        ]
-      );
-    }
+    const handle = () => deleteOrder({ orderId: order._id }).catch(e => Alert.alert('Error', e.message));
+    if (Platform.OS === 'web') { if (window.confirm(`Delete Order #${order.orderId.slice(-5)}?`)) handle(); }
+    else { Alert.alert("Delete?", "Action is permanent.", [{ text: "Cancel" }, { text: "Delete", style: "destructive", onPress: handle }]); }
   };
 
-  const isPending = order.status === 'Pending';
-  const isActionable = ['Pending', 'Assigned', 'Approved'].includes(order.status);
-
   return (
-    <TouchableOpacity 
-      activeOpacity={0.9} 
-      onPress={onToggle}
-      style={[styles.orderCard, isExpanded && { borderColor: COLORS.primary, borderWidth: 1.5, shadowOpacity: 0.1 }]}
-    >
+    <TouchableOpacity activeOpacity={0.8} onPress={onToggle} style={[styles.orderCard, isExpanded && styles.orderCardExpanded]}>
       <View style={styles.orderCardHeader}>
-        <View style={styles.compactMain}>
+        <View style={{ flex: 1 }}>
           <Text style={styles.compactId}>#{order.orderId.slice(-5)}</Text>
           <Text style={styles.compactName} numberOfLines={1}>{order.customerName || 'Customer'}</Text>
         </View>
-        <View style={styles.compactRight}>
+        <View style={{ alignItems: 'flex-end', gap: 4 }}>
           <Text style={styles.compactAmount}>₹{order.totalAmount}</Text>
           <View style={[styles.statusBadge, { backgroundColor: statusC.bg }]}>
             <Text style={[styles.statusText, { color: statusC.text }]}>{order.status}</Text>
           </View>
-          <MaterialIcons name={isExpanded ? "expand-less" : "expand-more"} size={20} color={COLORS.gray} />
         </View>
+        <MaterialIcons name={isExpanded ? "expand-less" : "expand-more"} size={16} color={COLORS.gray} style={{ marginLeft: 8 }} />
       </View>
+
+      {/* Assigned staff shown in compact view below header */}
+      {order.assignedStaffName && !isExpanded && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 2, paddingBottom: 4 }}>
+          <MaterialIcons name="delivery-dining" size={13} color={COLORS.secondary} />
+          <Text style={{ fontSize: scale(9), color: COLORS.secondary, fontWeight: '800' }}>
+            Assigned: {order.assignedStaffName}
+          </Text>
+        </View>
+      )}
 
       {isExpanded && (
         <View style={styles.expandedContent}>
@@ -388,88 +307,88 @@ function OrderCard({ order, isExpanded, onToggle }: { order: any, isExpanded: bo
             </View>
             <View style={styles.detailItem}>
               <Text style={styles.detailLabel}>Items</Text>
-              <Text style={styles.detailValue}>{order.quantity} × 20L Can</Text>
+              <Text style={styles.detailValue}>{order.quantity} × 20L</Text>
             </View>
           </View>
 
-          <View style={styles.sectionHeaderRow}>
-            <MaterialIcons name="receipt" size={14} color={COLORS.gray} />
-            <Text style={[styles.sectionHeaderTitle, { fontSize: scale(13), color: COLORS.gray }]}>Cost Breakdown</Text>
-          </View>
-          
           <View style={styles.breakdownBox}>
-             <View style={styles.breakdownRow}>
-               <Text style={styles.breakdownLabel}>Water ({order.quantity} × ₹{order.waterPrice})</Text>
-               <Text style={styles.breakdownValue}>₹{order.quantity * order.waterPrice}</Text>
-             </View>
-             {order.bottlePrice > 0 && (
-               <View style={styles.breakdownRow}>
-                 <Text style={styles.breakdownLabel}>Container Deposits</Text>
-                 <Text style={styles.breakdownValue}>+ ₹{order.bottlePrice}</Text>
-               </View>
-             )}
-             {order.expressCharge > 0 && (
-               <View style={styles.breakdownRow}>
-                 <Text style={styles.breakdownLabel}>Express Delivery Charge</Text>
-                 <Text style={styles.breakdownValue}>+ ₹{order.expressCharge}</Text>
-               </View>
-             )}
-             <View style={[styles.breakdownRow, { borderTopWidth: 1, borderTopColor: '#E2E8F0', marginTop: 8, paddingTop: 8 }]}>
-               <Text style={[styles.breakdownLabel, { fontWeight: '900', color: COLORS.text }]}>Total Amount</Text>
-               <Text style={[styles.breakdownValue, { fontWeight: '900', color: COLORS.secondary, fontSize: scale(16) }]}>₹{order.totalAmount}</Text>
+             <View style={styles.totalRow}>
+               <Text style={styles.totalLabel}>Grand Total</Text>
+               <Text style={styles.totalValue}>₹{order.totalAmount}</Text>
              </View>
           </View>
 
           <View style={styles.addressRow}>
-            <MaterialIcons name={"location-on" as any} size={16} color={COLORS.secondary} />
-            <Text style={styles.addressText}>
-              {[order.buildingName, order.streetName, order.area].filter(Boolean).join(', ') || order.pincode}
-            </Text>
+            <MaterialIcons name="location-pin" size={14} color={COLORS.secondary} />
+            <Text style={styles.addressText} numberOfLines={2}>{[order.buildingName, order.streetName, order.area].filter(Boolean).join(', ') || order.pincode}</Text>
           </View>
 
-          {order.assignedStaffName && (
-            <View style={styles.staffRow}>
-              <View style={styles.staffAvatarSmall}><MaterialIcons name="person" size={12} color="#fff" /></View>
-              <Text style={styles.staffLabel}>Assigned to {order.assignedStaffName}</Text>
-            </View>
-          )}
+          {/* ── ACTION ROW: Always one single line ── */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
 
-          <View style={styles.actionRow}>
-            {isActionable && (
+            {/* Assigned Staff label — shown when assigned (takes flex space) */}
+            {order.assignedStaffName ? (
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                <MaterialIcons name="delivery-dining" size={15} color={COLORS.secondary} />
+                <Text style={{ fontSize: scale(10), color: COLORS.secondary, fontWeight: '800' }} numberOfLines={1}>
+                  Assigned: {order.assignedStaffName}
+                </Text>
+              </View>
+            ) : (
+              /* Assign + Approve buttons when no staff assigned yet */
               <>
                 {(isPending || order.status === 'Approved') && (
-                  <TouchableOpacity style={[styles.actionBtn, { backgroundColor: COLORS.info }]} onPress={() => setAssignModal(true)}>
-                    <MaterialIcons name={"person-add" as any} size={16} color="#fff" />
-                    <Text style={styles.actionBtnText}>Assign</Text>
+                  <TouchableOpacity
+                    onPress={() => setAssignModal(true)}
+                    style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.info, borderRadius: 10, paddingVertical: 9, gap: 4 }}
+                  >
+                    <MaterialIcons name="person-add" size={13} color="#fff" />
+                    <Text style={{ fontSize: scale(9), fontWeight: '900', color: '#fff' }}>Assign</Text>
                   </TouchableOpacity>
                 )}
                 {isPending && (
-                  <TouchableOpacity style={[styles.actionBtn, { backgroundColor: COLORS.success }]} onPress={doApprove} disabled={!!loading}>
-                    {loading === 'approve' ? <ActivityIndicator size="small" color="#fff" /> : (
-                      <><MaterialIcons name={"check-circle" as any} size={16} color="#fff" /><Text style={styles.actionBtnText}>Approve</Text></>
-                    )}
+                  <TouchableOpacity
+                    onPress={doApprove}
+                    disabled={!!loading}
+                    style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.success, borderRadius: 10, paddingVertical: 9, gap: 4 }}
+                  >
+                    {loading === 'approve'
+                      ? <ActivityIndicator size="small" color="#fff" />
+                      : <><MaterialIcons name="check" size={13} color="#fff" /><Text style={{ fontSize: scale(9), fontWeight: '900', color: '#fff' }}>Approve</Text></>
+                    }
                   </TouchableOpacity>
                 )}
-                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: COLORS.danger, flex: 0.4 }]} onPress={doReject} disabled={!!loading}>
-                  {loading === 'reject' ? <ActivityIndicator size="small" color="#fff" /> : (
-                    <MaterialIcons name="close" size={18} color="#fff" />
-                  )}
-                </TouchableOpacity>
               </>
             )}
-            <TouchableOpacity 
-              style={[styles.actionBtn, { backgroundColor: '#334155', flex: 0.4 }]} 
-              onPress={confirmDelete} 
+
+            {/* Cancel / Reject icon — always right side */}
+            {isActionable && (
+              <TouchableOpacity
+                onPress={doReject}
+                disabled={!!loading}
+                style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#FEE2E2', alignItems: 'center', justifyContent: 'center' }}
+              >
+                {loading === 'reject'
+                  ? <ActivityIndicator size="small" color={COLORS.danger} />
+                  : <MaterialIcons name="close" size={17} color={COLORS.danger} />
+                }
+              </TouchableOpacity>
+            )}
+
+            {/* Delete icon — always right side */}
+            <TouchableOpacity
+              onPress={confirmDelete}
               disabled={!!loading}
+              style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' }}
             >
-              {loading === 'delete' ? <ActivityIndicator size="small" color="#fff" /> : (
-                <MaterialIcons name="delete-forever" size={20} color="#fff" />
-              )}
+              <MaterialIcons name="delete-outline" size={17} color="#475569" />
             </TouchableOpacity>
+
           </View>
+
+
         </View>
       )}
-
       <AssignStaffModal visible={assignModal} orderId={order._id} onClose={() => setAssignModal(false)} />
     </TouchableOpacity>
   );
@@ -507,35 +426,27 @@ function OrdersTab() {
     <View style={{ flex: 1 }}>
       <View style={styles.gridStats}>
         <TouchableOpacity style={[styles.statCard, filter === 'All' && styles.statCardActive]} onPress={() => setFilter('All')}>
-          <View style={[styles.statIconBox, { backgroundColor: '#F1F5F9' }]}><MaterialIcons name={"grid-view" as any} size={18} color={COLORS.gray} /></View>
-          <View>
-            <Text style={styles.statNum}>{total}</Text>
-            <Text style={styles.statLabel}>Total</Text>
-          </View>
+          <View style={[styles.statIconBox, { backgroundColor: '#F1F5F9' }]}><MaterialIcons name="grid-view" size={18} color={COLORS.gray} /></View>
+          <Text style={styles.statNum}>{total}</Text>
+          <Text style={styles.statLabel}>Total</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.statCard, filter === 'Pending' && { borderColor: '#F59E0B', backgroundColor: '#FFFBEB' }]} onPress={() => setFilter('Pending')}>
-          <View style={[styles.statIconBox, { backgroundColor: '#FEF3C7' }]}><MaterialIcons name={"hourglass-empty" as any} size={18} color="#D97706" /></View>
-          <View>
-            <Text style={[styles.statNum, { color: '#D97706' }]}>{pending}</Text>
-            <Text style={styles.statLabel}>Pending</Text>
-          </View>
+        <TouchableOpacity style={[styles.statCard, filter === 'Pending' && { borderColor: '#F59E0B' }]} onPress={() => setFilter('Pending')}>
+          <View style={[styles.statIconBox, { backgroundColor: '#FEF3C7' }]}><MaterialIcons name="hourglass-empty" size={18} color="#D97706" /></View>
+          <Text style={[styles.statNum, { color: '#D97706' }]}>{pending}</Text>
+          <Text style={styles.statLabel}>Pending</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.statCard, filter === 'Active' && { borderColor: '#3B82F6', backgroundColor: '#EFF6FF' }]} onPress={() => setFilter('Active')}>
-          <View style={[styles.statIconBox, { backgroundColor: '#DBEAFE' }]}><MaterialIcons name={"local-shipping" as any} size={18} color="#2563EB" /></View>
-          <View>
-            <Text style={[styles.statNum, { color: '#2563EB' }]}>{active}</Text>
-            <Text style={styles.statLabel}>Active</Text>
-          </View>
+        <TouchableOpacity style={[styles.statCard, filter === 'Active' && { borderColor: '#3B82F6' }]} onPress={() => setFilter('Active')}>
+          <View style={[styles.statIconBox, { backgroundColor: '#DBEAFE' }]}><MaterialIcons name="local-shipping" size={18} color="#2563EB" /></View>
+          <Text style={[styles.statNum, { color: '#2563EB' }]}>{active}</Text>
+          <Text style={styles.statLabel}>Active</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.statCard, filter === 'Delivered' && { borderColor: COLORS.success, backgroundColor: '#F0FDF4' }]} onPress={() => setFilter('Delivered')}>
-          <View style={[styles.statIconBox, { backgroundColor: '#DCFCE7' }]}><MaterialIcons name={"check-circle" as any} size={18} color={COLORS.success} /></View>
-          <View>
-            <Text style={[styles.statNum, { color: COLORS.success }]}>{delivered}</Text>
-            <Text style={styles.statLabel}>Done</Text>
-          </View>
+        <TouchableOpacity style={[styles.statCard, filter === 'Delivered' && { borderColor: COLORS.success }]} onPress={() => setFilter('Delivered')}>
+          <View style={[styles.statIconBox, { backgroundColor: '#DCFCE7' }]}><MaterialIcons name="check-circle" size={18} color={COLORS.success} /></View>
+          <Text style={[styles.statNum, { color: COLORS.success }]}>{delivered}</Text>
+          <Text style={styles.statLabel}>Done</Text>
         </TouchableOpacity>
       </View>
 
@@ -618,77 +529,70 @@ function StaffTab() {
   const deleteInvite = useMutation(api.invites.deleteInvite);
   const [detailsModal, setDetailsModal] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<any>(null);
+  const [quickAddModal, setQuickAddModal] = useState(false);
 
   const confirmDeleteInvite = (inviteId: any, inviteName: string) => {
     const handle = () => deleteInvite({ inviteId }).catch(e => Alert.alert("Error", e.message));
-    if (Platform.OS === 'web') { if (window.confirm(`Revoke invite for ${inviteName}?`)) handle(); }
-    else { Alert.alert("Revoke Invite", `Revoke invite for ${inviteName}?`, [{ text: "Cancel" }, { text: "Revoke", style: "destructive", onPress: handle }]); }
+    if (Platform.OS === 'web') { if (window.confirm(`Revoke?`)) handle(); }
+    else { Alert.alert("Revoke?", inviteName, [{ text: "Cancel" }, { text: "Revoke", style: "destructive", onPress: handle }]); }
   };
 
   const confirmRemove = (staffId: string, staffName: string) => {
     const handle = () => removeStaff({ staffId: staffId as any }).catch(e => Alert.alert("Error", e.message));
-    if (Platform.OS === 'web') { if (window.confirm(`Remove ${staffName} from staff?`)) handle(); }
-    else { Alert.alert("Remove Staff", `Remove ${staffName} from staff?`, [{ text: "Cancel" }, { text: "Remove", style: "destructive", onPress: handle }]); }
+    if (Platform.OS === 'web') { if (window.confirm(`Remove?`)) handle(); }
+    else { Alert.alert("Remove?", staffName, [{ text: "Cancel" }, { text: "Remove", style: "destructive", onPress: handle }]); }
   };
 
   return (
     <View style={{ flex: 1 }}>
+      <View style={styles.sectionHeaderRow}>
+        <Text style={styles.sectionHeaderTitle}>Manage Staff</Text>
+        <TouchableOpacity 
+          style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.secondary, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, gap: 4 }} 
+          onPress={() => setQuickAddModal(true)}
+        >
+          <MaterialIcons name="add" size={14} color="#fff" />
+          <Text style={{ fontSize: scale(10), fontWeight: '800', color: '#fff' }}>Add Staff</Text>
+        </TouchableOpacity>
+      </View>
+      
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-        {pendingInvites && pendingInvites.length > 0 && (
-          <View style={{ marginBottom: 32 }}>
-            <View style={styles.sectionHeaderRow}>
-              <MaterialIcons name={"hourglass-top" as any} size={18} color={COLORS.warning} />
-              <Text style={[styles.sectionHeaderTitle, { color: COLORS.warning }]}>Pending Invites</Text>
+        {pendingInvites && pendingInvites.map((invite) => (
+          <View key={invite._id} style={styles.staffListRow}>
+            <View style={styles.staffListLeft}>
+              <MaterialIcons name="mail-outline" size={20} color={COLORS.warning} />
+              <View style={{ marginLeft: 12 }}>
+                <Text style={styles.staffListName}>{invite.name} (Pending)</Text>
+                <Text style={styles.staffListSub}>{invite.email}</Text>
+              </View>
             </View>
-            <View style={styles.staffGrid}>
-              {pendingInvites.map((invite) => (
-                <View key={invite._id} style={[styles.staffGridCard, { borderColor: COLORS.warning, borderStyle: 'dashed' }]}>
-                  <View style={[styles.staffGridAvatar, { backgroundColor: '#FFFBEB' }]}><MaterialIcons name="mail" size={24} color="#F59E0B" /></View>
-                  <Text style={styles.staffGridName} numberOfLines={1}>{invite.name}</Text>
-                  <Text style={styles.staffGridSub}>{invite.email}</Text>
-                  <TouchableOpacity style={styles.staffGridAction} onPress={() => confirmDeleteInvite(invite._id, invite.name)}>
-                    <MaterialIcons name="close" size={16} color={COLORS.danger} />
-                    <Text style={[styles.staffGridActionText, { color: COLORS.danger }]}>Revoke</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
+            <TouchableOpacity onPress={() => confirmDeleteInvite(invite._id, invite.name)}>
+              <MaterialIcons name="close" size={20} color={COLORS.danger} />
+            </TouchableOpacity>
           </View>
-        )}
-
-        <View style={styles.sectionHeaderRow}>
-          <MaterialIcons name="verified" size={18} color={COLORS.secondary} />
-          <Text style={styles.sectionHeaderTitle}>Team Members</Text>
-        </View>
+        ))}
 
         {staffList === undefined ? <ActivityIndicator color={COLORS.primary} style={{ marginTop: 30 }} /> : staffList.length === 0 ? (
-          <View style={styles.emptyStateBox}><MaterialIcons name={"people-outline" as any} size={60} color={COLORS.border} /><Text style={styles.emptyStateText}>No staff members.</Text></View>
+          <View style={styles.emptyStateBox}><Text style={styles.emptyStateText}>No staff members.</Text></View>
         ) : (
-          <View style={styles.staffGrid}>
-            {staffList.map((staff) => (
-              <View key={staff._id} style={styles.staffGridCard}>
-                <View style={[styles.staffGridAvatar, { backgroundColor: COLORS.accent }]}>
-                  <Text style={styles.staffInitial}>{staff.name[0]}</Text>
-                  <View style={styles.onlineStatusDot} />
-                </View>
-                <Text style={styles.staffGridName} numberOfLines={1}>{staff.name}</Text>
-                <Text style={styles.staffGridSub}>{staff.phone || staff.email}</Text>
-                
-                <View style={styles.staffGridActions}>
-                  <TouchableOpacity style={styles.staffGridIconBtn} onPress={() => { setSelectedStaff(staff); setDetailsModal(true); }}>
-                    <MaterialIcons name="insights" size={20} color={COLORS.secondary} />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.staffGridIconBtn} onPress={() => confirmRemove(staff._id as any, staff.name)}>
-                    <MaterialIcons name="person-remove" size={20} color={COLORS.danger} />
-                  </TouchableOpacity>
+          staffList.map((staff) => (
+            <TouchableOpacity key={staff._id} style={styles.staffListRow} onPress={() => { setSelectedStaff(staff); setDetailsModal(true); }}>
+              <View style={styles.staffListLeft}>
+                <View style={[styles.staffListAvatar, { backgroundColor: COLORS.accent }]}><Text style={{ color: COLORS.secondary, fontWeight: '900' }}>{staff.name[0]}</Text></View>
+                <View style={{ marginLeft: 12 }}>
+                  <Text style={styles.staffListName}>{staff.name}</Text>
+                  <Text style={styles.staffListSub}>{staff.phone || staff.email}</Text>
                 </View>
               </View>
-            ))}
-          </View>
+              <TouchableOpacity onPress={() => confirmRemove(staff._id as any, staff.name)}>
+                <MaterialIcons name="delete-outline" size={20} color={COLORS.danger} />
+              </TouchableOpacity>
+            </TouchableOpacity>
+          ))
         )}
       </ScrollView>
-
       <StaffDetailsModal visible={detailsModal} staff={selectedStaff} onClose={() => setDetailsModal(false)} />
+      <AddStaffModal visible={quickAddModal} onClose={() => setQuickAddModal(false)} />
     </View>
   );
 }
@@ -699,97 +603,116 @@ function StaffTab() {
 function PricingTab() {
   const pricing = useQuery(api.pricing.getPricing);
   const updatePricing = useMutation(api.pricing.updatePricing);
-  const [water, setWater] = useState('');
-  const [empty, setEmpty] = useState('');
-  const [express, setExpress] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  const handleSave = async (type: 'water' | 'bottle' | 'express') => {
-    const newVal = type === 'water' ? water : type === 'bottle' ? empty : express;
-    
-    // Strict Numeric Validation
-    if (newVal.trim() !== "" && isNaN(parseFloat(newVal))) {
-      Alert.alert('Invalid Input', 'Please enter a valid numeric amount.');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      await updatePricing({ 
-        waterPrice: type === 'water' ? (parseFloat(water) || pricing?.waterPrice || 0) : (pricing?.waterPrice || 0), 
-        bottlePrice: type === 'bottle' ? (parseFloat(empty) || pricing?.bottlePrice || 0) : (pricing?.bottlePrice || 0),
-        expressCharge: type === 'express' ? (parseFloat(express) || pricing?.expressCharge || 0) : (pricing?.expressCharge || 0),
-      });
-      Alert.alert('Success', 'Price updated successfully.');
-      if (type === 'water') setWater(''); 
-      else if (type === 'bottle') setEmpty('');
-      else setExpress('');
-    } catch (e) { 
-      Alert.alert('Error', (e as Error).message); 
-    } finally { 
-      setSaving(false); 
-    }
-  };
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-      <View style={pricingStyles.premiumPanel}>
-        <View style={pricingStyles.premiumCard}>
-          <View style={pricingStyles.cardIcon}><MaterialIcons name="water-drop" size={24} color={COLORS.primary} /></View>
-          <Text style={pricingStyles.panelTitle}>Water Can (20L)</Text>
-          <Text style={pricingStyles.currentValue}>₹{pricing?.waterPrice || 0}</Text>
-          <Text style={pricingStyles.label}>Update Rate</Text>
-          <TextInput 
-            style={pricingStyles.input} 
-            keyboardType="numeric" 
-            value={water} 
-            onChangeText={(t) => setWater(t.replace(/[^0-9.]/g, ''))} 
-            placeholder="0.00" 
-          />
-          <TouchableOpacity style={pricingStyles.actionBtn} onPress={() => handleSave('water')} disabled={saving}>
-            <Text style={pricingStyles.btnText}>{saving ? '...' : 'PUBLISH'}</Text>
-          </TouchableOpacity>
-        </View>
+    <ScrollView contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+      <View style={styles.sectionHeaderRow}><Text style={styles.sectionHeaderTitle}>Pricing Settings</Text></View>
+      <PricingItem 
+        icon="water-drop" 
+        title="Water Can (20L)" 
+        current={pricing?.waterPrice || 0} 
+        onUpdate={(val: number) => updatePricing({ waterPrice: val, bottlePrice: pricing?.bottlePrice || 0, expressCharge: pricing?.expressCharge || 0 })} 
+        color={COLORS.primary} 
+      />
+      <PricingItem 
+        icon="inventory" 
+        title="Empty Container" 
+        current={pricing?.bottlePrice || 0} 
+        onUpdate={(val: number) => updatePricing({ waterPrice: pricing?.waterPrice || 0, bottlePrice: val, expressCharge: pricing?.expressCharge || 0 })} 
+        color={COLORS.info} 
+      />
+      <PricingItem 
+        icon="speed" 
+        title="Express Delivery" 
+        current={pricing?.expressCharge || 0} 
+        onUpdate={(val: number) => updatePricing({ waterPrice: pricing?.waterPrice || 0, bottlePrice: pricing?.bottlePrice || 0, expressCharge: val })} 
+        color={COLORS.warning} 
+      />
+    </ScrollView>
+  );
+}
 
-        <View style={pricingStyles.premiumCard}>
-          <View style={[pricingStyles.cardIcon, { backgroundColor: '#F0F9FF' }]}><MaterialIcons name="inventory" size={24} color="#0369A1" /></View>
-          <Text style={pricingStyles.panelTitle}>Empty Container</Text>
-          <Text style={pricingStyles.currentValue}>₹{pricing?.bottlePrice || 0}</Text>
-          <Text style={pricingStyles.label}>Update Deposit</Text>
-          <TextInput 
-            style={pricingStyles.input} 
-            keyboardType="numeric" 
-            value={empty} 
-            onChangeText={(t) => setEmpty(t.replace(/[^0-9.]/g, ''))} 
-            placeholder="0.00" 
-          />
-          <TouchableOpacity style={[pricingStyles.actionBtn, { backgroundColor: COLORS.info }]} onPress={() => handleSave('bottle')} disabled={saving}>
-            <Text style={pricingStyles.btnText}>{saving ? '...' : 'UPDATE'}</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={[pricingStyles.premiumCard, { width: '100%', flexDirection: 'row', gap: 20 }]}>
-          <View style={{ flex: 1 }}>
-             <View style={[pricingStyles.cardIcon, { backgroundColor: '#FEF3C7', marginBottom: 8 }]}><MaterialIcons name="speed" size={24} color="#D97706" /></View>
-             <Text style={[pricingStyles.panelTitle, { textAlign: 'left' }]}>Express Delivery</Text>
-             <Text style={[pricingStyles.currentValue, { color: '#D97706', marginBottom: 0 }]}>₹{pricing?.expressCharge || 0}</Text>
-          </View>
-          <View style={{ flex: 1.5 }}>
-            <Text style={pricingStyles.label}>Update Charge</Text>
-            <TextInput 
-              style={pricingStyles.input} 
-              keyboardType="numeric" 
-              value={express} 
-              onChangeText={(t) => setExpress(t.replace(/[^0-9.]/g, ''))} 
-              placeholder="0.00" 
-            />
-            <TouchableOpacity style={[pricingStyles.actionBtn, { backgroundColor: '#D97706' }]} onPress={() => handleSave('express')} disabled={saving}>
-              <Text style={pricingStyles.btnText}>{saving ? '...' : 'SAVE CHARGE'}</Text>
-            </TouchableOpacity>
-          </View>
+function PricingItem({ icon, title, current, onUpdate, color }: any) {
+  const [val, setVal] = useState('');
+  const [loading, setLoading] = useState(false);
+  const handle = async () => {
+    const num = parseFloat(val);
+    if (isNaN(num)) return;
+    setLoading(true);
+    try { await onUpdate(num); setVal(''); Alert.alert("Success", "Price updated."); }
+    catch (e) { Alert.alert("Error", (e as Error).message); } finally { setLoading(false); }
+  };
+  return (
+    <View style={pricingStyles.card}>
+      <View style={pricingStyles.cardHeader}>
+        <View style={[pricingStyles.iconBox, { backgroundColor: color + '15' }]}><MaterialIcons name={icon} size={20} color={color} /></View>
+        <View style={{ flex: 1, marginLeft: 10 }}>
+          <Text style={pricingStyles.title}>{title}</Text>
+          <Text style={[pricingStyles.price, { color }]}>₹{current}</Text>
         </View>
       </View>
-    </ScrollView>
+      <View style={pricingStyles.inputRow}>
+        <TextInput style={pricingStyles.input} placeholder="New price..." keyboardType="numeric" value={val} onChangeText={setVal} />
+        <TouchableOpacity style={[pricingStyles.btn, { backgroundColor: color }]} onPress={handle} disabled={loading}>
+          {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={pricingStyles.btnText}>UPDATE</Text>}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WATER ANIMATED BACKGROUND
+// ─────────────────────────────────────────────────────────────────────────────
+function WaterAnimatedBackground() {
+  const anim1 = useRef(new Animated.Value(0)).current;
+  const anim2 = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim1, { toValue: 1, duration: 10000, useNativeDriver: true }),
+        Animated.timing(anim1, { toValue: 0, duration: 10000, useNativeDriver: true })
+      ])
+    ).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim2, { toValue: 1, duration: 14000, useNativeDriver: true }),
+        Animated.timing(anim2, { toValue: 0, duration: 14000, useNativeDriver: true })
+      ])
+    ).start();
+  }, []);
+
+  const transY1 = anim1.interpolate({ inputRange: [0, 1], outputRange: [0, 50] });
+  const transX1 = anim1.interpolate({ inputRange: [0, 1], outputRange: [0, 20] });
+  const scale1 = anim1.interpolate({ inputRange: [0, 1], outputRange: [1, 1.1] });
+  
+  const transY2 = anim2.interpolate({ inputRange: [0, 1], outputRange: [0, -60] });
+  const transX2 = anim2.interpolate({ inputRange: [0, 1], outputRange: [0, -30] });
+  const scale2 = anim2.interpolate({ inputRange: [0, 1], outputRange: [1, 1.15] });
+
+  return (
+    <View style={[StyleSheet.absoluteFillObject, { overflow: 'hidden', backgroundColor: '#F4FDFC' }]} pointerEvents="none">
+      <Animated.View style={{
+        position: 'absolute', width: 600, height: 600, borderRadius: 300, 
+        backgroundColor: COLORS.primary, opacity: 0.1,
+        top: -200, left: -150,
+        transform: [{ translateY: transY1 }, { translateX: transX1 }, { scale: scale1 }]
+      }} />
+      <Animated.View style={{
+        position: 'absolute', width: 500, height: 500, borderRadius: 250, 
+        backgroundColor: COLORS.info, opacity: 0.08,
+        bottom: -150, right: -150,
+        transform: [{ translateY: transY2 }, { translateX: transX2 }, { scale: scale2 }]
+      }} />
+      <Animated.View style={{
+        position: 'absolute', width: 400, height: 400, borderRadius: 200, 
+        backgroundColor: COLORS.secondary, opacity: 0.06,
+        top: '40%', left: '30%',
+        transform: [{ translateY: transY1 }, { translateX: transX2 }, { scale: scale2 }]
+      }} />
+    </View>
   );
 }
 
@@ -801,7 +724,6 @@ export default function AdminDashboard() {
   const { user } = useUser();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('orders');
-  const [quickAddModal, setQuickAddModal] = useState(false);
 
   const handleSignOut = () => {
     const doSignOut = async () => { await signOut(); router.replace('/home'); };
@@ -814,6 +736,7 @@ export default function AdminDashboard() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.secondary} />
+      <WaterAnimatedBackground />
       
       <View style={styles.stickyHeader}>
         <View style={styles.headerTop}>
@@ -865,14 +788,6 @@ export default function AdminDashboard() {
         {tab === 'staff' && <StaffTab />}
         {tab === 'pricing' && <PricingTab />}
       </View>
-
-      {tab === 'staff' && (
-        <TouchableOpacity style={styles.fab} onPress={() => setQuickAddModal(true)}>
-          <MaterialIcons name="add" size={28} color="#fff" />
-        </TouchableOpacity>
-      )}
-
-      <AddStaffModal visible={quickAddModal} onClose={() => setQuickAddModal(false)} />
     </SafeAreaView>
   );
 }
@@ -881,238 +796,113 @@ export default function AdminDashboard() {
 // STYLES
 // ─────────────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F8FAFC' },
-  stickyHeader: { backgroundColor: COLORS.secondary, paddingTop: scale(8), borderBottomLeftRadius: scale(24), borderBottomRightRadius: scale(24), shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 15, elevation: 12, zIndex: 100 },
-  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: scale(20), paddingVertical: scale(14) },
-  homeBtn: { width: scale(38), height: scale(38), borderRadius: scale(11), backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
-  brandBox: { flex: 1, gap: 0, alignItems: 'center' },
-  brandTitle: { fontSize: scale(19), fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
-  brandBadge: { fontSize: scale(9), color: 'rgba(255,255,255,0.8)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, marginTop: -2 },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: scale(14) },
-  iconAction: { width: scale(40), height: scale(40), borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
-  notificationBadge: { position: 'absolute', top: scale(10), right: scale(10), width: scale(8), height: scale(8), borderRadius: 4, backgroundColor: '#EF4444', borderWidth: 1.5, borderColor: COLORS.secondary },
-  profileBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.15)', padding: scale(6), paddingRight: scale(12), borderRadius: scale(14), gap: scale(8) },
-  avatarHolder: { width: scale(32), height: scale(32), borderRadius: 10, backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: scale(14), fontWeight: '900', color: COLORS.secondary },
-  adminMeta: { gap: 2 },
-  adminName: { fontSize: scale(12), color: '#fff', fontWeight: '800', maxWidth: scale(60) },
-  onlineDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#4ADE80', position: 'absolute', right: -4, top: 0 },
-  tabBar: { flexDirection: 'row', paddingHorizontal: scale(10), marginTop: scale(4) },
-  tabItem: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: scale(14), gap: scale(6), borderBottomWidth: 3, borderBottomColor: 'transparent' },
+  safeArea: { flex: 1, backgroundColor: '#FAFAFA' },
+  stickyHeader: { backgroundColor: COLORS.secondary, paddingTop: scale(4), borderBottomLeftRadius: 20, borderBottomRightRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 8, zIndex: 100 },
+  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: scale(16), paddingVertical: scale(10) },
+  homeBtn: { width: scale(32), height: scale(32), borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
+  brandBox: { flex: 1, alignItems: 'center' },
+  brandTitle: { fontSize: scale(16), fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
+  brandBadge: { fontSize: scale(7), color: 'rgba(255,255,255,0.7)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: scale(10) },
+  iconAction: { width: scale(32), height: scale(32), borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
+  profileBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', height: scale(32), paddingHorizontal: 4, borderRadius: 8, gap: 4 },
+  avatarHolder: { width: scale(24), height: scale(24), borderRadius: 6, backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: scale(11), fontWeight: '900', color: COLORS.secondary },
+  adminName: { fontSize: scale(10), color: '#fff', fontWeight: '800', maxWidth: scale(40) },
+  tabBar: { flexDirection: 'row', paddingHorizontal: scale(8), marginTop: 2 },
+  tabItem: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: scale(10), gap: 4, borderBottomWidth: 2, borderBottomColor: 'transparent' },
   tabItemActive: { borderBottomColor: COLORS.white },
-  tabLabel: { fontSize: scale(12), fontWeight: '700', color: 'rgba(255,255,255,0.6)' },
+  tabLabel: { fontSize: scale(10), fontWeight: '700', color: 'rgba(255,255,255,0.5)' },
   tabLabelActive: { color: COLORS.white, fontWeight: '900' },
-  tabContent: { flex: 1, paddingHorizontal: scale(16), paddingTop: scale(20) },
-  gridStats: { flexDirection: 'row', gap: scale(8), marginBottom: scale(20) },
-  statCard: { 
-    flex: 1,
-    backgroundColor: COLORS.white, 
-    borderRadius: scale(16), 
-    padding: scale(12), 
-    gap: 4,
-    borderWidth: 1, 
-    borderColor: '#F1F5F9',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  statCardActive: { borderColor: COLORS.secondary, borderWidth: 1.5 },
-  statIconBox: { width: scale(28), height: scale(28), borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  statNum: { fontSize: scale(16), fontWeight: '900', color: COLORS.text },
-  statLabel: { fontSize: scale(8), fontWeight: '800', color: COLORS.gray, textTransform: 'uppercase' },
-  orderCard: { backgroundColor: COLORS.white, borderRadius: scale(24), padding: scale(16), marginBottom: scale(14), shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 4, borderWidth: 1, borderColor: '#F1F5F9', overflow: 'hidden' },
-  orderCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  compactMain: { gap: 2 },
-  compactId: { fontSize: scale(11), fontWeight: '900', color: COLORS.gray },
-  compactName: { fontSize: scale(15), fontWeight: '800', color: COLORS.text, width: scale(120) },
-  compactRight: { flexDirection: 'row', alignItems: 'center', gap: scale(12) },
-  compactAmount: { fontSize: scale(16), fontWeight: '900', color: COLORS.secondary },
-  statusBadge: { paddingHorizontal: scale(10), paddingVertical: scale(6), borderRadius: 10 },
-  statusText: { fontSize: scale(9), fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
-  expandedContent: { marginTop: scale(20), paddingTop: scale(16), borderTopWidth: 1, borderTopColor: '#F8FAFC' },
-  addressRow: { flexDirection: 'row', alignItems: 'center', gap: scale(10), marginBottom: scale(16), backgroundColor: '#F8FAFC', padding: scale(14), borderRadius: 16 },
-  addressText: { fontSize: scale(12), color: COLORS.gray, flex: 1, fontWeight: '600' },
-  staffRow: { flexDirection: 'row', alignItems: 'center', gap: scale(8), marginBottom: scale(16), paddingHorizontal: 4 },
-  staffAvatarSmall: { width: scale(20), height: scale(20), borderRadius: 6, backgroundColor: COLORS.secondary, alignItems: 'center', justifyContent: 'center' },
-  staffLabel: { fontSize: scale(13), color: COLORS.secondary, fontWeight: '800' },
-  actionRow: { flexDirection: 'row', gap: scale(10), marginTop: scale(10) },
-  actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: scale(14), borderRadius: scale(16), gap: 8 },
-  actionBtnText: { fontSize: scale(13), fontWeight: '900', color: '#fff' },
-  staffGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: scale(12) },
-  staffGridCard: { width: '48.5%', backgroundColor: COLORS.white, borderRadius: scale(24), padding: scale(16), alignItems: 'center', borderWidth: 1, borderColor: '#F1F5F9', shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, elevation: 4 },
-  staffGridAvatar: { width: scale(64), height: scale(64), borderRadius: scale(22), alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  staffInitial: { fontSize: scale(24), fontWeight: '900', color: COLORS.secondary },
-  onlineStatusDot: { width: 14, height: 14, borderRadius: 7, backgroundColor: '#4ADE80', borderWidth: 3, borderColor: '#fff', position: 'absolute', bottom: 2, right: 2 },
-  staffGridName: { fontSize: scale(16), fontWeight: '900', color: COLORS.text, marginBottom: 4 },
-  staffGridSub: { fontSize: scale(11), color: COLORS.gray, fontWeight: '600', marginBottom: 16 },
-  staffGridActions: { flexDirection: 'row', gap: scale(14), borderTopWidth: 1, borderTopColor: '#F8FAFC', paddingTop: 14, width: '100%', justifyContent: 'center' },
-  staffGridIconBtn: { width: scale(36), height: scale(36), borderRadius: 12, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center' },
-  staffGridAction: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  staffGridActionText: { fontSize: scale(12), fontWeight: '800' },
-  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16, marginTop: 8 },
-  sectionHeaderTitle: { fontSize: scale(16), fontWeight: '900', color: COLORS.text },
-  detailsGrid: { flexDirection: 'row', gap: 10, marginBottom: 16 },
-  detailItem: { flex: 1, backgroundColor: '#F8FAFC', padding: 12, borderRadius: 14 },
-  detailLabel: { fontSize: scale(9), color: COLORS.gray, fontWeight: '800', textTransform: 'uppercase', marginBottom: 4 },
-  detailValue: { fontSize: scale(13), fontWeight: '800', color: COLORS.text },
-  fab: { position: 'absolute', bottom: scale(30), right: scale(20), width: scale(60), height: scale(60), borderRadius: 30, backgroundColor: COLORS.secondary, alignItems: 'center', justifyContent: 'center', elevation: 8, shadowColor: COLORS.secondary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 10 },
-  loadingBox: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  loadingText: { marginTop: 12, color: COLORS.secondary, fontWeight: '700' },
-  emptyStateBox: { alignItems: 'center', marginTop: scale(60), opacity: 0.5 },
-  emptyStateText: { fontSize: scale(16), fontWeight: '700', color: COLORS.gray, marginTop: scale(16) },
+  tabContent: { flex: 1, paddingHorizontal: scale(12), paddingTop: scale(14) },
+  
+  // Compact Stats (Image 1 Style)
+  gridStats: { flexDirection: 'row', gap: scale(6), marginBottom: scale(14) },
+  statCard: { flex: 1, backgroundColor: COLORS.white, borderRadius: 12, padding: scale(8), alignItems: 'center', borderWidth: 1, borderColor: '#F1F5F9', elevation: 2 },
+  statIconBox: { width: scale(22), height: scale(22), borderRadius: 6, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  statNum: { fontSize: scale(13), fontWeight: '900', color: COLORS.text },
+  statLabel: { fontSize: scale(7), fontWeight: '800', color: COLORS.gray, textTransform: 'uppercase' },
 
-  // Breakdown View
-  breakdownBox: { backgroundColor: '#F8FAFC', padding: scale(16), borderRadius: 16, marginBottom: 16, borderWidth: 1, borderColor: '#EDF2F7' },
-  breakdownRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  breakdownLabel: { fontSize: scale(12), color: COLORS.gray, fontWeight: '600' },
-  breakdownValue: { fontSize: scale(13), color: COLORS.text, fontWeight: '800' },
-});
+  // Order Card (Image 1 Style - "Rama")
+  orderCard: { backgroundColor: COLORS.white, borderRadius: 16, padding: 12, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, elevation: 2, borderWidth: 1, borderColor: '#F1F5F9' },
+  orderCardExpanded: { borderColor: COLORS.secondary },
+  orderCardHeader: { flexDirection: 'row', alignItems: 'center' },
+  compactId: { fontSize: scale(9), fontWeight: '800', color: COLORS.gray },
+  compactName: { fontSize: scale(13), fontWeight: '900', color: COLORS.text },
+  compactAmount: { fontSize: scale(14), fontWeight: '900', color: COLORS.secondary },
+  statusBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  statusText: { fontSize: scale(8), fontWeight: '900', textTransform: 'uppercase' },
+  
+  expandedContent: { marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F1F5F9' },
+  detailsGrid: { flexDirection: 'row', gap: 6, marginBottom: 10 },
+  detailItem: { flex: 1, backgroundColor: '#F9FAFB', padding: 8, borderRadius: 10 },
+  detailLabel: { fontSize: scale(7), color: COLORS.gray, fontWeight: '800', textTransform: 'uppercase' },
+  detailValue: { fontSize: scale(11), fontWeight: '800', color: COLORS.text },
+  breakdownBox: { backgroundColor: '#F9FAFB', padding: 8, borderRadius: 10, marginBottom: 10 },
+  totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  totalLabel: { fontWeight: '800', color: COLORS.gray, fontSize: scale(10) },
+  totalValue: { fontWeight: '900', color: COLORS.secondary, fontSize: scale(14) },
+  addressRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10, backgroundColor: '#F9FAFB', padding: 8, borderRadius: 10 },
+  addressText: { fontSize: scale(10), color: COLORS.gray, flex: 1, fontWeight: '600' },
+  actionRow: { flexDirection: 'row', gap: 6, marginTop: 4 },
+  actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 10, gap: 4 },
+  actionBtnText: { fontSize: scale(11), fontWeight: '900', color: '#fff' },
 
-const pricingStyles = StyleSheet.create({
-  premiumPanel: { flexDirection: 'row', flexWrap: 'wrap', gap: scale(14), justifyContent: 'space-between', paddingHorizontal: scale(2) },
-  premiumCard: { 
-    width: '48%',
-    backgroundColor: COLORS.white, 
-    borderRadius: scale(24), 
-    padding: scale(16), 
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-    alignItems: 'center'
-  },
-  cardIcon: { width: scale(40), height: scale(40), borderRadius: 12, backgroundColor: COLORS.accent, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  panelTitle: { fontSize: scale(13), fontWeight: '800', color: COLORS.text, marginBottom: 2, textAlign: 'center' },
-  currentValue: { fontSize: scale(22), fontWeight: '900', color: COLORS.secondary, marginBottom: 12 },
-  label: { fontSize: scale(9), fontWeight: '800', color: COLORS.gray, textTransform: 'uppercase', letterSpacing: 0.5, alignSelf: 'flex-start', marginBottom: 4, marginLeft: 2 },
-  input: { width: '100%', backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#F1F5F9', borderRadius: 12, padding: scale(10), fontSize: scale(14), fontWeight: '700', color: COLORS.text, marginBottom: 12 },
-  actionBtn: { width: '100%', height: scale(42), backgroundColor: COLORS.secondary, borderRadius: 12, alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.secondary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1 },
-  btnText: { fontSize: scale(11), fontWeight: '900', color: '#fff', letterSpacing: 0.5 },
+  // Staff List (Image 3 Style)
+  sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  sectionHeaderTitle: { fontSize: scale(14), fontWeight: '900', color: COLORS.text },
+  staffListRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, backgroundColor: '#fff', borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: '#F1F5F9' },
+  staffListLeft: { flexDirection: 'row', alignItems: 'center' },
+  staffListAvatar: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  staffListName: { fontSize: scale(13), fontWeight: '800', color: COLORS.text },
+  staffListSub: { fontSize: scale(9), color: COLORS.gray },
+
+  fab: { position: 'absolute', bottom: 20, right: 16, width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.secondary, alignItems: 'center', justifyContent: 'center', elevation: 4 },
+  emptyStateBox: { alignItems: 'center', marginTop: 40, opacity: 0.5 },
+  emptyStateText: { fontSize: scale(14), fontWeight: '700', color: COLORS.gray },
+  
+  // Missing pieces for Admin Nav
+  notificationBadge: { position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.danger, borderWidth: 1.5, borderColor: COLORS.secondary },
+  adminMeta: { marginLeft: 8, justifyContent: 'center' },
+  onlineDot: { position: 'absolute', bottom: -2, right: -2, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.success, borderWidth: 1.5, borderColor: COLORS.secondary },
+  
+  // Helpers
+  loadingBox: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FAFAFA' },
+  loadingText: { marginTop: 12, fontSize: scale(12), color: COLORS.gray, fontWeight: '600' },
+  statCardActive: { borderColor: COLORS.secondary, backgroundColor: COLORS.accent },
 });
 
 const modalStyles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.7)', justifyContent: 'center', alignItems: 'center', padding: scale(20) },
-  sheet: { 
-    backgroundColor: COLORS.white, 
-    borderRadius: scale(28), 
-    padding: scale(24), 
-    width: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 20,
-    overflow: 'hidden'
-  },
-  header: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    marginBottom: scale(20), 
-    paddingBottom: scale(14), 
-    borderBottomWidth: 1, 
-    borderBottomColor: '#F1F5F9' 
-  },
-  title: { fontSize: scale(22), fontWeight: '900', color: COLORS.secondary, letterSpacing: -0.5 },
-  staffRow: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingVertical: scale(18), 
-    borderBottomWidth: 1, 
-    borderBottomColor: '#F8FAFC', 
-    gap: scale(16) 
-  },
-  staffAvatar: { 
-    width: scale(52), 
-    height: scale(52), 
-    borderRadius: scale(18), 
-    backgroundColor: COLORS.primary, 
-    alignItems: 'center', 
-    justifyContent: 'center',
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-  },
-  staffName: { fontSize: scale(17), fontWeight: '800', color: COLORS.text },
-  staffPhone: { fontSize: scale(14), color: COLORS.gray, marginTop: 3 },
-  label: { 
-    fontSize: scale(12), 
-    fontWeight: '800', 
-    color: COLORS.secondary, 
-    marginBottom: scale(10), 
-    marginTop: scale(24), 
-    textTransform: 'uppercase',
-    letterSpacing: 1
-  },
-  input: { 
-    borderWidth: 2, 
-    borderColor: '#F1F5F9', 
-    borderRadius: scale(18), 
-    padding: scale(18), 
-    fontSize: scale(16), 
-    fontWeight: '700', 
-    color: COLORS.text, 
-    backgroundColor: '#F8FAFC' 
-  },
-  generateBtn: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    backgroundColor: COLORS.secondary, 
-    height: scale(60), 
-    borderRadius: scale(20), 
-    marginTop: scale(28),
-    shadowColor: COLORS.secondary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 5
-  },
-  generateBtnText: { fontSize: scale(15), fontWeight: '900', color: '#fff', letterSpacing: 1.5 },
-  inviteBox: { 
-    marginTop: scale(28), 
-    borderWidth: 2, 
-    borderColor: COLORS.primary, 
-    borderRadius: scale(24), 
-    borderStyle: 'dashed', 
-    padding: scale(24), 
-    backgroundColor: '#F0FDF4' 
-  },
-  codeRow: { flexDirection: 'row', alignItems: 'center', gap: scale(14), marginBottom: scale(20) },
-  codeText: { fontSize: scale(26), fontWeight: '900', color: COLORS.secondary, letterSpacing: 6 },
-  invitePreview: { 
-    fontSize: scale(13), 
-    color: '#475569', 
-    lineHeight: scale(24), 
-    backgroundColor: '#fff', 
-    borderRadius: scale(16), 
-    padding: scale(20), 
-    marginBottom: scale(20), 
-    borderWidth: 1, 
-    borderColor: '#E2E8F0' 
-  },
-  shareRow: { flexDirection: 'row', gap: scale(14), marginBottom: scale(20) },
-  shareBtn: { 
-    flex: 1, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    paddingVertical: scale(16), 
-    backgroundColor: '#fff', 
-    borderRadius: scale(20), 
-    gap: scale(10), 
-    borderWidth: 2, 
-    borderColor: COLORS.primary 
-  },
-  shareBtnText: { fontSize: scale(15), fontWeight: '800', color: COLORS.secondary },
-  noteBox: { flexDirection: 'row', gap: scale(12), backgroundColor: '#E0F2FE', padding: scale(18), borderRadius: scale(20), borderWidth: 1, borderColor: '#BAE6FD' },
-  noteText: { flex: 1, fontSize: scale(12), color: '#0369A1', fontWeight: '700', lineHeight: scale(20) },
-  emptyBox: { alignItems: 'center', paddingVertical: scale(50) },
-  emptyText: { fontSize: scale(16), color: COLORS.gray, marginTop: scale(14), fontWeight: '700' },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
+  sheet: { backgroundColor: '#fff', borderRadius: 20, padding: 20, width: '90%', maxWidth: scale(320), shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  title: { fontSize: scale(15), fontWeight: '900', color: COLORS.text },
+  label: { fontSize: scale(8), fontWeight: '800', color: COLORS.secondary, textTransform: 'uppercase', marginBottom: 4, letterSpacing: 0.5 },
+  input: { backgroundColor: '#F9FAFB', borderRadius: 12, padding: 10, fontSize: scale(12), color: COLORS.text, marginBottom: 14, borderWidth: 1, borderColor: '#F1F5F9' },
+  generateBtn: { backgroundColor: COLORS.secondary, borderRadius: 12, paddingVertical: 12, alignItems: 'center', marginTop: 6 },
+  generateBtnText: { color: '#fff', fontSize: scale(11), fontWeight: '900', letterSpacing: 0.5 },
+  inviteBox: { backgroundColor: '#fff', padding: 8, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: COLORS.secondary, borderStyle: 'dashed' },
+  codeText: { fontSize: scale(15), fontWeight: '900', color: COLORS.secondary, letterSpacing: 2 },
+  shareBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 10, gap: 6 },
+  shareBtnText: { fontSize: scale(10), fontWeight: '900' },
+  
+  // Compatibility for older modals
+  emptyBox: { alignItems: 'center', paddingVertical: 30 },
+  emptyText: { fontSize: scale(12), color: COLORS.gray, marginTop: 10, fontWeight: '700', textAlign: 'center' },
+  staffRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  staffAvatar: { width: 36, height: 36, borderRadius: 12, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
+  staffName: { fontSize: scale(13), fontWeight: '800', color: COLORS.text },
+  staffPhone: { fontSize: scale(11), color: COLORS.gray },
+});
+
+const pricingStyles = StyleSheet.create({
+  card: { backgroundColor: '#fff', borderRadius: 16, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: '#F1F5F9' },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  iconBox: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: scale(10), fontWeight: '800', color: COLORS.gray, textTransform: 'uppercase' },
+  price: { fontSize: scale(14), fontWeight: '900' },
+  inputRow: { flexDirection: 'row', gap: 8 },
+  input: { flex: 1, backgroundColor: '#F9FAFB', borderRadius: 10, paddingHorizontal: 10, fontSize: scale(11), borderWidth: 1, borderColor: '#F1F5F9' },
+  btn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10, justifyContent: 'center' },
+  btnText: { color: '#fff', fontSize: scale(9), fontWeight: '900' },
 });
