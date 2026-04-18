@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, SafeAreaView, Platform, StatusBar, Modal, FlatList, Animated, Dimensions, TextInput, Alert, Image as RNImage } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, SafeAreaView, Platform, StatusBar, Modal, FlatList, Animated, Dimensions, TextInput, Alert, Image as RNImage, ImageBackground } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useClerk, useUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
@@ -20,11 +20,39 @@ const WATER_IMAGES = [
   require('@/assets/images/water_bg_4.jpg'),
 ];
 
-const WATER_WORDS = [
-  "PURITY",
-  "HEALTH",
-  "CLARITY",
-  "WELLNESS"
+const BANNER_SLIDES = [
+  {
+    tag: 'CERTIFIED PURITY',
+    tagIcon: 'verified' as const,
+    title: 'PURE HYDRATION.\nPURE LIFE.',
+    subtitle: 'Premium demineralized water\ndelivered to you.',
+    image: require('@/assets/images/banner.png'),
+    bg: 'rgba(15,100,86,0.60)',
+  },
+  {
+    tag: 'WORKING HOURS',
+    tagIcon: 'schedule' as const,
+    title: '6 AM TO 8 PM',
+    subtitle: 'We deliver your fresh water\nEvery single day.',
+    image: require('@/assets/images/water_can.png'),
+    bg: 'rgba(6,78,59,0.62)',
+  },
+  {
+    tag: 'TRUSTED QUALITY',
+    tagIcon: 'health-and-safety' as const,
+    title: 'PURE CLARITY.\nPURE WELLNESS.',
+    subtitle: 'OTP-verified delivery.\nZero compromise on quality.',
+    image: require('@/assets/images/water_can.png'),
+    bg: 'rgba(5,60,70,0.62)',
+  },
+  {
+    tag: 'REAL-TIME TRACKING',
+    tagIcon: 'local-shipping' as const,
+    title: 'TRACK YOUR\nORDER LIVE.',
+    subtitle: 'Know exactly when your\nwater can arrives.',
+    image: require('@/assets/images/water_can.png'),
+    bg: 'rgba(2,48,71,0.62)',
+  },
 ];
 
 // Theme Colors
@@ -57,28 +85,8 @@ export default function HomeScreen() {
   const [selectedPincodeLabel, setSelectedPincodeLabel] = useState<string | null>(null);
   const [selectedPincodeValue, setSelectedPincodeValue] = useState<string | null>(null);
   const [containerWidth, setContainerWidth] = useState(width - scale(20));
-  const [activeSlide, setActiveSlide] = useState(0);
-  const scrollViewRef = useRef<ScrollView>(null);
-
   const goHome = () => router.replace('/home');
 
-  // Auto-scroll Carousel
-  useEffect(() => {
-    // Only auto-scroll if container has measured its width successfully
-    if (containerWidth <= 0) return;
-    
-    const interval = setInterval(() => {
-      setActiveSlide((prev) => {
-        const nextSlide = (prev + 1) % 2; // We currently have 2 slides
-        scrollViewRef.current?.scrollTo({ 
-          x: nextSlide * containerWidth, 
-          animated: true 
-        });
-        return nextSlide;
-      });
-    }, 3500); // changes slide every 3.5 seconds
-    return () => clearInterval(interval);
-  }, [containerWidth]);
   
   // Sidebar State
   const [sidebarVisible, setSidebarVisible] = useState(false);
@@ -264,60 +272,33 @@ export default function HomeScreen() {
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.mainWrapper} onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}>
         
-        {/* Banner Carousel */}
-        <View style={{ marginBottom: scale(10) }}>
-          <ScrollView 
-            ref={scrollViewRef}
-            horizontal 
-            pagingEnabled 
-            showsHorizontalScrollIndicator={false} 
-            onMomentumScrollEnd={(e) => {
-              const slide = Math.round(e.nativeEvent.contentOffset.x / containerWidth);
-              setActiveSlide(slide);
-            }}
-          >
-          {/* Slide 1: Promotional Banner (Professional Redesign) */}
-          <View style={[styles.bannerCard, { width: containerWidth, marginBottom: 0 }]}>
-            <View style={styles.bannerContent}>
-              <View style={styles.bannerTextContainer}>
-                <View style={styles.bannerTagRow}>
-                   <MaterialIcons name="verified" size={10} color={COLORS.white} style={{ marginRight: 4 }} />
-                   <Text style={styles.bannerTagline}>CERTIFIED PURITY</Text>
+        {/* Banner — Fade animation only, 4 slides */}
+        <View style={[styles.bannerCard, { marginBottom: scale(10) }]}>
+          <Animated.View style={[{ flex: 1 }, { opacity: bannerFadeAnim }]}>
+            <ImageBackground
+              source={WATER_IMAGES[bannerIndex]}
+              style={{ flex: 1 }}
+              imageStyle={{ borderRadius: scale(16) }}
+            >
+              <View style={[styles.bannerContent, { backgroundColor: BANNER_SLIDES[bannerIndex].bg }]}>
+                <View style={styles.bannerTextContainer}>
+                  <View style={[styles.bannerTagRow, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
+                    <MaterialIcons name={BANNER_SLIDES[bannerIndex].tagIcon} size={10} color={COLORS.white} style={{ marginRight: 4 }} />
+                    <Text style={styles.bannerTagline}>{BANNER_SLIDES[bannerIndex].tag}</Text>
+                  </View>
+                  <Text style={styles.bannerTitle}>{BANNER_SLIDES[bannerIndex].title}</Text>
+                  <Text style={styles.bannerSubtitle}>{BANNER_SLIDES[bannerIndex].subtitle}</Text>
                 </View>
-                <Text style={styles.bannerTitle}>PURE HYDRATION.{"\n"}PURE LIFE.</Text>
-                <Text style={styles.bannerSubtitle}>Premium demineralized water delivered to you.</Text>
-              </View>
-              <View style={styles.bannerImageWrapper}>
-                <Image 
-                  source={require('@/assets/images/banner.png')} 
-                  style={styles.bannerImage}
-                  contentFit="contain"
-                />
-              </View>
-            </View>
-          </View>
-
-          {/* Slide 2: Daily Working Hours (Professional Redesign) */}
-          <View style={[styles.bannerCard, { width: containerWidth, marginBottom: 0 }]}>
-            <View style={[styles.bannerContent, { backgroundColor: '#064E3B' }]}>
-              <View style={styles.bannerTextContainer}>
-                <View style={[styles.bannerTagRow, { backgroundColor: 'rgba(46,196,182,0.3)' }]}>
-                   <MaterialIcons name="schedule" size={10} color={COLORS.white} style={{ marginRight: 4 }} />
-                   <Text style={styles.bannerTagline}>WORKING HOURS</Text>
+                <View style={styles.bannerImageWrapper}>
+                  <Image
+                    source={BANNER_SLIDES[bannerIndex].image}
+                    style={bannerIndex === 0 ? styles.bannerImage : styles.bannerImageSlide2}
+                    contentFit="contain"
+                  />
                 </View>
-                <Text style={styles.bannerTitle}>6 AM TO 8 PM</Text>
-                <Text style={styles.bannerSubtitle}>We deliver your fresh water{"\n"}Every single day.</Text>
               </View>
-              <View style={styles.bannerImageWrapper}>
-                <Image 
-                  source={require('@/assets/images/water_can.png')} 
-                  style={styles.bannerImageSlide2}
-                  contentFit="contain"
-                />
-              </View>
-            </View>
-          </View>
-          </ScrollView>
+            </ImageBackground>
+          </Animated.View>
         </View>
 
         {/* Order Section - Soft Rounded Card */}
@@ -530,7 +511,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accent,
   },
   header: {
-    height: scale(48),
+    height: scale(42),
     backgroundColor: COLORS.secondary,
     flexDirection: 'row',
     alignItems: 'center',
@@ -568,7 +549,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(15),
     paddingVertical: scale(2),
     backgroundColor: 'transparent',
-    marginTop: scale(2),
+    marginTop: scale(0),
   },
   locationInfo: {
     flex: 1,
@@ -588,7 +569,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: scale(8),
+    padding: scale(6),
     paddingBottom: 2,
   },
   mainWrapper: {
@@ -597,10 +578,10 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   bannerCard: {
-    borderRadius: scale(16),
+    borderRadius: scale(12),
     overflow: 'hidden',
-    marginBottom: scale(12),
-    height: scale(150),
+    marginBottom: scale(4),
+    height: scale(90),
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
@@ -615,7 +596,7 @@ const styles = StyleSheet.create({
   },
   bannerTextContainer: {
     flex: 1.5,
-    padding: scale(18),
+    padding: scale(12),
     justifyContent: 'center',
     zIndex: 10,
   },
@@ -623,11 +604,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.25)',
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
     alignSelf: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 5,
   },
   bannerTagline: {
     fontSize: scale(9.5),
@@ -636,18 +617,18 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   bannerTitle: {
-    fontSize: scale(20),
+    fontSize: scale(13),
     fontWeight: '900',
     color: COLORS.white,
-    marginBottom: 4,
-    lineHeight: scale(24),
+    marginBottom: 1,
+    lineHeight: scale(16),
   },
   bannerSubtitle: {
-    fontSize: scale(11),
+    fontSize: scale(9),
     color: COLORS.white,
     opacity: 0.9,
     fontWeight: '600',
-    lineHeight: scale(15),
+    lineHeight: scale(12),
   },
   bannerImageWrapper: {
     flex: 1,
@@ -685,10 +666,10 @@ const styles = StyleSheet.create({
   },
   orderSection: {
     backgroundColor: COLORS.white,
-    borderRadius: scale(12),
-    padding: scale(8),
+    borderRadius: scale(10),
+    padding: scale(4),
     alignItems: 'center',
-    marginBottom: scale(10),
+    marginBottom: scale(4),
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -698,7 +679,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: scale(6),
+    marginBottom: scale(2),
     width: '100%',
     justifyContent: 'center',
   },
@@ -708,25 +689,25 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   productImage: {
-    width: scale(70),
-    height: scale(70),
-    marginBottom: scale(6),
+    width: scale(40),
+    height: scale(40),
+    marginBottom: scale(2),
   },
   stepperContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
-    borderRadius: scale(12),
-    padding: scale(4),
-    marginBottom: scale(10),
+    borderRadius: scale(8),
+    padding: scale(2),
+    marginBottom: scale(4),
     borderWidth: 1,
     borderColor: '#F1F5F9',
   },
   stepperBtn: {
     backgroundColor: COLORS.white,
-    width: scale(36),
-    height: scale(36),
-    borderRadius: scale(8),
+    width: scale(26),
+    height: scale(26),
+    borderRadius: scale(6),
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 2,
@@ -736,11 +717,11 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   quantityInput: {
-    fontSize: scale(18),
+    fontSize: scale(14),
     fontWeight: '900',
     color: COLORS.secondary,
-    width: scale(60),
-    minHeight: scale(40),
+    width: scale(40),
+    minHeight: scale(26),
     textAlign: 'center',
     padding: 0,
     marginHorizontal: scale(4),
@@ -758,15 +739,15 @@ const styles = StyleSheet.create({
   dropdown: {
     backgroundColor: COLORS.white,
     width: '100%',
-    height: 42,
-    borderRadius: 12,
+    height: 32,
+    borderRadius: 8,
     borderWidth: 2,
     borderColor: COLORS.accent,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    marginBottom: 10,
+    paddingHorizontal: 10,
+    marginBottom: 4,
   },
   dropdownText: {
     fontSize: 15,
@@ -868,7 +849,7 @@ const styles = StyleSheet.create({
   },
   checkboxWrapper: {
     width: '100%',
-    marginBottom: 12,
+    marginBottom: 4,
   },
   checkboxContainer: {
     flexDirection: 'row',
@@ -895,8 +876,8 @@ const styles = StyleSheet.create({
   priceContainer: {
     width: '100%',
     backgroundColor: COLORS.accent,
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: 8,
+    padding: 6,
   },
   priceRow: {
     flexDirection: 'row',
@@ -915,8 +896,8 @@ const styles = StyleSheet.create({
   summaryTotalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 6,
-    paddingTop: 8,
+    marginTop: 4,
+    paddingTop: 4,
     borderTopWidth: 1,
     borderTopColor: 'rgba(46, 196, 182, 0.2)',
   },
@@ -932,10 +913,10 @@ const styles = StyleSheet.create({
   },
   buyBtn: {
     backgroundColor: COLORS.primary,
-    height: scale(40),
+    height: scale(32),
     width: '75%',
     alignSelf: 'center',
-    borderRadius: scale(20),
+    borderRadius: scale(16),
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
@@ -944,7 +925,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    marginTop: scale(15),
+    marginTop: scale(5),
   },
   buyBtnText: {
     color: COLORS.white,

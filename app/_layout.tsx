@@ -130,13 +130,13 @@ function InitialLayout() {
 
     try {
       // ── 1. SEGMENTS SAFETY ──
-      const safeSegments = segments || [];
+      const safeSegments = (segments as string[]) || [];
       const inAuthGroup = safeSegments[0] === '(auth)';
       const inAdminGroup = safeSegments[0] === '(admin)';
       const inStaffGroup = safeSegments[0] === '(staff)';
       const onVerifyInvite = safeSegments[0] === 'verify-invite';
       const onHomePage = safeSegments[0] === 'home';
-      const isRoot = safeSegments.length === 0 || (safeSegments.length === 1 && safeSegments[0] === 'index');
+      const isRoot = safeSegments.length === 0;
 
       // ── 2. NOT SIGNED IN ──
       if (!isSignedIn) {

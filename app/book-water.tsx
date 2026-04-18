@@ -1,8 +1,23 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, SafeAreaView, Platform, StatusBar, Dimensions } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, SafeAreaView, Platform, StatusBar, Dimensions, Animated, ImageBackground } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import { Image } from 'expo-image';
+
+const WATER_IMAGES = [
+  require('@/assets/images/water_bg_1.jpg'),
+  require('@/assets/images/water_bg_2.jpg'),
+  require('@/assets/images/water_bg_3.jpg'),
+  require('@/assets/images/water_bg_4.jpg'),
+];
+
+const WATER_WORDS = ['HEALTHY CHOICE.', 'PURE HYDRATION.', 'STAY REFRESHED.', 'FEEL THE PURITY.'];
+const BANNER_SUBS = [
+  'Demineralized water processed with advanced filtration for your wellness.',
+  'Premium 20L cans delivered fresh to your doorstep every day.',
+  'Pure water. Verified delivery. Zero compromise on quality.',
+  '99.9% purity guaranteed. Trusted by thousands in Tirunelveli.',
+];
 
 const COLORS = {
   primary: '#2EC4B6',
@@ -16,6 +31,28 @@ const COLORS = {
 
 export default function BookWaterScreen() {
   const router = useRouter();
+
+  // Banner animation (same as about.tsx)
+  const [bannerIndex, setBannerIndex] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 1500,
+        useNativeDriver: true,
+      }).start(() => {
+        setBannerIndex(prev => (prev + 1) % WATER_IMAGES.length);
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const [qty, setQty] = useState(1);
   const [noBottleReturn, setNoBottleReturn] = useState(false);
@@ -54,17 +91,25 @@ export default function BookWaterScreen() {
 
       <ScrollView contentContainerStyle={styles.container}>
         
-        {/* Wellness Banner */}
-        <View style={styles.banner}>
-          <View style={styles.bannerContent}>
-            <Text style={styles.bannerTitle}>HEALTHY CHOICE.</Text>
-            <Text style={styles.bannerSubtitle}>Demineralized water processed with advanced filtration for your wellness.</Text>
-             <TouchableOpacity style={styles.statsBadge}>
-                <FontAwesome5 name="medal" size={12} color={COLORS.white} />
-                <Text style={styles.statsBadgeText}>99.9% Purity</Text>
-             </TouchableOpacity>
-          </View>
-        </View>
+        {/* Wellness Banner - Animated */}
+        <Animated.View style={[styles.bannerAnimated, { opacity: fadeAnim }]}>
+          <ImageBackground
+            source={WATER_IMAGES[bannerIndex]}
+            style={styles.banner}
+            imageStyle={styles.bannerImageStyle}
+          >
+            <View style={styles.bannerOverlay}>
+              <View style={styles.bannerContent}>
+                <Text style={styles.bannerTitle}>{WATER_WORDS[bannerIndex]}</Text>
+                <Text style={styles.bannerSubtitle}>{BANNER_SUBS[bannerIndex]}</Text>
+                <TouchableOpacity style={styles.statsBadge}>
+                  <FontAwesome5 name="medal" size={12} color={COLORS.white} />
+                  <Text style={styles.statsBadgeText}>99.9% Purity</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ImageBackground>
+        </Animated.View>
 
         {/* Dynamic Booking Card */}
         <View style={styles.mainCard}>
@@ -195,15 +240,30 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingBottom: 40,
   },
+  bannerAnimated: {
+    borderRadius: 36,
+    marginBottom: 24,
+    overflow: 'hidden',
+    elevation: 4,
+    shadowColor: COLORS.secondary,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+  },
   banner: {
     width: '100%',
     height: 180,
-    backgroundColor: COLORS.secondary,
     borderRadius: 36,
-    marginBottom: 24,
-    padding: 24,
+    overflow: 'hidden',
     justifyContent: 'center',
-    elevation: 4,
+  },
+  bannerImageStyle: {
+    borderRadius: 36,
+  },
+  bannerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 157, 138, 0.52)',
+    justifyContent: 'center',
+    padding: 24,
   },
   bannerContent: {
     width: '80%',
