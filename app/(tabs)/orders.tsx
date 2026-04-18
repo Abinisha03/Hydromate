@@ -171,116 +171,121 @@ export default function OrdersScreen() {
 
   const getStatusColor = (status: string) => {
     switch (status.toUpperCase()) {
-      case 'PENDING': return COLORS.primary;
-      case 'CANCEL': case 'REJECTED': return COLORS.danger;
-      case 'DELIVERED': return '#22C55E';
-      case 'APPROVED': return '#0EA5E9';
-      case 'ASSIGNED': return '#8B5CF6';
-      case 'ACCEPTED': return '#8B5CF6';
-      case 'OUT FOR DELIVERY': return '#F59E0B';
-      default: return COLORS.text;
+      case 'PENDING': return '#64748B'; // Slate
+      case 'CANCEL': case 'REJECTED': return '#EF4444'; // Red
+      case 'DELIVERED': return '#10B981'; // Emerald
+      case 'APPROVED': return '#0EA5E9'; // Sky
+      case 'ASSIGNED': return '#0F9D8A'; // Teal
+      case 'ACCEPTED': return '#0F9D8A'; // Teal
+      case 'OUT FOR DELIVERY': return '#F59E0B'; // Amber
+      default: return '#1E293B';
+    }
+  };
+
+  const getStatusBg = (status: string) => {
+    switch (status.toUpperCase()) {
+      case 'PENDING': return '#F1F5F9';
+      case 'CANCEL': case 'REJECTED': return '#FEF2F2';
+      case 'DELIVERED': return '#ECFDF5';
+      case 'APPROVED': return '#F0F9FF';
+      case 'ASSIGNED': case 'ACCEPTED': return '#F0FDF4';
+      case 'OUT FOR DELIVERY': return '#FFFBEB';
+      default: return '#F1F5F9';
     }
   };
 
   // ── Order card ──────────────────────────────────────────────────────────
-  const renderOrderItem = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      style={styles.orderCard}
-      onPress={() => router.push({ pathname: '/order-details', params: { id: item._id } })}
-      activeOpacity={0.85}
-    >
-      {/* Action buttons — only for PENDING */}
-      {item.status.toUpperCase() === 'PENDING' && (
-        <View style={styles.actionRow}>
-          {/* Cancel */}
+  // ── Order card ──────────────────────────────────────────────────────────
+  const renderOrderItem = ({ item }: { item: any }) => {
+    const status = item.status.toUpperCase();
+    
+    return (
+      <TouchableOpacity
+        style={styles.orderCard}
+        onPress={() => router.push({ pathname: '/order-details', params: { id: item._id } })}
+        activeOpacity={0.85}
+      >
+        {/* Assigned Partner - COMPACT TEAL RE-DESIGN (Traditional Layout structure) */}
+        {['ASSIGNED', 'ACCEPTED', 'OUT FOR DELIVERY'].includes(status) && item.assignedStaffName && (
+          <View style={styles.partnerSection}>
+             <Text style={styles.partnerHeader}>DELIVERY PARTNER ASSIGNED</Text>
+             <View style={styles.partnerRow}>
+                <View style={styles.partnerAvatar}>
+                   <MaterialIcons name="person" size={16} color={COLORS.secondary} />
+                </View>
+                <View style={{ flex: 1, marginLeft: 8 }}>
+                   <Text style={styles.partnerName}>{item.assignedStaffName}</Text>
+                   <Text style={styles.partnerPhone}>{item.supplierPhone || 'No contact'}</Text>
+                </View>
+                {item.supplierPhone && (
+                  <TouchableOpacity 
+                    onPress={() => import('react-native').then(m => m.Linking.openURL(`tel:${item.supplierPhone}`))} 
+                    style={styles.callBtn}
+                  >
+                    <MaterialIcons name="phone" size={12} color={COLORS.white} />
+                    <Text style={styles.callBtnText}>Call</Text>
+                  </TouchableOpacity>
+                )}
+             </View>
+          </View>
+        )}
+
+        {/* Traditional List Layout (Same as image but SMALL) */}
+        <View style={styles.detailsList}>
+          <View style={styles.orderRowCompact}>
+            <Text style={styles.orderLabel}>Order Id</Text>
+            <Text style={styles.colon}>:</Text>
+            <Text style={styles.orderValue}>{item.orderId}</Text>
+          </View>
+
+          <View style={styles.orderRowCompact}>
+            <Text style={styles.orderLabel}>Order Status</Text>
+            <Text style={styles.colon}>:</Text>
+            <Text style={[styles.orderValue, { color: getStatusColor(status) }]}>{item.status}</Text>
+          </View>
+
+          <View style={styles.orderRowCompact}>
+            <Text style={styles.orderLabel}>Payment mode</Text>
+            <Text style={styles.colon}>:</Text>
+            <Text style={styles.orderValue}>{item.paymentMode}</Text>
+          </View>
+
+          <View style={styles.orderRowCompact}>
+            <Text style={styles.orderLabel}>Quantity</Text>
+            <Text style={styles.colon}>:</Text>
+            <Text style={styles.orderValue}>{item.quantity} can(s)</Text>
+          </View>
+
+          <View style={styles.orderRowCompact}>
+            <Text style={styles.orderLabel}>Total amount</Text>
+            <Text style={styles.colon}>:</Text>
+            <Text style={styles.orderValue}>₹{item.totalAmount}</Text>
+          </View>
+
+          <View style={styles.orderRowCompact}>
+            <Text style={styles.orderLabel}>Date</Text>
+            <Text style={styles.colon}>:</Text>
+            <Text style={styles.orderValue}>{item.date}</Text>
+          </View>
+
+          <View style={[styles.orderRowCompact, { marginBottom: 0 }]}>
+            <Text style={styles.orderLabel}>Pincode</Text>
+            <Text style={styles.colon}>:</Text>
+            <Text style={styles.orderValue} numberOfLines={1}>{item.pincode || '-'}</Text>
+          </View>
+        </View>
+
+        {status === 'PENDING' && (
           <TouchableOpacity
-            style={styles.cancelIconBtn}
+            style={styles.overlayCancelBtn}
             onPress={(e) => { e.stopPropagation(); handleCancelOrder(item._id); }}
           >
-            <MaterialIcons name="cancel" size={20} color={COLORS.white} />
+            <MaterialIcons name="close" size={14} color={COLORS.danger} />
           </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Top Banners */}
-      {item.status.toUpperCase() === 'APPROVED' && (
-        <View style={{ backgroundColor: '#F0F9FF', padding: 10, borderRadius: 10, marginBottom: 12, borderWidth: 1, borderColor: '#BAE6FD' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-            <MaterialIcons name="check-circle" size={16} color="#0284C7" style={{ marginRight: 6 }} />
-            <Text style={{ color: '#0369A1', fontSize: 13, fontWeight: '800' }}>Order Approved!</Text>
-          </View>
-          <Text style={{ color: '#0369A1', fontSize: 12, fontWeight: '600', paddingLeft: 22 }}>
-            Your order has been acknowledged. We will assign a delivery partner shortly.
-          </Text>
-        </View>
-      )}
-
-      {['ASSIGNED', 'ACCEPTED', 'OUT FOR DELIVERY'].includes(item.status.toUpperCase()) && item.assignedStaffName && (
-        <View style={{ backgroundColor: '#FAF5FF', padding: 12, borderRadius: 10, marginBottom: 12, borderWidth: 1, borderColor: '#E9D5FF' }}>
-          <Text style={{ fontSize: 11, fontWeight: '800', color: '#7E22CE', marginBottom: 6, letterSpacing: 0.5 }}>DELIVERY PARTNER ASSIGNED</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#E9D5FF', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
-              <MaterialIcons name="person" size={20} color="#9333EA" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '900', color: '#6B21A8' }}>{item.assignedStaffName}</Text>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: '#9333EA', marginTop: 2 }}>{item.supplierPhone || 'No contact found'}</Text>
-            </View>
-            {item.supplierPhone && (
-              <TouchableOpacity onPress={() => import('react-native').then(m => m.Linking.openURL(`tel:${item.supplierPhone}`))} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#9333EA', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, elevation: 2 }}>
-                <MaterialIcons name="phone" size={14} color="#FFF" style={{ marginRight: 6 }} />
-                <Text style={{ color: '#FFF', fontSize: 13, fontWeight: '800' }}>Call</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      )}
-
-      <View style={styles.orderRow}>
-        <Text style={styles.orderLabel}>Order Id</Text>
-        <Text style={styles.colon}>:</Text>
-        <Text style={styles.orderValue}>{item.orderId}</Text>
-      </View>
-
-      <View style={styles.orderRow}>
-        <Text style={styles.orderLabel}>Order Status</Text>
-        <Text style={styles.colon}>:</Text>
-        <Text style={[styles.orderValue, { color: getStatusColor(item.status) }]}>
-          {item.status}
-        </Text>
-      </View>
-
-      <View style={styles.orderRow}>
-        <Text style={styles.orderLabel}>Payment mode</Text>
-        <Text style={styles.colon}>:</Text>
-        <Text style={styles.orderValue}>{item.paymentMode}</Text>
-      </View>
-
-      <View style={styles.orderRow}>
-        <Text style={styles.orderLabel}>Quantity</Text>
-        <Text style={styles.colon}>:</Text>
-        <Text style={styles.orderValue}>{item.quantity} can(s)</Text>
-      </View>
-
-      <View style={styles.orderRow}>
-        <Text style={styles.orderLabel}>Total amount</Text>
-        <Text style={styles.colon}>:</Text>
-        <Text style={styles.orderValue}>₹{item.totalAmount}</Text>
-      </View>
-
-      <View style={styles.orderRow}>
-        <Text style={styles.orderLabel}>Date</Text>
-        <Text style={styles.colon}>:</Text>
-        <Text style={styles.orderValue}>{item.date}</Text>
-      </View>
-
-      <View style={[styles.orderRow, { marginBottom: 0 }]}>
-        <Text style={styles.orderLabel}>Pincode</Text>
-        <Text style={styles.colon}>:</Text>
-        <Text style={styles.orderValue} numberOfLines={2}>{item.pincode || '-'}</Text>
-      </View>
-    </TouchableOpacity>
-  );
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   // ── UI ──────────────────────────────────────────────────────────────────
   return (
@@ -509,49 +514,112 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 13, fontWeight: '800', letterSpacing: 0.5 },
   tabTextActive: { color: '#ffffff' },
   tabTextInactive: { color: COLORS.text },
-  listContent: { padding: 16, paddingTop: 0 },
+  listContent: { padding: 12, paddingTop: 0 },
   orderCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 10,
-    borderWidth: 1.5,
-    borderColor: COLORS.accent,
+    borderRadius: 14,
+    padding: 10,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
     elevation: 3,
-    shadowColor: COLORS.secondary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    position: 'relative',
   },
-  actionRow: {
+  partnerSection: {
+    backgroundColor: '#F0FDFA',
+    padding: 8,
+    borderRadius: 10,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+  },
+  partnerHeader: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    marginBottom: 4,
+    letterSpacing: 0.5,
+  },
+  partnerRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 8,
-    marginBottom: 10,
+    alignItems: 'center',
   },
-  editIconBtn: {
+  partnerAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: '#CCFBF1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  partnerName: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#0F766E',
+  },
+  partnerPhone: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: COLORS.secondary,
+  },
+  callBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.secondary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
   },
-  cancelIconBtn: {
+  callBtnText: {
+    color: COLORS.white,
+    fontSize: 10,
+    fontWeight: '800',
+    marginLeft: 4,
+  },
+  detailsList: {
+    gap: 1,
+  },
+  orderRowCompact: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.danger,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-    gap: 4,
+    paddingVertical: 1,
   },
-  actionBtnText: { color: COLORS.white, fontSize: 12, fontWeight: '800' },
-  orderRow: { flexDirection: 'row', marginBottom: 5, alignItems: 'center' },
-  orderLabel: { flex: 1.5, fontSize: 12, color: COLORS.secondary, fontWeight: '700' },
-  colon: { width: 15, fontSize: 12, color: COLORS.secondary, textAlign: 'center', fontWeight: '700' },
-  orderValue: { flex: 2, fontSize: 13, color: COLORS.text, fontWeight: '900', paddingLeft: 4 },
+  orderLabel: {
+    flex: 1.2,
+    fontSize: 10.5,
+    color: '#064E3B',
+    fontWeight: '800',
+  },
+  colon: {
+    width: 15,
+    fontSize: 10.5,
+    color: '#064E3B',
+    textAlign: 'center',
+  },
+  orderValue: {
+    flex: 2,
+    fontSize: 11.5,
+    color: COLORS.text,
+    fontWeight: '900',
+  },
+  overlayCancelBtn: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    backgroundColor: '#FFF',
+    borderWidth: 1.5,
+    borderColor: '#FEE2E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+  },
   successBanner: {
     backgroundColor: '#F0FDF9',
     borderRadius: 12,

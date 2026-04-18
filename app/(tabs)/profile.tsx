@@ -124,13 +124,11 @@ export default function ProfileScreen() {
           ) : (
             (addresses ?? []).map((addr) => (
               <View key={addr._id} style={[styles.addressCard, addr.isDefault && styles.defaultBorder]}>
-                {/* Card header with icon-only edit + delete */}
+                {/* Card header with icon-only edit + delete (Re-designed for professional look) */}
                 <View style={styles.addressHeader}>
                   <View style={styles.addressNameRow}>
-                    <MaterialIcons name="location-city" size={18} color={COLORS.primary} style={{ marginRight: 8 }} />
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
-                      <Text style={styles.addressNameText}>{addr.buildingName || 'Home'}</Text>
-                    </ScrollView>
+                    <MaterialIcons name="location-city" size={16} color={COLORS.secondary} style={{ marginRight: 6 }} />
+                    <Text style={styles.addressNameText} numberOfLines={1}>{addr.buildingName || 'Home'}</Text>
                     {addr.isDefault && (
                       <View style={styles.defaultBadge}>
                         <Text style={styles.defaultBadgeText}>PRIMARY</Text>
@@ -139,16 +137,16 @@ export default function ProfileScreen() {
                   </View>
                   <View style={styles.addressActions}>
                     <TouchableOpacity
-                      style={styles.iconBtn}
+                      style={styles.iconBtnProfessional}
                       onPress={() => { setEditingAddress(addr); setModalVisible(true); }}
                     >
-                      <MaterialIcons name="edit" size={16} color="#fff" />
+                      <MaterialIcons name="edit" size={14} color={COLORS.secondary} />
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[styles.iconBtn, { backgroundColor: COLORS.danger }]}
+                      style={[styles.iconBtnProfessional, { borderColor: '#FEE2E2' }]}
                       onPress={() => handleDelete(addr._id)}
                     >
-                      <MaterialIcons name="delete" size={16} color="#fff" />
+                      <MaterialIcons name="delete" size={14} color={COLORS.danger} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -346,15 +344,15 @@ const styles = StyleSheet.create({
 
   // Address card
   addressCard: {
-    borderRadius: scale(16),
+    borderRadius: scale(14),
     backgroundColor: COLORS.white,
-    padding: scale(12),
-    marginBottom: scale(10),
+    padding: scale(10),
+    marginBottom: scale(8),
     elevation: 3,
     shadowColor: COLORS.secondary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
     borderWidth: 1.5,
     borderColor: '#F1F5F9',
   },
@@ -363,42 +361,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: scale(10),
+    marginBottom: scale(8),
   },
   addressNameRow: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  addressNameText: { fontSize: scale(14), fontWeight: '800', color: COLORS.secondary },
+  addressNameText: { fontSize: scale(13), fontWeight: '800', color: COLORS.secondary },
   defaultBadge: {
     backgroundColor: COLORS.primary,
     borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    marginLeft: 8,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    marginLeft: 6,
   },
-  defaultBadgeText: { fontSize: scale(9), fontWeight: '900', color: '#fff', letterSpacing: 0.5 },
-  addressActions: { flexDirection: 'row', gap: 8 },
-  iconBtn: {
-    width: scale(32),
-    height: scale(32),
-    borderRadius: scale(10),
-    backgroundColor: COLORS.secondary,
+  defaultBadgeText: { fontSize: scale(8.5), fontWeight: '900', color: '#fff', letterSpacing: 0.5 },
+  addressActions: { flexDirection: 'row', gap: 6 },
+  iconBtnProfessional: {
+    width: scale(30),
+    height: scale(30),
+    borderRadius: scale(8),
+    backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  divider: { height: 1, backgroundColor: COLORS.accent, marginBottom: scale(10) },
-  addressRow: { flexDirection: 'row', marginBottom: scale(8), alignItems: 'flex-start' },
-  addressLabel: { width: scale(90), fontSize: scale(12), color: COLORS.primary, fontWeight: '600' },
-  labelColon: { width: scale(15), textAlign: 'center', fontSize: scale(12), color: COLORS.primary, fontWeight: '600' },
-  addressValue: { fontSize: scale(13), fontWeight: '800', color: COLORS.secondary },
+  divider: { height: 1, backgroundColor: '#F1F5F9', marginBottom: scale(8) },
+  addressRow: { flexDirection: 'row', marginBottom: scale(4), alignItems: 'center' },
+  addressLabel: { width: scale(85), fontSize: scale(10.5), color: '#064E3B', fontWeight: '800' },
+  labelColon: { width: scale(15), textAlign: 'center', fontSize: scale(10.5), color: '#064E3B', fontWeight: '800' },
+  addressValue: { fontSize: scale(11.5), fontWeight: '900', color: COLORS.text },
   scrollValueContainer: { flex: 1 },
   useAddressBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: scale(10),
-    paddingTop: scale(10),
+    marginTop: scale(6),
+    paddingTop: scale(6),
     borderTopWidth: 1,
-    borderTopColor: COLORS.accent,
+    borderTopColor: '#F1F5F9',
   },
-  useAddressText: { fontSize: scale(13), fontWeight: '700', color: COLORS.secondary },
+  useAddressText: { fontSize: scale(11.5), fontWeight: '700', color: COLORS.secondary },
 
   // Add address button
   addAddressBtn: {

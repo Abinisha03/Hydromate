@@ -276,39 +276,43 @@ export default function HomeScreen() {
               setActiveSlide(slide);
             }}
           >
-          {/* Slide 1: Promotional Banner */}
+          {/* Slide 1: Promotional Banner (Professional Redesign) */}
           <View style={[styles.bannerCard, { width: containerWidth, marginBottom: 0 }]}>
             <View style={styles.bannerContent}>
               <View style={styles.bannerTextContainer}>
-                <Text style={styles.bannerTagline}>Health First</Text>
+                <View style={styles.bannerTagRow}>
+                   <MaterialIcons name="verified" size={10} color={COLORS.white} style={{ marginRight: 4 }} />
+                   <Text style={styles.bannerTagline}>CERTIFIED PURITY</Text>
+                </View>
                 <Text style={styles.bannerTitle}>PURE HYDRATION.{"\n"}PURE LIFE.</Text>
-                <Text style={styles.bannerSubtitle}>Premium demineralized water for a healthier you.</Text>
+                <Text style={styles.bannerSubtitle}>Premium demineralized water delivered to you.</Text>
               </View>
               <View style={styles.bannerImageWrapper}>
-                <View style={styles.bannerBgDecoration} />
-                <RNImage 
+                <Image 
                   source={require('@/assets/images/banner.png')} 
                   style={styles.bannerImage}
-                  resizeMode="contain"
+                  contentFit="contain"
                 />
               </View>
             </View>
           </View>
 
-          {/* Slide 2: Daily Working Hours generated from Slide 1 template */}
+          {/* Slide 2: Daily Working Hours (Professional Redesign) */}
           <View style={[styles.bannerCard, { width: containerWidth, marginBottom: 0 }]}>
-            <View style={styles.bannerContent}>
+            <View style={[styles.bannerContent, { backgroundColor: '#064E3B' }]}>
               <View style={styles.bannerTextContainer}>
-                <Text style={styles.bannerTagline}>Daily Work</Text>
+                <View style={[styles.bannerTagRow, { backgroundColor: 'rgba(46,196,182,0.3)' }]}>
+                   <MaterialIcons name="schedule" size={10} color={COLORS.white} style={{ marginRight: 4 }} />
+                   <Text style={styles.bannerTagline}>WORKING HOURS</Text>
+                </View>
                 <Text style={styles.bannerTitle}>6 AM TO 8 PM</Text>
-                <Text style={styles.bannerSubtitle}>Pure drinking water{"\n"}At your doorstep.</Text>
+                <Text style={styles.bannerSubtitle}>We deliver your fresh water{"\n"}Every single day.</Text>
               </View>
               <View style={styles.bannerImageWrapper}>
-                <View style={styles.bannerBgDecoration} />
-                <RNImage 
+                <Image 
                   source={require('@/assets/images/water_can.png')} 
-                  style={styles.bannerImage}
-                  resizeMode="contain"
+                  style={styles.bannerImageSlide2}
+                  contentFit="contain"
                 />
               </View>
             </View>
@@ -593,66 +597,74 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   bannerCard: {
-    borderRadius: scale(12),
+    borderRadius: scale(16),
     overflow: 'hidden',
-    marginBottom: scale(10),
-    height: scale(85),
-    elevation: 2,
+    marginBottom: scale(12),
+    height: scale(150),
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
   },
   bannerContent: {
     flex: 1,
     flexDirection: 'row',
     backgroundColor: COLORS.secondary,
+    position: 'relative',
   },
   bannerTextContainer: {
     flex: 1.5,
-    padding: scale(15),
+    padding: scale(18),
     justifyContent: 'center',
-    zIndex: 2,
+    zIndex: 10,
+  },
+  bannerTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  bannerTagline: {
+    fontSize: scale(9.5),
+    color: COLORS.white,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  bannerTitle: {
+    fontSize: scale(20),
+    fontWeight: '900',
+    color: COLORS.white,
+    marginBottom: 4,
+    lineHeight: scale(24),
+  },
+  bannerSubtitle: {
+    fontSize: scale(11),
+    color: COLORS.white,
+    opacity: 0.9,
+    fontWeight: '600',
+    lineHeight: scale(15),
   },
   bannerImageWrapper: {
     flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-  },
-  bannerBgDecoration: {
-    position: 'absolute',
-    width: scale(100),
-    height: scale(100),
-    borderRadius: scale(50),
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    right: -scale(20),
-    top: -scale(20),
-  },
-  bannerTagline: {
-    fontSize: scale(10),
-    color: COLORS.white,
-    fontWeight: '800',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    marginBottom: scale(2),
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  bannerTitle: {
-    fontSize: scale(14),
-    fontWeight: '900',
-    color: COLORS.white,
-    marginBottom: 2,
-  },
-  bannerSubtitle: {
-    fontSize: scale(10),
-    color: COLORS.white,
-    opacity: 0.9,
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
   },
   bannerImage: {
-    width: '100%',
+    width: '130%',
     height: '100%',
-    zIndex: 2,
-    position: 'absolute',
-    right: 0,
-    bottom: -scale(5),
+    marginRight: -scale(15),
+  },
+  bannerImageSlide2: {
+    width: '100%',
+    height: '90%',
+    marginRight: scale(5),
+    marginTop: scale(10),
   },
   paginationRow: {
     flexDirection: 'row',
@@ -920,8 +932,10 @@ const styles = StyleSheet.create({
   },
   buyBtn: {
     backgroundColor: COLORS.primary,
-    height: scale(36),
-    borderRadius: scale(18),
+    height: scale(40),
+    width: '75%',
+    alignSelf: 'center',
+    borderRadius: scale(20),
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
@@ -930,7 +944,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    marginTop: 2,
+    marginTop: scale(15),
   },
   buyBtnText: {
     color: COLORS.white,
