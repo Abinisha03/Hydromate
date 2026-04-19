@@ -8,7 +8,6 @@ import { useRouter } from 'expo-router';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { scale } from '@/utils/responsive';
-import BackgroundAnimation from '@/components/BackgroundAnimation';
 import * as Haptics from 'expo-haptics';
 import { useUser, useClerk, useAuth } from '@clerk/clerk-expo';
 
@@ -102,7 +101,7 @@ export default function VerifyInviteScreen() {
       >
         <View style={styles.card}>
           <View style={styles.iconCircle}>
-            <MaterialIcons name="verified-user" size={36} color={COLORS.secondary} />
+            <MaterialIcons name="verified-user" size={28} color={COLORS.secondary} />
           </View>
           
           <Text style={styles.title}>Team Activation</Text>
@@ -186,41 +185,41 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: COLORS.white,
-    borderRadius: scale(32),
-    padding: scale(28),
+    borderRadius: scale(24),
+    padding: scale(20),
     width: '100%',
-    maxWidth: 400,
+    maxWidth: 340,
     alignItems: 'center',
     elevation: 10,
     shadowColor: COLORS.secondary,
-    shadowOffset: { width: 0, height: 12 },
+    shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
-    shadowRadius: 24,
+    shadowRadius: 20,
   },
   iconCircle: {
-    width: scale(72),
-    height: scale(72),
-    borderRadius: scale(24),
+    width: scale(56),
+    height: scale(56),
+    borderRadius: scale(18),
     backgroundColor: '#F0FDF4',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: scale(24),
+    marginBottom: scale(16),
     borderWidth: 1,
     borderColor: '#DCFCE7',
   },
   title: {
-    fontSize: scale(24),
+    fontSize: scale(20),
     fontWeight: '900',
     color: COLORS.secondary,
-    marginBottom: scale(8),
+    marginBottom: scale(6),
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: scale(14),
+    fontSize: scale(11.5),
     color: COLORS.gray,
     textAlign: 'center',
-    lineHeight: scale(20),
-    marginBottom: scale(32),
+    lineHeight: scale(16),
+    marginBottom: scale(20),
     paddingHorizontal: scale(10),
     fontWeight: '500',
   },
@@ -228,13 +227,13 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   inputGroup: {
-    marginBottom: scale(20),
+    marginBottom: scale(12),
   },
   inputLabel: {
-    fontSize: scale(12),
+    fontSize: scale(10),
     fontWeight: '800',
     color: COLORS.secondary,
-    marginBottom: scale(8),
+    marginBottom: scale(6),
     marginLeft: scale(4),
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -243,38 +242,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F1F5F9',
-    borderRadius: scale(16),
+    borderRadius: scale(12),
     borderWidth: 2,
     borderColor: 'transparent',
-    paddingHorizontal: scale(16),
-    height: scale(56),
+    paddingHorizontal: scale(12),
+    height: scale(46),
   },
   inputIcon: {
-    marginRight: scale(12),
+    marginRight: scale(10),
   },
   input: {
     flex: 1,
-    fontSize: scale(16),
+    fontSize: scale(14),
     fontWeight: '700',
     color: COLORS.text,
   },
   verifyBtn: {
     backgroundColor: COLORS.primary,
     width: '100%',
-    height: scale(56),
-    borderRadius: scale(18),
+    height: scale(50),
+    borderRadius: scale(12),
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: scale(12),
+    marginTop: scale(10),
     elevation: 4,
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 10,
+    shadowRadius: 8,
   },
   verifyBtnText: {
     color: '#fff',
-    fontSize: scale(15),
+    fontSize: scale(14),
     fontWeight: '900',
     letterSpacing: 1,
   },
@@ -282,7 +281,7 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#F1F5F9',
     width: '100%',
-    marginVertical: scale(24),
+    marginVertical: scale(16),
   },
   signOutBtn: {
     flexDirection: 'row',

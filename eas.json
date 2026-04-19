@@ -17,6 +17,10 @@
     "apk": {
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_cmFwaWQtb3J5eC02Ni5jbGVyay5hY2NvdW50cy5kZXYk",
+        "EXPO_PUBLIC_CONVEX_URL": "https://adventurous-zebra-81.convex.cloud"
       }
     },
     "production": {

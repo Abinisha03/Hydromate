@@ -8,7 +8,6 @@ import { useAuth, useUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { useQuery, useMutation, useConvexAuth } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import BackgroundAnimation from '@/components/BackgroundAnimation';
 import { scale } from '@/utils/responsive';
 import AddressModal from '@/components/AddressModal';
 
@@ -80,8 +79,6 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.secondary} />
-      <BackgroundAnimation />
-
       {/* Header */}
       <View style={styles.header}>
         <FontAwesome5 name="user-circle" size={22} color={COLORS.white} style={{ marginRight: 10 }} />

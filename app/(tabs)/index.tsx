@@ -6,7 +6,6 @@ import { useRouter } from 'expo-router';
 import { useQuery, useConvexAuth } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Image } from 'expo-image';
-import BackgroundAnimation from '@/components/BackgroundAnimation';
 import { scale } from '@/utils/responsive';
 import AddressModal from '@/components/AddressModal';
 
@@ -125,11 +124,7 @@ export default function HomeScreen() {
       const day = istDate.getUTCDay();
       const hour = istDate.getUTCHours();
 
-      if (day === 0 && hour >= 12) {
-        setAvailability({ isAvailable: false, reason: 'Orders are closed after 12 PM on Sunday. Please order after Monday 6 AM.' });
-      } else if (day === 1 && hour < 6) {
-        setAvailability({ isAvailable: false, reason: 'Orders are closed until Monday 6 AM.' });
-      } else if (hour < 6 || hour >= 20) {
+      if (hour < 6 || hour >= 20) {
         setAvailability({ isAvailable: false, reason: 'Orders open 6 AM - 8 PM' });
       } else {
         setAvailability({ isAvailable: true, reason: '' });
@@ -746,7 +741,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 10,
-    marginBottom: 4,
+    marginBottom: scale(12),
   },
   dropdownText: {
     fontSize: 15,

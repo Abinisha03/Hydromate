@@ -5,7 +5,6 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useUser } from '@clerk/clerk-expo';
-import BackgroundAnimation from '@/components/BackgroundAnimation';
 import AddressModal from '@/components/AddressModal';
 import { scale } from '@/utils/responsive';
 
@@ -130,7 +129,6 @@ export default function PaymentScreen() {
     return (
       <SafeAreaView style={styles.successContainer}>
         <StatusBar barStyle="dark-content" backgroundColor={COLORS.accent} />
-        <BackgroundAnimation />
         <View style={styles.successContent}>
           <View style={styles.successIconCircle}>
             <MaterialIcons name="check" size={60} color={COLORS.white} />
@@ -153,7 +151,6 @@ export default function PaymentScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.accent} />
-      <BackgroundAnimation />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <MaterialIcons name="arrow-back" size={24} color={COLORS.secondary} />

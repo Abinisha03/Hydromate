@@ -5,7 +5,6 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useUser } from '@clerk/clerk-expo';
-import BackgroundAnimation from '@/components/BackgroundAnimation';
 import { scale } from '@/utils/responsive';
 
 const COLORS = {
@@ -73,7 +72,6 @@ export default function OrderDetailsScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.secondary} />
-      <BackgroundAnimation />
       <Stack.Screen 
         options={{ 
           title: 'Order Status', 
