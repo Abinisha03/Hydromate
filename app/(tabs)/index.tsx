@@ -229,7 +229,6 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.secondary} />
-      <BackgroundAnimation />
       
       {/* Centered Top Header */}
       <View style={styles.header}>
@@ -580,8 +579,8 @@ const styles = StyleSheet.create({
   bannerCard: {
     borderRadius: scale(12),
     overflow: 'hidden',
-    marginBottom: scale(4),
-    height: scale(90),
+    marginBottom: scale(8),
+    height: scale(180),
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
@@ -596,7 +595,7 @@ const styles = StyleSheet.create({
   },
   bannerTextContainer: {
     flex: 1.5,
-    padding: scale(12),
+    padding: scale(18),
     justifyContent: 'center',
     zIndex: 10,
   },
@@ -611,24 +610,24 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   bannerTagline: {
-    fontSize: scale(9.5),
+    fontSize: scale(12),
     color: COLORS.white,
     fontWeight: '900',
     letterSpacing: 1,
   },
   bannerTitle: {
-    fontSize: scale(13),
+    fontSize: scale(24),
     fontWeight: '900',
     color: COLORS.white,
-    marginBottom: 1,
-    lineHeight: scale(16),
+    marginBottom: 4,
+    lineHeight: scale(30),
   },
   bannerSubtitle: {
-    fontSize: scale(9),
+    fontSize: scale(14),
     color: COLORS.white,
     opacity: 0.9,
     fontWeight: '600',
-    lineHeight: scale(12),
+    lineHeight: scale(18),
   },
   bannerImageWrapper: {
     flex: 1,
@@ -637,9 +636,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   bannerImage: {
-    width: '130%',
-    height: '100%',
-    marginRight: -scale(15),
+    width: '140%',
+    height: '110%',
+    marginRight: -scale(20),
   },
   bannerImageSlide2: {
     width: '100%',
@@ -666,15 +665,15 @@ const styles = StyleSheet.create({
   },
   orderSection: {
     backgroundColor: COLORS.white,
-    borderRadius: scale(10),
-    padding: scale(4),
+    borderRadius: scale(16),
+    padding: scale(25),
     alignItems: 'center',
-    marginBottom: scale(4),
-    elevation: 2,
+    marginBottom: scale(10),
+    elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -684,14 +683,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   orderTitle: {
-    fontSize: scale(13),
-    fontWeight: '600',
+    fontSize: scale(15),
+    fontWeight: '700',
     color: COLORS.text,
   },
   productImage: {
-    width: scale(40),
-    height: scale(40),
-    marginBottom: scale(2),
+    width: scale(60),
+    height: scale(60),
+    marginBottom: scale(8),
   },
   stepperContainer: {
     flexDirection: 'row',
@@ -876,8 +875,9 @@ const styles = StyleSheet.create({
   priceContainer: {
     width: '100%',
     backgroundColor: COLORS.accent,
-    borderRadius: 8,
-    padding: 6,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   priceRow: {
     flexDirection: 'row',
@@ -885,11 +885,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   priceLabel: {
-    fontSize: 12,
-    color: '#555',
+    fontSize: scale(13),
+    color: '#333',
+    fontWeight: '500',
   },
   priceValue: {
-    fontSize: 12,
+    fontSize: scale(13),
     fontWeight: 'bold',
     color: COLORS.text,
   },
@@ -902,30 +903,31 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(46, 196, 182, 0.2)',
   },
   totalLabel: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '800',
     color: COLORS.secondary,
   },
   totalValue: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '900',
     color: COLORS.secondary,
   },
   buyBtn: {
     backgroundColor: COLORS.primary,
-    height: scale(32),
+    height: scale(48),
     width: '75%',
     alignSelf: 'center',
-    borderRadius: scale(16),
+    borderRadius: scale(12),
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 4,
+    elevation: 6,
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    marginTop: scale(5),
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    marginTop: scale(15),
+    marginBottom: scale(5),
   },
   buyBtnText: {
     color: COLORS.white,
