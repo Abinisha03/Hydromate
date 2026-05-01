@@ -87,15 +87,15 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accent,
   },
   container: {
-    padding: 24,
+    padding: 16,
   },
   header: {
      alignItems: 'center',
-     marginBottom: 40,
+     marginBottom: 12,
      marginTop: 10,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '900',
     color: COLORS.secondary,
     marginTop: 15,
@@ -109,8 +109,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.white,
     borderRadius: 32,
-    padding: 24,
-    marginBottom: 20,
+    padding: 10,
+    marginBottom: 12,
     elevation: 3,
     shadowColor: COLORS.secondary,
     shadowOffset: { width: 0, height: 4 },
@@ -124,8 +124,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   iconBox: {
-    width: 48,
-    height: 48,
+    width: 36,
+    height: 36,
     borderRadius: 16,
     backgroundColor: COLORS.accent,
     alignItems: 'center',
@@ -133,14 +133,14 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '900',
     color: COLORS.secondary,
   },
   cardContent: {
-    fontSize: 15,
+    fontSize: 13,
     color: COLORS.text,
-    lineHeight: 24,
+    lineHeight: 20,
     opacity: 0.7,
   },
   footerBox: {

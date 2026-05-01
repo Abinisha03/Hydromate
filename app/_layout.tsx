@@ -140,9 +140,9 @@ function InitialLayout() {
 
       // ── 2. NOT SIGNED IN ──
       if (!isSignedIn) {
-        if (!inAuthGroup && !onHomePage) {
-          console.log('[Layout] Not signed in, replacing to /home');
-          router.replace('/home');
+        if (!inAuthGroup) {
+          console.log('[Layout] Not signed in, replacing to /(auth)/sign-in');
+          router.replace('/(auth)/sign-in');
         }
         const timer = setTimeout(() => setIsReady(true), 100);
         return () => clearTimeout(timer);
@@ -164,7 +164,7 @@ function InitialLayout() {
 
       // CASE A: ADMIN
       if (userRole === 'admin' || email === 'abinishaa271@gmail.com') {
-        if (!inAdminGroup && !onHomePage) {
+        if (!inAdminGroup) {
           router.replace('/(admin)');
         }
         setIsReady(true);
@@ -173,7 +173,7 @@ function InitialLayout() {
 
       // CASE B: EXISTING STAFF
       if (userRole === 'staff') {
-        if (!inStaffGroup && !onHomePage) {
+        if (!inStaffGroup) {
           router.replace('/(staff)');
         }
         setIsReady(true);
@@ -181,7 +181,7 @@ function InitialLayout() {
       }
 
       // CASE C: PENDING STAFF INVITE
-      if (hasPendingInvite === true && userRole === 'member') {
+      if (hasPendingInvite === true && (userRole === 'member' || userRole === 'user')) {
         if (!onVerifyInvite) {
           router.replace('/verify-invite');
         }
@@ -200,7 +200,7 @@ function InitialLayout() {
           return;
         }
 
-        if (isRoot || inAuthGroup || onVerifyInvite || onHomePage) {
+        if (isRoot || inAuthGroup || onVerifyInvite) {
           console.log('[Layout] Member/User routing to tabs');
           router.replace('/(tabs)');
         }
@@ -260,7 +260,6 @@ function InitialLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="home" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(admin)" options={{ headerShown: false }} />

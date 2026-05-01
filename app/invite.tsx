@@ -95,13 +95,13 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    padding: 24,
+    padding: 16,
     justifyContent: 'center',
   },
   contentCard: {
     backgroundColor: COLORS.white,
     borderRadius: 40,
-    padding: 30,
+    padding: 12,
     alignItems: 'center',
     elevation: 10,
     shadowColor: COLORS.secondary,
@@ -110,8 +110,8 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
   },
   iconCircle: {
-    width: 100,
-    height: 100,
+    width: 50,
+    height: 50,
     borderRadius: 36,
     backgroundColor: COLORS.primary,
     justifyContent: 'center',
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   title: {
-    fontSize: 26,
+    fontSize: 18,
     fontWeight: '900',
     color: COLORS.secondary,
     marginBottom: 12,
@@ -131,12 +131,12 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 32,
+    marginBottom: 16,
     opacity: 0.7,
   },
   codeContainer: {
     width: '100%',
-    marginBottom: 32,
+    marginBottom: 16,
   },
   codeLabel: {
     fontSize: 12,
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: COLORS.accent,
     paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingVertical: 10,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(46, 196, 182, 0.2)',
   },
   codeText: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '900',
     color: COLORS.secondary,
     letterSpacing: 2,
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   },
   shareBtn: {
     backgroundColor: COLORS.primary,
-    height: 64,
+    height: 48,
     borderRadius: 24,
     width: '100%',
     flexDirection: 'row',
@@ -186,8 +186,8 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    marginTop: 32,
-    paddingTop: 24,
+    marginTop: 16,
+    paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: COLORS.accent,
     width: '100%',

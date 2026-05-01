@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  StyleSheet, View, Text, ScrollView, SafeAreaView, StatusBar,
+  StyleSheet, View, Text, ScrollView, StatusBar,
   TouchableOpacity, ActivityIndicator, Alert, Modal, TextInput,
   Linking, Share, Platform, Animated, KeyboardAvoidingView
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useQuery, useMutation } from 'convex/react';
 import { useAuth, useUser } from '@clerk/clerk-expo';
@@ -726,23 +727,22 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState<Tab>('orders');
 
   const handleSignOut = () => {
-    const doSignOut = async () => { await signOut(); router.replace('/home'); };
+    const doSignOut = async () => { await signOut(); router.replace('/(auth)/sign-in'); };
     if (Platform.OS === 'web') { if (window.confirm("Log out?")) doSignOut(); }
     else { Alert.alert("Log Out", "Log out of Admin?", [{ text: "Cancel" }, { text: "Log Out", style: "destructive", onPress: doSignOut }]); }
   };
 
-  const goHome = () => router.replace('/home');
+  const goHome = () => router.replace('/(admin)');
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.secondary} />
+      <View style={{ flex: 1, backgroundColor: '#FAFAFA' }}>
       <WaterAnimatedBackground />
       
       <View style={styles.stickyHeader}>
         <View style={styles.headerTop}>
-          <TouchableOpacity style={styles.homeBtn} onPress={goHome} id="admin-home-btn">
-            <MaterialIcons name="home" size={scale(20)} color="#fff" />
-          </TouchableOpacity>
+          <View style={{ width: scale(36) }} />
           <View style={styles.brandBox}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(6) }}>
               <FontAwesome5 name="tint" size={scale(16)} color="#fff" />
@@ -751,10 +751,6 @@ export default function AdminDashboard() {
             <Text style={styles.brandBadge}>ADMIN PANEL</Text>
           </View>
           <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.iconAction}>
-              <MaterialIcons name="notifications-none" size={22} color="#fff" />
-              <View style={styles.notificationBadge} />
-            </TouchableOpacity>
             <TouchableOpacity style={styles.profileBox} onPress={handleSignOut}>
               <View style={styles.avatarHolder}>
                 <Text style={styles.avatarText}>{user?.firstName?.[0] || 'A'}</Text>
@@ -788,6 +784,7 @@ export default function AdminDashboard() {
         {tab === 'staff' && <StaffTab />}
         {tab === 'pricing' && <PricingTab />}
       </View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -796,7 +793,7 @@ export default function AdminDashboard() {
 // STYLES
 // ─────────────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#FAFAFA' },
+  safeArea: { flex: 1, backgroundColor: COLORS.secondary },
   stickyHeader: { backgroundColor: COLORS.secondary, paddingTop: scale(4), borderBottomLeftRadius: 20, borderBottomRightRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 8, zIndex: 100 },
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: scale(16), paddingVertical: scale(10) },
   homeBtn: { width: scale(32), height: scale(32), borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },

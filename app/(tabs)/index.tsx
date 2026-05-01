@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, SafeAreaView, Platform, StatusBar, Modal, FlatList, Animated, Dimensions, TextInput, Alert, Image as RNImage, ImageBackground } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Platform, StatusBar, Modal, FlatList, Animated, Dimensions, TextInput, Alert, Image as RNImage, ImageBackground } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useClerk, useUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
@@ -71,7 +72,7 @@ const PINCODES = [
   { label: 'Palayamkottai - 627002', value: '627002' },
   { label: 'Melapalayam - 627005', value: '627005' },
   { label: 'Thachanallur - 627001', value: '627001' },
-  { label: 'Express Delivery - 50 Mins - 91176129', value: '91176129' }
+  { label: 'Express Delivery - 50 Mins - 627004', value: '91176129' }
 ];
 
 export default function HomeScreen() {
@@ -84,7 +85,7 @@ export default function HomeScreen() {
   const [selectedPincodeLabel, setSelectedPincodeLabel] = useState<string | null>(null);
   const [selectedPincodeValue, setSelectedPincodeValue] = useState<string | null>(null);
   const [containerWidth, setContainerWidth] = useState(width - scale(20));
-  const goHome = () => router.replace('/home');
+  const goHome = () => router.replace('/(tabs)');
 
   
   // Sidebar State
@@ -191,7 +192,7 @@ export default function HomeScreen() {
     { label: 'Contact Us', icon: 'headset-mic', action: () => navTo('/contact' as any) },
     { label: 'Terms & Condition', icon: 'assignment', action: () => navTo('/terms' as any) },
     { label: 'About us', icon: 'info', action: () => navTo('/about' as any) },
-    { label: 'Logout', icon: 'exit-to-app', action: async () => { await signOut(); router.replace('/home'); } },
+    { label: 'Logout', icon: 'exit-to-app', action: async () => { await signOut(); router.replace('/(auth)/sign-in'); } },
   ];
 
   const handleBuyNow = () => {
@@ -222,8 +223,9 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.secondary} />
+      <View style={{ flex: 1, backgroundColor: COLORS.accent }}>
       
       {/* Centered Top Header */}
       <View style={styles.header}>
@@ -241,9 +243,7 @@ export default function HomeScreen() {
           </View>
         </View>
         
-        <TouchableOpacity style={styles.menuBtn} onPress={goHome} id="user-home-btn">
-          <MaterialIcons name="home" size={24} color={COLORS.white} />
-        </TouchableOpacity>
+        <View style={{ width: scale(32) }} />
       </View>
 
       {/* Compact Left-Aligned Location Bar */}
@@ -254,7 +254,7 @@ export default function HomeScreen() {
         <MaterialIcons name="location-on" size={14} color={COLORS.primary} style={{ marginRight: 6 }} />
         <View style={styles.locationInfo}>
            <Text style={styles.locationLabel}>HOME <MaterialIcons name="keyboard-arrow-down" size={12} color={COLORS.gray} /></Text>
-           <Text style={styles.locationAddress} numberOfLines={1}>
+           <Text style={styles.locationAddress}>
              {defaultAddress 
                ? `${defaultAddress.buildingName || ''}, ${defaultAddress.area || ''}`
                : "Set delivery address"}
@@ -346,11 +346,11 @@ export default function HomeScreen() {
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
               <MaterialIcons name="location-on" size={20} color={COLORS.primary} style={{ marginRight: 10 }} />
-              <Text style={[styles.dropdownText, !selectedPincodeLabel && { color: COLORS.gray }]} numberOfLines={1}>
+              <Text style={[styles.dropdownText, !selectedPincodeLabel && { color: COLORS.gray }]}>
                 {selectedPincodeLabel || 'Select your pincode'}
               </Text>
             </View>
-            <MaterialIcons name="keyboard-arrow-down" size={24} color={COLORS.secondary} />
+            <MaterialIcons name="arrow-drop-down" size={24} color="#64748b" />
           </TouchableOpacity>
 
           {/* Checkbox - Themed Switch Style */}
@@ -366,22 +366,24 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Price Summary - Clean & Readable */}
           <View style={styles.priceContainer}>
             <View style={styles.priceRow}>
-              <Text style={styles.priceLabel}>Water Price : {quantity} X {waterPrice}</Text>
-              <Text style={styles.priceValue}>{"₹ " + (quantity * waterPrice)}</Text>
+              <Text style={styles.priceLabel}>Water Price :</Text>
+              <Text style={styles.priceCalc}>{quantity} X {waterPrice}</Text>
+              <Text style={styles.priceValue}>₹ {quantity * waterPrice}</Text>
             </View>
             {hasNoBottle && (
               <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Bottle Price : {quantity} X {bottlePricePerUnit}</Text>
+                <Text style={styles.priceLabel}>Bottle Price :</Text>
+                <Text style={styles.priceCalc}>{quantity} X {bottlePricePerUnit}</Text>
                 <Text style={styles.priceValue}>₹ {currentBottlePrice}</Text>
               </View>
             )}
             {expressCharge > 0 && (
               <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Express Delivery : {quantity} X {expressChargePerUnit}</Text>
-                <Text style={styles.priceValue}>{"₹ " + expressCharge}</Text>
+                <Text style={styles.priceLabel}>Express Delivery :</Text>
+                <Text style={styles.priceCalc}>{quantity} X {expressChargePerUnit}</Text>
+                <Text style={styles.priceValue}>₹ {expressCharge}</Text>
               </View>
             )}
             <View style={styles.summaryTotalRow}>
@@ -495,6 +497,7 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+      </View>
     </SafeAreaView>
   );
 }
@@ -502,7 +505,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.accent,
+    backgroundColor: COLORS.secondary,
   },
   header: {
     height: scale(42),
@@ -575,7 +578,7 @@ const styles = StyleSheet.create({
     borderRadius: scale(12),
     overflow: 'hidden',
     marginBottom: scale(8),
-    height: scale(180),
+    height: scale(165),
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
@@ -589,7 +592,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   bannerTextContainer: {
-    flex: 1.5,
+    flex: 2,
     padding: scale(18),
     justifyContent: 'center',
     zIndex: 10,
@@ -611,11 +614,11 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   bannerTitle: {
-    fontSize: scale(24),
+    fontSize: scale(21),
     fontWeight: '900',
     color: COLORS.white,
     marginBottom: 4,
-    lineHeight: scale(30),
+    lineHeight: scale(26),
   },
   bannerSubtitle: {
     fontSize: scale(14),
@@ -631,9 +634,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   bannerImage: {
-    width: '140%',
-    height: '110%',
-    marginRight: -scale(20),
+    width: '100%',
+    height: '100%',
+    marginRight: scale(4),
   },
   bannerImageSlide2: {
     width: '100%',
@@ -661,9 +664,9 @@ const styles = StyleSheet.create({
   orderSection: {
     backgroundColor: COLORS.white,
     borderRadius: scale(16),
-    padding: scale(25),
+    padding: scale(12),
     alignItems: 'center',
-    marginBottom: scale(10),
+    marginBottom: scale(6),
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -683,9 +686,9 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   productImage: {
-    width: scale(60),
-    height: scale(60),
-    marginBottom: scale(8),
+    width: scale(45),
+    height: scale(45),
+    marginBottom: scale(6),
   },
   stepperContainer: {
     flexDirection: 'row',
@@ -733,18 +736,18 @@ const styles = StyleSheet.create({
   dropdown: {
     backgroundColor: COLORS.white,
     width: '100%',
-    height: 32,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: COLORS.accent,
+    height: 42,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#94a3b8',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 10,
-    marginBottom: scale(12),
+    marginBottom: scale(8),
   },
   dropdownText: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -876,34 +879,50 @@ const styles = StyleSheet.create({
   },
   priceRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
+    alignItems: 'center',
+    marginBottom: scale(6),
   },
   priceLabel: {
-    fontSize: scale(13),
-    color: '#333',
-    fontWeight: '500',
+    width: scale(95),
+    fontSize: scale(11),
+    color: COLORS.text,
+    fontWeight: '700',
+    opacity: 0.8,
+  },
+  priceCalc: {
+    flex: 1,
+    fontSize: scale(11),
+    color: COLORS.text,
+    fontWeight: '600',
+    opacity: 0.8,
+    textAlign: 'left',
+    paddingLeft: scale(4),
   },
   priceValue: {
-    fontSize: scale(13),
-    fontWeight: 'bold',
+    width: scale(65),
+    textAlign: 'left',
+    fontSize: scale(12),
+    fontWeight: '800',
     color: COLORS.text,
   },
   summaryTotalRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 4,
-    paddingTop: 4,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(46, 196, 182, 0.2)',
+    alignItems: 'center',
+    marginTop: scale(4),
+    paddingTop: scale(8),
+    borderTopWidth: 1.5,
+    borderTopColor: 'rgba(15, 157, 138, 0.2)',
   },
   totalLabel: {
-    fontSize: 18,
-    fontWeight: '800',
+    flex: 1,
+    fontSize: scale(16),
+    fontWeight: '900',
     color: COLORS.secondary,
   },
   totalValue: {
-    fontSize: 18,
+    width: scale(65),
+    textAlign: 'left',
+    fontSize: scale(18),
     fontWeight: '900',
     color: COLORS.secondary,
   },
@@ -1038,7 +1057,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     width: '90%',
     maxWidth: 400,
-    padding: 20,
+    padding: 14,
     maxHeight: '80%',
     elevation: 20,
     shadowColor: '#000',
@@ -1066,8 +1085,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.white,
     borderRadius: 12,
-    padding: 10,
-    marginVertical: 4,
+    padding: 8,
+    marginVertical: 3,
     elevation: 2,
     shadowColor: COLORS.secondary,
     shadowOffset: { width: 0, height: 2 },
@@ -1078,7 +1097,7 @@ const styles = StyleSheet.create({
   },
   pincodeItemText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '700',
     color: COLORS.secondary,
   },

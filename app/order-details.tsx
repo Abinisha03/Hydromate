@@ -116,7 +116,7 @@ export default function OrderDetailsScreen() {
           </View>
           {(order.expressCharge ?? 0) > 0 && (
             <View style={styles.detailRow}>
-              <Text style={styles.label}>Express Delivery</Text>
+              <Text style={styles.label}>Express Delivery - 50 Mins - 627004</Text>
               <Text style={styles.value}>₹ {order.expressCharge}</Text>
             </View>
           )}
@@ -280,8 +280,8 @@ const styles = StyleSheet.create({
   detailsCard: {
     backgroundColor: COLORS.white,
     borderRadius: scale(16),
-    padding: scale(12),
-    marginBottom: scale(12),
+    padding: scale(8),
+    marginBottom: scale(8),
     elevation: 4,
     shadowColor: COLORS.secondary,
     shadowOffset: { width: 0, height: 8 },
@@ -304,11 +304,11 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: COLORS.accent,
-    marginBottom: scale(12),
+    marginBottom: scale(8),
   },
   detailRow: {
     flexDirection: 'row',
-    marginBottom: scale(10),
+    marginBottom: scale(8),
     alignItems: 'flex-start',
   },
   label: {
@@ -344,8 +344,8 @@ const styles = StyleSheet.create({
   totalBox: {
     backgroundColor: COLORS.accent,
     borderRadius: scale(14),
-    padding: scale(12),
-    marginTop: scale(10),
+    padding: scale(10),
+    marginTop: scale(8),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -361,9 +361,9 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   otpBox: {
-    marginTop: scale(12),
+    marginTop: scale(8),
     alignItems: 'center',
-    padding: scale(10),
+    padding: scale(8),
     borderWidth: 2,
     borderColor: COLORS.accent,
     borderRadius: scale(14),
@@ -386,10 +386,10 @@ const styles = StyleSheet.create({
   supplierCard: {
     backgroundColor: COLORS.white,
     borderRadius: scale(16),
-    padding: scale(12),
+    padding: scale(10),
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: scale(20),
+    marginBottom: scale(12),
     elevation: 3,
     shadowColor: COLORS.secondary,
     shadowOffset: { width: 0, height: 4 },

@@ -105,11 +105,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accent,
   },
   container: {
-    padding: 24,
+    padding: 16,
   },
   headerBox: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 12,
     marginTop: 10,
   },
   leafCircle: {
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
      elevation: 5,
   },
   headerTitle: {
-    fontSize: 26,
+    fontSize: 20,
     fontWeight: '900',
     color: COLORS.secondary,
     marginBottom: 8,
@@ -138,18 +138,18 @@ const styles = StyleSheet.create({
   contactCard: {
     backgroundColor: COLORS.white,
     borderRadius: 24,
-    padding: 20,
+    padding: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
     elevation: 2,
     shadowColor: COLORS.secondary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
   },
   iconBox: {
-    width: 60,
-    height: 60,
+    width: 36,
+    height: 36,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   optionValue: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '900',
     color: COLORS.secondary,
   },
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   addressCard: {
     backgroundColor: COLORS.white,
     borderRadius: 30,
-    padding: 24,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,

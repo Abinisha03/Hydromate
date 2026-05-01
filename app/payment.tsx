@@ -246,7 +246,7 @@ export default function PaymentScreen() {
           </View>
           {Number(params.expressCharge) > 0 && (
             <View style={[styles.summaryRow, { marginTop: 12 }]}>
-              <Text style={styles.summaryLabel}>Express Delivery Charge</Text>
+              <Text style={styles.summaryLabel}>Express Delivery - 50 Mins - 627004</Text>
               <Text style={styles.summaryValue}>₹ {params.expressCharge}</Text>
             </View>
           )}

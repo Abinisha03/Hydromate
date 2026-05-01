@@ -101,23 +101,22 @@ export default function VerifyInviteScreen() {
       >
         <View style={styles.card}>
           <View style={styles.iconCircle}>
-            <MaterialIcons name="verified-user" size={28} color={COLORS.secondary} />
+            <MaterialIcons name="local-shipping" size={32} color={COLORS.secondary} />
           </View>
           
-          <Text style={styles.title}>Team Activation</Text>
+          <Text style={styles.title}>Staff Verification</Text>
           <Text style={styles.subtitle}>
-            Enter the unique credentials from your invitation to join the HydroMate delivery network.
+            We noticed you have a pending Staff Invite for your email address. Please enter your unique invite code and phone number to activate your account.
           </Text>
 
           <View style={styles.form}>
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Invite Code</Text>
               <View style={styles.inputWrapper}>
-                <MaterialIcons name="vpn-key" size={20} color={COLORS.primary} style={styles.inputIcon} />
+                <MaterialIcons name="vpn-key" size={20} color={COLORS.secondary} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. HM-XXXXXX"
-                  placeholderTextColor="#A0AEC0"
+                  placeholder="e.g. HM-QUS6F4"
+                  placeholderTextColor="#718096"
                   autoCapitalize="characters"
                   value={code}
                   onChangeText={setCode}
@@ -126,13 +125,12 @@ export default function VerifyInviteScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Phone Number</Text>
               <View style={styles.inputWrapper}>
-                <MaterialIcons name="phone-iphone" size={20} color={COLORS.primary} style={styles.inputIcon} />
+                <MaterialIcons name="phone" size={20} color={COLORS.secondary} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="10-digit mobile number"
-                  placeholderTextColor="#A0AEC0"
+                  placeholderTextColor="#718096"
                   keyboardType="number-pad"
                   maxLength={10}
                   value={phone}
@@ -150,21 +148,18 @@ export default function VerifyInviteScreen() {
                 <ActivityIndicator color={COLORS.white} />
               ) : (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                   <Text style={styles.verifyBtnText}>ACTIVATE ACCOUNT</Text>
+                   <Text style={styles.verifyBtnText}>VERIFY & JOIN</Text>
                    <MaterialIcons name="arrow-forward" size={18} color="#fff" />
                 </View>
               )}
             </TouchableOpacity>
           </View>
 
-          <View style={styles.divider} />
-
           <TouchableOpacity 
             style={styles.signOutBtn}
             onPress={handleSignOut}
           >
-            <MaterialIcons name="account-circle" size={18} color={COLORS.gray} />
-            <Text style={styles.signOutBtnText}>Use a different account</Text>
+            <Text style={styles.signOutBtnText}>I don't have a code, continue as customer.</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -197,29 +192,27 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
   },
   iconCircle: {
-    width: scale(56),
-    height: scale(56),
-    borderRadius: scale(18),
-    backgroundColor: '#F0FDF4',
+    width: scale(64),
+    height: scale(64),
+    borderRadius: scale(32),
+    backgroundColor: COLORS.accent,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: scale(16),
-    borderWidth: 1,
-    borderColor: '#DCFCE7',
   },
   title: {
     fontSize: scale(20),
     fontWeight: '900',
     color: COLORS.secondary,
-    marginBottom: scale(6),
+    marginBottom: scale(12),
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: scale(11.5),
     color: COLORS.gray,
     textAlign: 'center',
-    lineHeight: scale(16),
-    marginBottom: scale(20),
+    lineHeight: scale(18),
+    marginBottom: scale(24),
     paddingHorizontal: scale(10),
     fontWeight: '500',
   },
@@ -227,26 +220,17 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   inputGroup: {
-    marginBottom: scale(12),
-  },
-  inputLabel: {
-    fontSize: scale(10),
-    fontWeight: '800',
-    color: COLORS.secondary,
-    marginBottom: scale(6),
-    marginLeft: scale(4),
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    marginBottom: scale(16),
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#E8FFF9',
     borderRadius: scale(12),
-    borderWidth: 2,
-    borderColor: 'transparent',
-    paddingHorizontal: scale(12),
-    height: scale(46),
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    paddingHorizontal: scale(16),
+    height: scale(50),
   },
   inputIcon: {
     marginRight: scale(10),
@@ -264,12 +248,8 @@ const styles = StyleSheet.create({
     borderRadius: scale(12),
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: scale(10),
-    elevation: 4,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    marginTop: scale(12),
+    marginBottom: scale(20),
   },
   verifyBtnText: {
     color: '#fff',
@@ -277,21 +257,14 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 1,
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
-    width: '100%',
-    marginVertical: scale(16),
-  },
   signOutBtn: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(10),
     paddingVertical: scale(8),
   },
   signOutBtnText: {
     color: COLORS.gray,
-    fontSize: scale(14),
-    fontWeight: '700',
+    fontSize: scale(12),
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });

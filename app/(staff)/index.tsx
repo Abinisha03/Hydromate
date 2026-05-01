@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  StyleSheet, View, Text, ScrollView, SafeAreaView, StatusBar,
+  StyleSheet, View, Text, ScrollView, StatusBar,
   TouchableOpacity, ActivityIndicator, Alert, Linking, Platform, Modal, TextInput, Animated, KeyboardAvoidingView
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { useQuery, useMutation } from 'convex/react';
@@ -322,12 +323,12 @@ export default function StaffDashboard() {
   const [filter, setFilter] = useState<'All' | 'Assigned' | 'Active' | 'Completed'>('All');
 
   const handleSignOut = () => {
-    const doSignOut = async () => { await signOut(); router.replace('/home'); };
+    const doSignOut = async () => { await signOut(); router.replace('/(auth)/sign-in'); };
     if (Platform.OS === 'web') { if (window.confirm("Logout?")) doSignOut(); }
     else { Alert.alert("Logout", "Are you sure you want to sign out?", [{ text: "Cancel" }, { text: "Logout", style: 'destructive', onPress: doSignOut }]); }
   };
 
-  const goHome = () => router.replace('/home');
+  const goHome = () => router.replace('/(staff)');
 
   let displayOrders = orders ?? [];
   if (filter === 'Assigned') {
@@ -339,16 +340,15 @@ export default function StaffDashboard() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.secondary} />
+      <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
       <WaterAnimatedBackground />
 
       {/* Modern Sticky Header */}
       <View style={styles.stickyHeader}>
         <View style={styles.headerTop}>
-          <TouchableOpacity style={styles.homeBtn} onPress={goHome} id="staff-home-btn">
-            <MaterialIcons name="home" size={scale(20)} color="#fff" />
-          </TouchableOpacity>
+          <View style={{ width: scale(36) }} />
           <View style={styles.brandBox}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(6) }}>
               <FontAwesome5 name="tint" size={scale(16)} color="#fff" />
@@ -357,10 +357,6 @@ export default function StaffDashboard() {
             <Text style={styles.brandBadge}>STAFF PANEL</Text>
           </View>
           <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.iconAction}>
-              <MaterialIcons name="notifications-none" size={22} color="#fff" />
-              <View style={styles.notificationBadge} />
-            </TouchableOpacity>
             <TouchableOpacity style={styles.profileBox} onPress={handleSignOut}>
               <View style={styles.avatarHolder}>
                 <Text style={styles.avatarText}>{user?.firstName?.[0] || 'S'}</Text>
@@ -424,6 +420,7 @@ export default function StaffDashboard() {
           </ScrollView>
         )}
       </View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -432,7 +429,7 @@ export default function StaffDashboard() {
 // STYLES
 // ─────────────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F8FAFC' },
+  safeArea: { flex: 1, backgroundColor: COLORS.secondary },
   mainContent: { flex: 1, marginTop: scale(10) },
   scrollContent: { paddingHorizontal: scale(16), paddingBottom: scale(60) },
   

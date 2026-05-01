@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  StyleSheet, View, Text, SafeAreaView, Platform, StatusBar,
+  StyleSheet, View, Text, Platform, StatusBar,
   TouchableOpacity, Alert, Modal, TextInput, ScrollView, FlatList,
   Animated
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -271,7 +272,7 @@ export default function OrdersScreen() {
           <View style={[styles.orderRowCompact, { marginBottom: 0 }]}>
             <Text style={styles.orderLabel}>Pincode</Text>
             <Text style={styles.colon}>:</Text>
-            <Text style={styles.orderValue} numberOfLines={1}>{item.pincode || '-'}</Text>
+            <Text style={styles.orderValue}>{item.pincode || '-'}</Text>
           </View>
         </View>
 
@@ -289,10 +290,12 @@ export default function OrdersScreen() {
 
   // ── UI ──────────────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.secondary} />
+      <View style={{ flex: 1, backgroundColor: COLORS.accent }}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>History</Text>
+        <MaterialIcons name="history" size={22} color={COLORS.white} style={{ marginRight: 10 }} />
+        <Text style={styles.headerTitle}>Order History</Text>
       </View>
 
       <View style={styles.container}>
@@ -485,22 +488,22 @@ export default function OrdersScreen() {
           </View>
         </View>
       </Modal>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.accent },
+  safeArea: { flex: 1, backgroundColor: COLORS.secondary },
   header: {
     backgroundColor: COLORS.secondary,
-    paddingHorizontal: 20,
-    height: 70,
+    height: 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 4,
   },
-  headerTitle: { fontSize: 22, fontWeight: '900', color: '#ffffff', letterSpacing: 1 },
+  headerTitle: { fontSize: 16, fontWeight: '900', color: '#ffffff', letterSpacing: 1 },
   container: { flex: 1 },
   tabsContainer: {
     flexDirection: 'row',

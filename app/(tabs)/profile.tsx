@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  StyleSheet, View, Text, ScrollView, SafeAreaView, Platform,
+  StyleSheet, View, Text, ScrollView, Platform,
   StatusBar, TouchableOpacity, TextInput, ActivityIndicator, Alert, Animated
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
@@ -77,8 +78,9 @@ export default function ProfileScreen() {
   const defaultAddress = addresses?.find(a => a.isDefault);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.secondary} />
+      <View style={{ flex: 1, backgroundColor: COLORS.accent }}>
       {/* Header */}
       <View style={styles.header}>
         <FontAwesome5 name="user-circle" size={22} color={COLORS.white} style={{ marginRight: 10 }} />
@@ -125,7 +127,7 @@ export default function ProfileScreen() {
                 <View style={styles.addressHeader}>
                   <View style={styles.addressNameRow}>
                     <MaterialIcons name="location-city" size={16} color={COLORS.secondary} style={{ marginRight: 6 }} />
-                    <Text style={styles.addressNameText} numberOfLines={1}>{addr.buildingName || 'Home'}</Text>
+                    <Text style={styles.addressNameText}>{addr.buildingName || 'Home'}</Text>
                     {addr.isDefault && (
                       <View style={styles.defaultBadge}>
                         <Text style={styles.defaultBadgeText}>PRIMARY</Text>
@@ -219,12 +221,13 @@ export default function ProfileScreen() {
           if (!editingAddress) router.replace('/(tabs)');
         }}
       />
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.accent },
+  safeArea: { flex: 1, backgroundColor: COLORS.secondary },
   header: {
     backgroundColor: COLORS.secondary,
     height: scale(48),

@@ -57,14 +57,14 @@ export default function BookWaterScreen() {
   const [qty, setQty] = useState(1);
   const [noBottleReturn, setNoBottleReturn] = useState(false);
   const [showPincodeDropdown, setShowPincodeDropdown] = useState(false);
-  const [selectedPincode, setSelectedPincode] = useState('600091 - Madipakkam');
+  const [selectedPincode, setSelectedPincode] = useState('Tirunelveli Town - 627006');
 
   const pincodes = [
-    'Madipakkam - 600091',
-    'keelkattalai - 600117',
-    'Nanganallur - 600061',
-    'S. Kolathur - 600129',
-    'Express Delivery - 50 Mins'
+    'Tirunelveli Town - 627006',
+    'Palayamkottai - 627002',
+    'Melapalayam - 627005',
+    'Thachanallur - 627001',
+    'Express Delivery - 50 Mins - 627004'
   ];
 
   const waterPrice = 35;
@@ -189,7 +189,7 @@ export default function BookWaterScreen() {
             </View>
             {expressCharge > 0 && (
               <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Express Delivery : {qty} X 75</Text>
+                <Text style={styles.priceLabel}>Express Delivery - 50 Mins - 627004 : {qty} X 75</Text>
                 <Text style={styles.priceValue}>{"₹ " + expressCharge}</Text>
               </View>
             )}
@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
   },
   dropdownText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: COLORS.text,
   },
