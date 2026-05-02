@@ -246,21 +246,7 @@ export default function HomeScreen() {
         <View style={{ width: scale(32) }} />
       </View>
 
-      {/* Compact Left-Aligned Location Bar */}
-      <TouchableOpacity 
-        style={styles.locationBar} 
-        onPress={() => setAddressModalVisible(true)}
-      >
-        <MaterialIcons name="location-on" size={14} color={COLORS.primary} style={{ marginRight: 6 }} />
-        <View style={styles.locationInfo}>
-           <Text style={styles.locationLabel}>HOME <MaterialIcons name="keyboard-arrow-down" size={12} color={COLORS.gray} /></Text>
-           <Text style={styles.locationAddress}>
-             {defaultAddress 
-               ? `${defaultAddress.buildingName || ''}, ${defaultAddress.area || ''}`
-               : "Set delivery address"}
-           </Text>
-        </View>
-      </TouchableOpacity>
+
 
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>

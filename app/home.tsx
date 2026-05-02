@@ -1,4 +1,4 @@
-import { scale } from '@/utils/responsive';
+import { scale } from '../utils/responsive';
 import { useAuth } from '@clerk/clerk-expo';
 import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';

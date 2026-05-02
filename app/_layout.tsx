@@ -9,7 +9,7 @@ import { Image } from 'expo-image';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View, LogBox } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View, LogBox, Platform } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import 'react-native-reanimated';
 
@@ -140,8 +140,11 @@ function InitialLayout() {
 
       // ── 2. NOT SIGNED IN ──
       if (!isSignedIn) {
-        if (!inAuthGroup) {
-          console.log('[Layout] Not signed in, replacing to /(auth)/sign-in');
+        if (Platform.OS === 'web' && !onHomePage && !inAuthGroup) {
+          console.log('[Layout] Web guest, redirecting to landing page');
+          router.replace('/home');
+        } else if (Platform.OS !== 'web' && !inAuthGroup) {
+          console.log('[Layout] Mobile guest, redirecting to sign-in');
           router.replace('/(auth)/sign-in');
         }
         const timer = setTimeout(() => setIsReady(true), 100);
@@ -258,12 +261,13 @@ function InitialLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
+      <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(admin)" options={{ headerShown: false }} />
         <Stack.Screen name="(staff)" options={{ headerShown: false }} />
+        <Stack.Screen name="home" options={{ headerShown: false }} />
         <Stack.Screen name="verify-invite" options={{ headerShown: false }} />
         <Stack.Screen name="add-address" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
