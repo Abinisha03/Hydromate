@@ -1,17 +1,27 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  StyleSheet, View, Text, ScrollView, StatusBar,
-  TouchableOpacity, ActivityIndicator, Alert, Modal, TextInput,
-  Linking, Share, Platform, Animated, KeyboardAvoidingView
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
-import { useQuery, useMutation } from 'convex/react';
-import { useAuth, useUser } from '@clerk/clerk-expo';
 import { api } from '@/convex/_generated/api';
-import { scale } from '@/utils/responsive';
 import { Id } from '@/convex/_generated/dataModel';
+import { scale } from '@/utils/responsive';
+import { useAuth, useUser } from '@clerk/clerk-expo';
+import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
+import { useMutation, useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator, Alert,
+  KeyboardAvoidingView,
+  Linking,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  Share,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
 const COLORS = {
   primary: '#2EC4B6',
@@ -144,11 +154,11 @@ function AddStaffModal({
   const [isLoading, setIsLoading] = useState(false);
 
   const handleGenerate = async () => {
-    if (!name.trim()) { 
-      Alert.alert('Error', 'Name is required.'); 
-      return; 
+    if (!name.trim()) {
+      Alert.alert('Error', 'Name is required.');
+      return;
     }
-    
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email.trim() || !emailRegex.test(email.trim())) {
       Alert.alert('Error', 'Please give correct mail id.');
@@ -205,35 +215,51 @@ function AddStaffModal({
                 <Text style={modalStyles.codeText}>{code}</Text>
               </View>
               <View style={{ backgroundColor: '#F9FAFB', padding: 14, borderRadius: 10, width: '100%', marginBottom: 16 }}>
-                 <Text style={{ fontSize: scale(10), fontWeight: '800', color: COLORS.text, marginBottom: 10 }}>🚰 HydroMate Staff Invite</Text>
-                 <Text style={{ fontSize: scale(10), color: COLORS.text, marginBottom: 6 }}>Hi {name}!</Text>
-                 <Text style={{ fontSize: scale(10), color: COLORS.text, marginBottom: 10 }}>You've been invited to join HydroMate as a Delivery Staff member.</Text>
+                <Text style={{ fontSize: scale(10), fontWeight: '800', color: COLORS.text, marginBottom: 10 }}>🚰 HydroMate Staff Invite</Text>
+                <Text style={{ fontSize: scale(10), color: COLORS.text, marginBottom: 6 }}>Hi {name}!</Text>
+                <Text style={{ fontSize: scale(10), color: COLORS.text, marginBottom: 10 }}>You've been invited to join HydroMate as a Delivery Staff member.</Text>
               </View>
               <View style={{ flexDirection: 'row', gap: 10, width: '100%' }}>
-                 <TouchableOpacity style={[modalStyles.shareBtn, { backgroundColor: '#fff', borderWidth: 1, borderColor: COLORS.primary }]} onPress={() => {
-                     const msg = `*HydroMate Staff Invite*\n\nHi ${name}!\n\nYou've been invited to join HydroMate as a Delivery Staff member.\n\n📱 Download the app and sign up using your email: *${email}*\n\n🔑 Your invite code: *${code}*\n\nRight after you sign in, the app will ask for this code and your phone number. Enter them to activate your staff dashboard instantly!\n\n- HydroMate Team`;
-                     Linking.openURL(`whatsapp://send?text=${encodeURIComponent(msg)}`).catch(() => {
-                         Share.share({ message: msg });
-                     });
-                     handleClose();
-                 }}>
-                    <MaterialIcons name="share" size={16} color={COLORS.primary} />
-                    <Text style={[modalStyles.shareBtnText, { color: COLORS.primary }]}>Share</Text>
-                 </TouchableOpacity>
-                 <TouchableOpacity style={[modalStyles.shareBtn, { backgroundColor: '#3B82F6', borderWidth: 1, borderColor: '#3B82F6' }]} onPress={() => {
-                     const msg = `*HydroMate Staff Invite*\n\nHi ${name}!\n\nYou've been invited to join HydroMate as a Delivery Staff member.\n\n📱 Download the app and sign up using your email: *${email}*\n\n🔑 Your invite code: *${code}*\n\nRight after you sign in, the app will ask for this code and your phone number. Enter them to activate your staff dashboard instantly!\n\n- HydroMate Team`;
-                     Linking.openURL(`mailto:${email}?subject=HydroMate Staff Invitation&body=${encodeURIComponent(msg)}`).catch(() => {
-                         Share.share({ message: msg });
-                     });
-                     handleClose();
-                 }}>
-                    <MaterialIcons name="email" size={16} color="#fff" />
-                    <Text style={[modalStyles.shareBtnText, { color: '#fff' }]}>Send Email</Text>
-                 </TouchableOpacity>
+                <TouchableOpacity style={[modalStyles.shareBtn, { backgroundColor: '#fff', borderWidth: 1, borderColor: COLORS.primary }]} onPress={() => {
+                  const msg = `*HydroMate Staff Invite*\n\nHi ${name}!\n\nYou've been invited to join HydroMate as a Delivery Staff member.\n\n📱 Download the app and sign up using your email: *${email}*\n\n🔑 Your invite code: *${code}*\n\nRight after you sign in, the app will ask for this code and your phone number. Enter them to activate your staff dashboard instantly!\n\n- HydroMate Team`;
+                  Linking.openURL(`whatsapp://send?text=${encodeURIComponent(msg)}`).catch(() => {
+                    Share.share({ message: msg });
+                  });
+                  handleClose();
+                }}>
+                  <MaterialIcons name="share" size={16} color={COLORS.primary} />
+                  <Text style={[modalStyles.shareBtnText, { color: COLORS.primary }]}>Share</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[modalStyles.shareBtn, { backgroundColor: '#3B82F6', borderWidth: 1, borderColor: '#3B82F6' }]} onPress={async () => {
+                  const subject = "HydroMate Staff Invitation";
+                  const msg = `*HydroMate Staff Invite*\n\nHi ${name}!\n\nYou've been invited to join HydroMate as a Delivery Staff member.\n\n📱 Download the app and sign up using your email: *${email}*\n\n🔑 Your invite code: *${code}*\n\nRight after you sign in, the app will ask for this code and your phone number. Enter them to activate your staff dashboard instantly!\n\n- HydroMate Team`;
+
+                  const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(msg)}`;
+
+                  try {
+                    if (Platform.OS === 'web') {
+                      await Linking.openURL(gmailUrl);
+                    } else {
+                      const gmailAppUrl = `googlegmail:///co?to=${email}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(msg)}`;
+                      const canOpen = await Linking.canOpenURL(gmailAppUrl);
+                      if (canOpen) {
+                        await Linking.openURL(gmailAppUrl);
+                      } else {
+                        await Linking.openURL(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(msg)}`);
+                      }
+                    }
+                  } catch (e) {
+                    Share.share({ message: msg });
+                  }
+                  handleClose();
+                }}>
+                  <MaterialIcons name="email" size={16} color="#fff" />
+                  <Text style={[modalStyles.shareBtnText, { color: '#fff' }]}>Send Email</Text>
+                </TouchableOpacity>
               </View>
               <View style={{ backgroundColor: '#EFF6FF', padding: 10, borderRadius: 8, marginTop: 16, flexDirection: 'row', alignItems: 'flex-start', gap: 6, width: '100%', borderWidth: 1, borderColor: '#BFDBFE' }}>
-                 <MaterialIcons name="info-outline" size={14} color="#3B82F6" style={{ marginTop: 1 }} />
-                 <Text style={{ fontSize: scale(8), color: '#1E40AF', flex: 1, lineHeight: 14 }}>The staff member will be automatically activated when they sign up and enter this code.</Text>
+                <MaterialIcons name="info-outline" size={14} color="#3B82F6" style={{ marginTop: 1 }} />
+                <Text style={{ fontSize: scale(8), color: '#1E40AF', flex: 1, lineHeight: 14 }}>The staff member will be automatically activated when they sign up and enter this code.</Text>
               </View>
             </View>
           )}
@@ -246,162 +272,110 @@ function AddStaffModal({
 // ─────────────────────────────────────────────────────────────────────────────
 // ORDER CARD (VERY COMPACT - IMAGE 1 STYLE)
 // ─────────────────────────────────────────────────────────────────────────────
-function OrderCard({ order, isExpanded, onToggle }: { order: any, isExpanded: boolean, onToggle: () => void }) {
-  const [assignModal, setAssignModal] = useState(false);
-  const approveOrder = useMutation(api.orders.approveOrder);
-  const rejectOrder = useMutation(api.orders.rejectOrder);
-  const deleteOrder = useMutation(api.orders.adminDeleteOrder);
-  const [loading, setLoading] = useState<string | null>(null);
-
+// ─────────────────────────────────────────────────────────────────────────────
+// ORDER ROW (TABLE STYLE - IMAGE 2 STYLE)
+// ─────────────────────────────────────────────────────────────────────────────
+function OrderRow({ order, onAssign, onApprove, onReject, onDelete }: {
+  order: any,
+  onAssign: () => void,
+  onApprove: () => void,
+  onReject: () => void,
+  onDelete: () => void
+}) {
+  const [showMenu, setShowMenu] = useState(false);
   const statusC = statusColor(order.status);
   const isPending = order.status === 'Pending';
   const isActionable = ['Pending', 'Assigned', 'Approved'].includes(order.status);
 
-  const doApprove = async () => {
-    setLoading('approve');
-    try { await approveOrder({ orderId: order._id }); } catch (e) { Alert.alert('Error', (e as Error).message); } finally { setLoading(null); }
-  };
-  const doReject = async () => {
-    setLoading('reject');
-    try { await rejectOrder({ orderId: order._id }); } catch (e) { Alert.alert('Error', (e as Error).message); } finally { setLoading(null); }
-  };
-  const confirmDelete = () => {
-    const handle = () => deleteOrder({ orderId: order._id }).catch(e => Alert.alert('Error', e.message));
-    if (Platform.OS === 'web') { if (window.confirm(`Delete Order #${order.orderId.slice(-5)}?`)) handle(); }
-    else { Alert.alert("Delete?", "Action is permanent.", [{ text: "Cancel" }, { text: "Delete", style: "destructive", onPress: handle }]); }
-  };
-
   return (
-    <TouchableOpacity activeOpacity={0.8} onPress={onToggle} style={[styles.orderCard, isExpanded && styles.orderCardExpanded]}>
-      <View style={styles.orderCardHeader}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.compactId}>#{order.orderId.slice(-5)}</Text>
-          <Text style={styles.compactName} numberOfLines={1}>{order.customerName || 'Customer'}</Text>
-        </View>
-        <View style={{ alignItems: 'flex-end', gap: 4 }}>
-          <Text style={styles.compactAmount}>₹{order.totalAmount}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: statusC.bg }]}>
-            <Text style={[styles.statusText, { color: statusC.text }]}>{order.status}</Text>
-          </View>
-        </View>
-        <MaterialIcons name={isExpanded ? "expand-less" : "expand-more"} size={16} color={COLORS.gray} style={{ marginLeft: 8 }} />
+    <View style={styles.tableRow}>
+      <View style={[styles.tableCol, { width: scale(45) }]}>
+        <Text style={styles.tableTextId}>#{order.orderId.slice(-5)}</Text>
       </View>
 
-      {/* Assigned staff shown in compact view below header */}
-      {order.assignedStaffName && !isExpanded && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 2, paddingBottom: 4 }}>
-          <MaterialIcons name="delivery-dining" size={13} color={COLORS.secondary} />
-          <Text style={{ fontSize: scale(9), color: COLORS.secondary, fontWeight: '800' }}>
-            Assigned: {order.assignedStaffName}
-          </Text>
+      <View style={[styles.tableCol, { flex: 1.5 }]}>
+        <Text style={styles.tableTextName} numberOfLines={1}>{order.customerName || 'Customer'}</Text>
+        <Text style={styles.tableTextSub}>{order.customerPhone}</Text>
+      </View>
+
+      <View style={[styles.tableCol, { flex: 1 }]}>
+        <View style={[styles.tableStatusBadge, { backgroundColor: statusC.bg }]}>
+          <Text style={[styles.tableStatusText, { color: statusC.text }]}>{order.status}</Text>
         </View>
-      )}
+      </View>
 
-      {isExpanded && (
-        <View style={styles.expandedContent}>
-          <View style={styles.detailsGrid}>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Direct Phone</Text>
-              <TouchableOpacity onPress={() => Linking.openURL(`tel:${order.customerPhone}`)}>
-                <Text style={[styles.detailValue, { color: COLORS.info }]}>{order.customerPhone || 'N/A'}</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Items</Text>
-              <Text style={styles.detailValue}>{order.quantity} × 20L</Text>
-            </View>
-          </View>
+      <View style={[styles.tableCol, { flex: 1, alignItems: 'center' }]}>
+        <Text style={styles.tableTextItems}>{order.quantity}×20L</Text>
+      </View>
 
-          <View style={styles.breakdownBox}>
-             <View style={styles.totalRow}>
-               <Text style={styles.totalLabel}>Grand Total</Text>
-               <Text style={styles.totalValue}>₹{order.totalAmount}</Text>
-             </View>
-          </View>
+      <View style={[styles.tableCol, { width: scale(60), alignItems: 'flex-end' }]}>
+        <Text style={styles.tableTextAmount}>₹{order.totalAmount}</Text>
+      </View>
 
-          <View style={styles.addressRow}>
-            <MaterialIcons name="location-pin" size={14} color={COLORS.secondary} />
-            <Text style={styles.addressText} numberOfLines={2}>{[order.buildingName, order.streetName, order.area].filter(Boolean).join(', ') || order.pincode}</Text>
-          </View>
+      <View style={[styles.tableCol, { width: scale(40), alignItems: 'center' }]}>
+        <TouchableOpacity
+          onPress={() => setShowMenu(true)}
+          style={styles.actionMenuBtn}
+        >
+          <MaterialIcons name="more-horiz" size={20} color={COLORS.gray} />
+        </TouchableOpacity>
+      </View>
 
-          {/* ── ACTION ROW: Always one single line ── */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
+      {/* ACTION DROPDOWN MENU */}
+      <Modal visible={showMenu} transparent animationType="fade" onRequestClose={() => setShowMenu(false)}>
+        <TouchableOpacity
+          style={modalStyles.overlay}
+          activeOpacity={1}
+          onPress={() => setShowMenu(false)}
+        >
+          <View style={styles.dropdownMenu}>
+            <Text style={styles.menuTitle}>ORDER ACTIONS</Text>
 
-            {/* Assigned Staff label — shown when assigned (takes flex space) */}
-            {order.assignedStaffName ? (
-              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                <MaterialIcons name="delivery-dining" size={15} color={COLORS.secondary} />
-                <Text style={{ fontSize: scale(10), color: COLORS.secondary, fontWeight: '800' }} numberOfLines={1}>
-                  Assigned: {order.assignedStaffName}
-                </Text>
-              </View>
-            ) : (
-              /* Assign + Approve buttons when no staff assigned yet */
-              <>
-                {(isPending || order.status === 'Approved') && (
-                  <TouchableOpacity
-                    onPress={() => setAssignModal(true)}
-                    style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.info, borderRadius: 10, paddingVertical: 9, gap: 4 }}
-                  >
-                    <MaterialIcons name="person-add" size={13} color="#fff" />
-                    <Text style={{ fontSize: scale(9), fontWeight: '900', color: '#fff' }}>Assign</Text>
-                  </TouchableOpacity>
-                )}
-                {isPending && (
-                  <TouchableOpacity
-                    onPress={doApprove}
-                    disabled={!!loading}
-                    style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.success, borderRadius: 10, paddingVertical: 9, gap: 4 }}
-                  >
-                    {loading === 'approve'
-                      ? <ActivityIndicator size="small" color="#fff" />
-                      : <><MaterialIcons name="check" size={13} color="#fff" /><Text style={{ fontSize: scale(9), fontWeight: '900', color: '#fff' }}>Approve</Text></>
-                    }
-                  </TouchableOpacity>
-                )}
-              </>
-            )}
-
-            {/* Cancel / Reject icon — always right side */}
-            {isActionable && (
-              <TouchableOpacity
-                onPress={doReject}
-                disabled={!!loading}
-                style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#FEE2E2', alignItems: 'center', justifyContent: 'center' }}
-              >
-                {loading === 'reject'
-                  ? <ActivityIndicator size="small" color={COLORS.danger} />
-                  : <MaterialIcons name="close" size={17} color={COLORS.danger} />
-                }
-              </TouchableOpacity>
-            )}
-
-            {/* Delete icon — always right side */}
-            <TouchableOpacity
-              onPress={confirmDelete}
-              disabled={!!loading}
-              style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <MaterialIcons name="delete-outline" size={17} color="#475569" />
+            <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); onAssign(); }}>
+              <MaterialIcons name="person-add" size={18} color={COLORS.info} />
+              <Text style={styles.menuItemText}>Assign Staff</Text>
             </TouchableOpacity>
 
+            {isPending && (
+              <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); onApprove(); }}>
+                <MaterialIcons name="check-circle" size={18} color={COLORS.success} />
+                <Text style={styles.menuItemText}>Approve Order</Text>
+              </TouchableOpacity>
+            )}
+
+            {isActionable && (
+              <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); onReject(); }}>
+                <MaterialIcons name="cancel" size={18} color={COLORS.warning} />
+                <Text style={styles.menuItemText}>Reject Order</Text>
+              </TouchableOpacity>
+            )}
+
+            <View style={styles.menuDivider} />
+
+            <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); onDelete(); }}>
+              <MaterialIcons name="delete-outline" size={18} color={COLORS.danger} />
+              <Text style={[styles.menuItemText, { color: COLORS.danger }]}>Delete Permanent</Text>
+            </TouchableOpacity>
           </View>
-
-
-        </View>
-      )}
-      <AssignStaffModal visible={assignModal} orderId={order._id} onClose={() => setAssignModal(false)} />
-    </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+    </View>
   );
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ORDERS TAB
 // ─────────────────────────────────────────────────────────────────────────────
 function OrdersTab() {
   const orders = useQuery(api.orders.getAllOrders);
+  const approveOrder = useMutation(api.orders.approveOrder);
+  const rejectOrder = useMutation(api.orders.rejectOrder);
+  const deleteOrder = useMutation(api.orders.adminDeleteOrder);
+
   const [filter, setFilter] = useState<'All' | 'Pending' | 'Active' | 'Delivered'>('All');
-  const [expandedId, setExpandedId] = useState<Id<'orders'> | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<Id<'orders'> | null>(null);
+  const [assignModal, setAssignModal] = useState(false);
 
   if (orders === undefined) {
     return (
@@ -411,6 +385,20 @@ function OrdersTab() {
       </View>
     );
   }
+
+  const handleApprove = async (id: Id<'orders'>) => {
+    try { await approveOrder({ orderId: id }); } catch (e) { Alert.alert('Error', (e as Error).message); }
+  };
+
+  const handleReject = async (id: Id<'orders'>) => {
+    try { await rejectOrder({ orderId: id }); } catch (e) { Alert.alert('Error', (e as Error).message); }
+  };
+
+  const handleDelete = (id: Id<'orders'>, orderIdStr: string) => {
+    const handle = () => deleteOrder({ orderId: id }).catch(e => Alert.alert('Error', e.message));
+    if (Platform.OS === 'web') { if (window.confirm(`Delete Order #${orderIdStr.slice(-5)} permanently?`)) handle(); }
+    else { Alert.alert("Delete?", "Action is permanent.", [{ text: "Cancel" }, { text: "Delete", style: "destructive", onPress: handle }]); }
+  };
 
   const total = orders.length;
   const pending = orders.filter(o => o.status === 'Pending').length;
@@ -451,23 +439,38 @@ function OrdersTab() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
-        {filteredOrders.length === 0 ? (
-          <View style={styles.emptyStateBox}>
-            <FontAwesome5 name="wine-bottle" size={48} color={COLORS.border} />
-            <Text style={styles.emptyStateText}>No orders found.</Text>
-          </View>
-        ) : (
-          filteredOrders.map((order) => (
-            <OrderCard 
-              key={order._id} 
-              order={order} 
-              isExpanded={expandedId === order._id}
-              onToggle={() => setExpandedId(expandedId === order._id ? null : order._id)}
-            />
-          ))
-        )}
-      </ScrollView>
+      <View style={styles.tableContainer}>
+        {/* TABLE HEADER */}
+        <View style={styles.tableHeader}>
+          <View style={[styles.tableCol, { width: scale(45) }]}><Text style={styles.tableHeaderText}>ID</Text></View>
+          <View style={[styles.tableCol, { flex: 1.5 }]}><Text style={styles.tableHeaderText}>CUSTOMER</Text></View>
+          <View style={[styles.tableCol, { flex: 1 }]}><Text style={styles.tableHeaderText}>STATUS</Text></View>
+          <View style={[styles.tableCol, { flex: 1, alignItems: 'center' }]}><Text style={styles.tableHeaderText}>ITEMS</Text></View>
+          <View style={[styles.tableCol, { width: scale(60), alignItems: 'flex-end' }]}><Text style={styles.tableHeaderText}>AMOUNT</Text></View>
+          <View style={[styles.tableCol, { width: scale(40), alignItems: 'center' }]}><Text style={styles.tableHeaderText}>ACT</Text></View>
+        </View>
+
+        <ScrollView contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+          {filteredOrders.length === 0 ? (
+            <View style={styles.emptyStateBox}>
+              <FontAwesome5 name="wine-bottle" size={48} color={COLORS.border} />
+              <Text style={styles.emptyStateText}>No orders found.</Text>
+            </View>
+          ) : (
+            filteredOrders.map((order) => (
+              <OrderRow
+                key={order._id}
+                order={order}
+                onAssign={() => { setSelectedOrderId(order._id); setAssignModal(true); }}
+                onApprove={() => handleApprove(order._id)}
+                onReject={() => handleReject(order._id)}
+                onDelete={() => handleDelete(order._id, order.orderId)}
+              />
+            ))
+          )}
+        </ScrollView>
+      </View>
+      <AssignStaffModal visible={assignModal} orderId={selectedOrderId} onClose={() => setAssignModal(false)} />
     </View>
   );
 }
@@ -548,50 +551,77 @@ function StaffTab() {
     <View style={{ flex: 1 }}>
       <View style={styles.sectionHeaderRow}>
         <Text style={styles.sectionHeaderTitle}>Manage Staff</Text>
-        <TouchableOpacity 
-          style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.secondary, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, gap: 4 }} 
+        <TouchableOpacity
+          style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.secondary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, gap: 6 }}
           onPress={() => setQuickAddModal(true)}
         >
-          <MaterialIcons name="add" size={14} color="#fff" />
-          <Text style={{ fontSize: scale(10), fontWeight: '800', color: '#fff' }}>Add Staff</Text>
+          <MaterialIcons name="add" size={16} color="#fff" />
+          <Text style={{ fontSize: scale(11), fontWeight: '800', color: '#fff' }}>Add New Staff</Text>
         </TouchableOpacity>
       </View>
-      
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-        {pendingInvites && pendingInvites.map((invite) => (
-          <View key={invite._id} style={styles.staffListRow}>
-            <View style={styles.staffListLeft}>
-              <MaterialIcons name="mail-outline" size={20} color={COLORS.warning} />
-              <View style={{ marginLeft: 12 }}>
-                <Text style={styles.staffListName}>{invite.name} (Pending)</Text>
-                <Text style={styles.staffListSub}>{invite.email}</Text>
+
+      <View style={styles.tableContainer}>
+        {/* STAFF TABLE HEADER */}
+        <View style={styles.tableHeader}>
+          <View style={[styles.tableCol, { width: scale(40), alignItems: 'center' }]}><Text style={styles.tableHeaderText}>AV</Text></View>
+          <View style={[styles.tableCol, { flex: 1.5 }]}><Text style={styles.tableHeaderText}>STAFF NAME</Text></View>
+          <View style={[styles.tableCol, { flex: 1.5 }]}><Text style={styles.tableHeaderText}>CONTACT INFO</Text></View>
+          <View style={[styles.tableCol, { width: scale(60), alignItems: 'center' }]}><Text style={styles.tableHeaderText}>STATUS</Text></View>
+          <View style={[styles.tableCol, { width: scale(40), alignItems: 'center' }]}><Text style={styles.tableHeaderText}>ACT</Text></View>
+        </View>
+
+        <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+          {pendingInvites && pendingInvites.map((invite) => (
+            <View key={invite._id} style={styles.tableRow}>
+              <View style={[styles.tableCol, { width: scale(40), alignItems: 'center' }]}>
+                <View style={[styles.staffListAvatar, { backgroundColor: '#FEF3C7' }]}><MaterialIcons name="mail-outline" size={16} color="#D97706" /></View>
+              </View>
+              <View style={[styles.tableCol, { flex: 1.5 }]}>
+                <Text style={styles.tableTextName}>{invite.name}</Text>
+              </View>
+              <View style={[styles.tableCol, { flex: 1.5 }]}>
+                <Text style={styles.tableTextSub}>{invite.email}</Text>
+              </View>
+              <View style={[styles.tableCol, { width: scale(60), alignItems: 'center' }]}>
+                <View style={[styles.tableStatusBadge, { backgroundColor: '#FEF3C7' }]}><Text style={[styles.tableStatusText, { color: '#D97706' }]}>PENDING</Text></View>
+              </View>
+              <View style={[styles.tableCol, { width: scale(40), alignItems: 'center' }]}>
+                <TouchableOpacity onPress={() => confirmDeleteInvite(invite._id, invite.name)} style={styles.actionMenuBtn}>
+                  <MaterialIcons name="close" size={18} color={COLORS.danger} />
+                </TouchableOpacity>
               </View>
             </View>
-            <TouchableOpacity onPress={() => confirmDeleteInvite(invite._id, invite.name)}>
-              <MaterialIcons name="close" size={20} color={COLORS.danger} />
-            </TouchableOpacity>
-          </View>
-        ))}
+          ))}
 
-        {staffList === undefined ? <ActivityIndicator color={COLORS.primary} style={{ marginTop: 30 }} /> : staffList.length === 0 ? (
-          <View style={styles.emptyStateBox}><Text style={styles.emptyStateText}>No staff members.</Text></View>
-        ) : (
-          staffList.map((staff) => (
-            <TouchableOpacity key={staff._id} style={styles.staffListRow} onPress={() => { setSelectedStaff(staff); setDetailsModal(true); }}>
-              <View style={styles.staffListLeft}>
-                <View style={[styles.staffListAvatar, { backgroundColor: COLORS.accent }]}><Text style={{ color: COLORS.secondary, fontWeight: '900' }}>{staff.name[0]}</Text></View>
-                <View style={{ marginLeft: 12 }}>
-                  <Text style={styles.staffListName}>{staff.name}</Text>
-                  <Text style={styles.staffListSub}>{staff.phone || staff.email}</Text>
+          {staffList === undefined ? <ActivityIndicator color={COLORS.primary} style={{ marginTop: 30 }} /> : staffList.length === 0 ? (
+            <View style={styles.emptyStateBox}><Text style={styles.emptyStateText}>No staff members.</Text></View>
+          ) : (
+            staffList.map((staff) => (
+              <TouchableOpacity key={staff._id} style={styles.tableRow} onPress={() => { setSelectedStaff(staff); setDetailsModal(true); }}>
+                <View style={[styles.tableCol, { width: scale(40), alignItems: 'center' }]}>
+                  <View style={[styles.staffListAvatar, { backgroundColor: COLORS.accent }]}>
+                    <Text style={{ color: COLORS.secondary, fontWeight: '900', fontSize: scale(10) }}>{staff.name[0]}</Text>
+                  </View>
                 </View>
-              </View>
-              <TouchableOpacity onPress={() => confirmRemove(staff._id as any, staff.name)}>
-                <MaterialIcons name="delete-outline" size={20} color={COLORS.danger} />
+                <View style={[styles.tableCol, { flex: 1.5 }]}>
+                  <Text style={styles.tableTextName}>{staff.name}</Text>
+                </View>
+                <View style={[styles.tableCol, { flex: 1.5 }]}>
+                  <Text style={styles.tableTextSub}>{staff.phone || staff.email}</Text>
+                </View>
+                <View style={[styles.tableCol, { width: scale(60), alignItems: 'center' }]}>
+                  <View style={[styles.tableStatusBadge, { backgroundColor: '#DCFCE7' }]}><Text style={[styles.tableStatusText, { color: COLORS.success }]}>ACTIVE</Text></View>
+                </View>
+                <View style={[styles.tableCol, { width: scale(40), alignItems: 'center' }]}>
+                  <TouchableOpacity onPress={() => confirmRemove(staff._id as any, staff.name)} style={styles.actionMenuBtn}>
+                    <MaterialIcons name="delete-outline" size={18} color={COLORS.danger} />
+                  </TouchableOpacity>
+                </View>
               </TouchableOpacity>
-            </TouchableOpacity>
-          ))
-        )}
-      </ScrollView>
+            ))
+          )}
+        </ScrollView>
+      </View>
       <StaffDetailsModal visible={detailsModal} staff={selectedStaff} onClose={() => setDetailsModal(false)} />
       <AddStaffModal visible={quickAddModal} onClose={() => setQuickAddModal(false)} />
     </View>
@@ -606,34 +636,228 @@ function PricingTab() {
   const updatePricing = useMutation(api.pricing.updatePricing);
 
   return (
-    <ScrollView contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingBottom: scale(250) }} showsVerticalScrollIndicator={false}>
       <View style={styles.sectionHeaderRow}><Text style={styles.sectionHeaderTitle}>Pricing Settings</Text></View>
-      <PricingItem 
-        icon="water-drop" 
-        title="Water Can (20L)" 
-        current={pricing?.waterPrice || 0} 
-        onUpdate={(val: number) => updatePricing({ waterPrice: val, bottlePrice: pricing?.bottlePrice || 0, expressCharge: pricing?.expressCharge || 0 })} 
-        color={COLORS.primary} 
-      />
-      <PricingItem 
-        icon="inventory" 
-        title="Empty Container" 
-        current={pricing?.bottlePrice || 0} 
-        onUpdate={(val: number) => updatePricing({ waterPrice: pricing?.waterPrice || 0, bottlePrice: val, expressCharge: pricing?.expressCharge || 0 })} 
-        color={COLORS.info} 
-      />
-      <PricingItem 
-        icon="speed" 
-        title="Express Delivery" 
-        current={pricing?.expressCharge || 0} 
-        onUpdate={(val: number) => updatePricing({ waterPrice: pricing?.waterPrice || 0, bottlePrice: pricing?.bottlePrice || 0, expressCharge: val })} 
-        color={COLORS.warning} 
-      />
+
+      <View style={styles.tableContainer}>
+        {/* PRICING TABLE HEADER */}
+        <View style={styles.tableHeader}>
+          <View style={[styles.tableCol, { flex: 2, justifyContent: 'flex-start' }]}><Text style={[styles.tableHeaderText, { paddingLeft: 10 }]}>SERVICE ITEM</Text></View>
+          <View style={[styles.tableCol, { flex: 1, alignItems: 'center' }]}><Text style={styles.tableHeaderText}>CURRENT</Text></View>
+          <View style={[styles.tableCol, { flex: 1.5, alignItems: 'center' }]}><Text style={styles.tableHeaderText}>NEW PRICE</Text></View>
+          <View style={[styles.tableCol, { width: scale(60), alignItems: 'center' }]}><Text style={styles.tableHeaderText}>ACT</Text></View>
+        </View>
+
+        <PricingTableRow
+          icon="water-drop"
+          title="Water Can (20L)"
+          current={pricing?.waterPrice || 0}
+          onUpdate={(val: number) => updatePricing({ waterPrice: val, bottlePrice: pricing?.bottlePrice || 0, expressCharge: pricing?.expressCharge || 0 })}
+          color={COLORS.primary}
+        />
+        <PricingTableRow
+          icon="inventory"
+          title="Empty Container"
+          current={pricing?.bottlePrice || 0}
+          onUpdate={(val: number) => updatePricing({ waterPrice: pricing?.waterPrice || 0, bottlePrice: val, expressCharge: pricing?.expressCharge || 0 })}
+          color={COLORS.info}
+        />
+        <PricingTableRow
+          icon="speed"
+          title="Express Delivery"
+          current={pricing?.expressCharge || 0}
+          onUpdate={(val: number) => updatePricing({ waterPrice: pricing?.waterPrice || 0, bottlePrice: pricing?.bottlePrice || 0, expressCharge: val })}
+          color={COLORS.warning}
+        />
+      </View>
+
+      <PincodeManagementSection />
     </ScrollView>
   );
 }
 
-function PricingItem({ icon, title, current, onUpdate, color }: any) {
+function PincodeManagementSection() {
+  const pincodes = useQuery(api.pincodes.getPincodes);
+  const addPincode = useMutation(api.pincodes.addPincode);
+  const updatePincode = useMutation(api.pincodes.updatePincode);
+  const deletePincode = useMutation(api.pincodes.deletePincode);
+  const seedPincodes = useMutation(api.pincodes.seedDefaultPincodes);
+
+  const [label, setLabel] = useState('');
+  const [value, setValue] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
+  const [editingId, setEditingId] = useState<Id<'pincodes'> | null>(null);
+
+  useEffect(() => {
+    if (pincodes !== undefined && pincodes.length === 0) {
+      seedPincodes();
+    }
+  }, [pincodes]);
+
+  const handleSave = async () => {
+    if (!label || !value) {
+      Alert.alert('Error', 'Please fill both Label and Pincode.');
+      return;
+    }
+    setIsAdding(true);
+    try {
+      if (editingId) {
+        await updatePincode({ id: editingId, label, value });
+        setEditingId(null);
+      } else {
+        await addPincode({ label, value });
+      }
+      setLabel('');
+      setValue('');
+      Alert.alert('Success', `Pincode ${editingId ? 'updated' : 'added'} successfully.`);
+    } catch (e) {
+      Alert.alert('Error', (e as Error).message);
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const startEdit = (p: any) => {
+    setEditingId(p._id);
+    setLabel(p.label);
+    setValue(p.value);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setLabel('');
+    setValue('');
+  };
+
+  const handleDelete = (id: any) => {
+    const handle = () => deletePincode({ id }).catch(e => Alert.alert('Error', e.message));
+    if (Platform.OS === 'web') {
+      if (window.confirm('Delete this pincode?')) handle();
+    } else {
+      Alert.alert('Delete?', 'Remove this pincode?', [
+        { text: 'Cancel' },
+        { text: 'Delete', style: 'destructive', onPress: handle }
+      ]);
+    }
+  };
+
+  return (
+    <View style={{ marginTop: scale(24), marginBottom: scale(40) }}>
+      <View style={styles.sectionHeaderRow}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <MaterialIcons name="map" size={20} color={COLORS.secondary} />
+          <Text style={styles.sectionHeaderTitle}>Pincode Management</Text>
+        </View>
+        <Text style={{ fontSize: scale(8), color: COLORS.gray, fontWeight: '700' }}>{pincodes?.length || 0} AREAS ACTIVE</Text>
+      </View>
+
+      <View style={{ backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', overflow: 'hidden', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 }}>
+        {/* TABLE HEADER */}
+        <View style={{ flexDirection: 'row', backgroundColor: '#F8FAFC', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' }}>
+          <View style={{ flex: 2.5, paddingLeft: 16 }}><Text style={{ fontSize: scale(8), fontWeight: '900', color: '#64748B', letterSpacing: 1 }}>AREA NAME / LABEL</Text></View>
+          <View style={{ width: 1, backgroundColor: '#E2E8F0' }} />
+          <View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: scale(8), fontWeight: '900', color: '#64748B', letterSpacing: 1 }}>CODE</Text></View>
+          <View style={{ width: 1, backgroundColor: '#E2E8F0' }} />
+          <View style={{ width: scale(85), alignItems: 'center' }}><Text style={{ fontSize: scale(8), fontWeight: '900', color: '#64748B', letterSpacing: 1 }}>ACTIONS</Text></View>
+        </View>
+
+        {/* INPUT ROW */}
+        <View style={{ flexDirection: 'row', backgroundColor: '#fff', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}>
+          <View style={{ flex: 2.5, paddingHorizontal: 12 }}>
+            <TextInput 
+              style={{ height: scale(34), backgroundColor: '#F9FAFB', borderRadius: 8, paddingHorizontal: 12, fontSize: scale(10), color: '#0F172A', borderWidth: 1, borderColor: '#E2E8F0' }} 
+              placeholder="Enter Area..." 
+              placeholderTextColor="#94A3B8"
+              value={label}
+              onChangeText={setLabel}
+            />
+          </View>
+          <View style={{ flex: 1, paddingHorizontal: 8 }}>
+            <TextInput 
+              style={{ height: scale(34), backgroundColor: '#F9FAFB', borderRadius: 8, textAlign: 'center', fontSize: scale(10), color: '#0F172A', fontWeight: '700', borderWidth: 1, borderColor: '#E2E8F0' }} 
+              placeholder="Code" 
+              placeholderTextColor="#94A3B8"
+              value={value}
+              onChangeText={setValue}
+              keyboardType="numeric"
+            />
+          </View>
+          <View style={{ width: scale(85), alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
+            <TouchableOpacity 
+              style={{ backgroundColor: editingId ? '#10B981' : COLORS.secondary, width: scale(34), height: scale(34), borderRadius: 8, alignItems: 'center', justifyContent: 'center' }} 
+              onPress={handleSave}
+              disabled={isAdding}
+            >
+              <MaterialIcons name={editingId ? "done" : "add"} size={20} color="#fff" />
+            </TouchableOpacity>
+            {editingId && (
+              <TouchableOpacity 
+                style={{ backgroundColor: '#EF4444', width: scale(34), height: scale(34), borderRadius: 8, alignItems: 'center', justifyContent: 'center' }} 
+                onPress={cancelEdit}
+              >
+                <MaterialIcons name="close" size={20} color="#fff" />
+              </TouchableOpacity>
+            )}
+            {!editingId && (
+              <TouchableOpacity 
+                style={{ backgroundColor: '#F1F5F9', width: scale(34), height: scale(34), borderRadius: 8, alignItems: 'center', justifyContent: 'center' }} 
+                onPress={() => seedPincodes()}
+              >
+                <MaterialIcons name="refresh" size={18} color="#64748B" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {/* DATA ROWS */}
+        {pincodes === undefined ? (
+          <View style={{ padding: 50, alignItems: 'center' }}>
+            <ActivityIndicator color={COLORS.secondary} />
+          </View>
+        ) : pincodes.length === 0 ? (
+          <View style={{ padding: 60, alignItems: 'center' }}>
+            <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+              <MaterialIcons name="map" size={32} color="#CBD5E1" />
+            </View>
+            <Text style={{ fontSize: scale(12), color: '#1E293B', fontWeight: '800' }}>No Service Areas</Text>
+            <Text style={{ fontSize: scale(9), color: '#64748B', textAlign: 'center', marginTop: 4, marginBottom: 20 }}>Ready to define your delivery zones?</Text>
+            <TouchableOpacity 
+              onPress={() => seedPincodes()}
+              style={{ backgroundColor: COLORS.secondary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 }}
+            >
+              <Text style={{ color: '#fff', fontSize: scale(10), fontWeight: '800' }}>INITIALIZE DEFAULTS</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          pincodes.map((p, idx) => (
+            <View key={p._id} style={{ flexDirection: 'row', paddingVertical: 12, borderBottomWidth: idx === pincodes.length - 1 ? 0 : 1, borderBottomColor: '#F1F5F9', backgroundColor: editingId === p._id ? '#F0FDFA' : '#fff', minHeight: scale(50), alignItems: 'center' }}>
+              <View style={{ flex: 2.5, paddingLeft: 16, paddingRight: 8 }}>
+                <Text style={{ fontSize: scale(11), fontWeight: '700', color: '#1E293B' }} numberOfLines={1}>{p.label}</Text>
+              </View>
+              <View style={{ width: 1, height: '60%', backgroundColor: '#F1F5F9' }} />
+              <View style={{ flex: 1, alignItems: 'center' }}>
+                <View style={{ backgroundColor: '#F1F5F9', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 }}>
+                  <Text style={{ fontSize: scale(10.5), fontWeight: '800', color: COLORS.secondary }}>{p.value}</Text>
+                </View>
+              </View>
+              <View style={{ width: 1, height: '60%', backgroundColor: '#F1F5F9' }} />
+              <View style={{ width: scale(85), flexDirection: 'row', justifyContent: 'center', gap: 10 }}>
+                <TouchableOpacity onPress={() => startEdit(p)} style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#E2E8F0' }}>
+                  <MaterialIcons name="edit" size={16} color="#64748B" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDelete(p._id)} style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FECACA' }}>
+                  <MaterialIcons name="delete-outline" size={16} color="#EF4444" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))
+        )}
+      </View>
+    </View>
+  );
+}
+
+function PricingTableRow({ icon, title, current, onUpdate, color }: any) {
   const [val, setVal] = useState('');
   const [loading, setLoading] = useState(false);
   const handle = async () => {
@@ -644,78 +868,36 @@ function PricingItem({ icon, title, current, onUpdate, color }: any) {
     catch (e) { Alert.alert("Error", (e as Error).message); } finally { setLoading(false); }
   };
   return (
-    <View style={pricingStyles.card}>
-      <View style={pricingStyles.cardHeader}>
-        <View style={[pricingStyles.iconBox, { backgroundColor: color + '15' }]}><MaterialIcons name={icon} size={20} color={color} /></View>
-        <View style={{ flex: 1, marginLeft: 10 }}>
-          <Text style={pricingStyles.title}>{title}</Text>
-          <Text style={[pricingStyles.price, { color }]}>₹{current}</Text>
-        </View>
+    <View style={styles.tableRow}>
+      <View style={[styles.tableCol, { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 10 }]}>
+        <View style={[pricingStyles.iconBox, { backgroundColor: color + '15' }]}><MaterialIcons name={icon} size={16} color={color} /></View>
+        <Text style={[styles.tableTextName, { fontSize: scale(10) }]}>{title}</Text>
       </View>
-      <View style={pricingStyles.inputRow}>
-        <TextInput style={pricingStyles.input} placeholder="New price..." keyboardType="numeric" value={val} onChangeText={setVal} />
-        <TouchableOpacity style={[pricingStyles.btn, { backgroundColor: color }]} onPress={handle} disabled={loading}>
-          {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={pricingStyles.btnText}>UPDATE</Text>}
+      <View style={[styles.tableCol, { flex: 1, alignItems: 'center' }]}>
+        <Text style={[styles.tableTextAmount, { color }]}>₹{current}</Text>
+      </View>
+      <View style={[styles.tableCol, { flex: 1.5, alignItems: 'center', paddingHorizontal: 10 }]}>
+        <TextInput
+          style={[pricingStyles.input, { height: scale(28), width: '100%', fontSize: scale(10) }]}
+          placeholder="0.00"
+          keyboardType="numeric"
+          value={val}
+          onChangeText={setVal}
+        />
+      </View>
+      <View style={[styles.tableCol, { width: scale(60), alignItems: 'center' }]}>
+        <TouchableOpacity
+          style={[pricingStyles.btn, { backgroundColor: color, height: scale(28), paddingVertical: 0 }]}
+          onPress={handle}
+          disabled={loading}
+        >
+          {loading ? <ActivityIndicator size="small" color="#fff" /> : <MaterialIcons name="done" size={18} color="#fff" />}
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// WATER ANIMATED BACKGROUND
-// ─────────────────────────────────────────────────────────────────────────────
-function WaterAnimatedBackground() {
-  const anim1 = useRef(new Animated.Value(0)).current;
-  const anim2 = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(anim1, { toValue: 1, duration: 10000, useNativeDriver: true }),
-        Animated.timing(anim1, { toValue: 0, duration: 10000, useNativeDriver: true })
-      ])
-    ).start();
-
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(anim2, { toValue: 1, duration: 14000, useNativeDriver: true }),
-        Animated.timing(anim2, { toValue: 0, duration: 14000, useNativeDriver: true })
-      ])
-    ).start();
-  }, []);
-
-  const transY1 = anim1.interpolate({ inputRange: [0, 1], outputRange: [0, 50] });
-  const transX1 = anim1.interpolate({ inputRange: [0, 1], outputRange: [0, 20] });
-  const scale1 = anim1.interpolate({ inputRange: [0, 1], outputRange: [1, 1.1] });
-  
-  const transY2 = anim2.interpolate({ inputRange: [0, 1], outputRange: [0, -60] });
-  const transX2 = anim2.interpolate({ inputRange: [0, 1], outputRange: [0, -30] });
-  const scale2 = anim2.interpolate({ inputRange: [0, 1], outputRange: [1, 1.15] });
-
-  return (
-    <View style={[StyleSheet.absoluteFillObject, { overflow: 'hidden', backgroundColor: '#F4FDFC' }]} pointerEvents="none">
-      <Animated.View style={{
-        position: 'absolute', width: 600, height: 600, borderRadius: 300, 
-        backgroundColor: COLORS.primary, opacity: 0.1,
-        top: -200, left: -150,
-        transform: [{ translateY: transY1 }, { translateX: transX1 }, { scale: scale1 }]
-      }} />
-      <Animated.View style={{
-        position: 'absolute', width: 500, height: 500, borderRadius: 250, 
-        backgroundColor: COLORS.info, opacity: 0.08,
-        bottom: -150, right: -150,
-        transform: [{ translateY: transY2 }, { translateX: transX2 }, { scale: scale2 }]
-      }} />
-      <Animated.View style={{
-        position: 'absolute', width: 400, height: 400, borderRadius: 200, 
-        backgroundColor: COLORS.secondary, opacity: 0.06,
-        top: '40%', left: '30%',
-        transform: [{ translateY: transY1 }, { translateX: transX2 }, { scale: scale2 }]
-      }} />
-    </View>
-  );
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN ADMIN DASHBOARD
@@ -727,22 +909,22 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState<Tab>('orders');
 
   const handleSignOut = () => {
-    const doSignOut = async () => { await signOut(); router.replace('/(auth)/sign-in'); };
+    const doSignOut = async () => { await signOut(); router.replace('/home'); };
     if (Platform.OS === 'web') { if (window.confirm("Log out?")) doSignOut(); }
     else { Alert.alert("Log Out", "Log out of Admin?", [{ text: "Cancel" }, { text: "Log Out", style: "destructive", onPress: doSignOut }]); }
   };
 
-  const goHome = () => router.replace('/(admin)');
+  const goHome = () => router.replace('/home');
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.secondary} />
-      <View style={{ flex: 1, backgroundColor: '#FAFAFA' }}>
-      <WaterAnimatedBackground />
-      
+
       <View style={styles.stickyHeader}>
         <View style={styles.headerTop}>
-          <View style={{ width: scale(36) }} />
+          <TouchableOpacity style={styles.homeBtn} onPress={goHome} id="admin-home-btn">
+            <MaterialIcons name="home" size={scale(20)} color="#fff" />
+          </TouchableOpacity>
           <View style={styles.brandBox}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(6) }}>
               <FontAwesome5 name="tint" size={scale(16)} color="#fff" />
@@ -751,6 +933,10 @@ export default function AdminDashboard() {
             <Text style={styles.brandBadge}>ADMIN PANEL</Text>
           </View>
           <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.iconAction}>
+              <MaterialIcons name="notifications-none" size={22} color="#fff" />
+              <View style={styles.notificationBadge} />
+            </TouchableOpacity>
             <TouchableOpacity style={styles.profileBox} onPress={handleSignOut}>
               <View style={styles.avatarHolder}>
                 <Text style={styles.avatarText}>{user?.firstName?.[0] || 'A'}</Text>
@@ -784,7 +970,6 @@ export default function AdminDashboard() {
         {tab === 'staff' && <StaffTab />}
         {tab === 'pricing' && <PricingTab />}
       </View>
-      </View>
     </SafeAreaView>
   );
 }
@@ -793,7 +978,7 @@ export default function AdminDashboard() {
 // STYLES
 // ─────────────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.secondary },
+  safeArea: { flex: 1, backgroundColor: '#FAFAFA' },
   stickyHeader: { backgroundColor: COLORS.secondary, paddingTop: scale(4), borderBottomLeftRadius: 20, borderBottomRightRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 8, zIndex: 100 },
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: scale(16), paddingVertical: scale(10) },
   homeBtn: { width: scale(32), height: scale(32), borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
@@ -812,61 +997,54 @@ const styles = StyleSheet.create({
   tabLabel: { fontSize: scale(10), fontWeight: '700', color: 'rgba(255,255,255,0.5)' },
   tabLabelActive: { color: COLORS.white, fontWeight: '900' },
   tabContent: { flex: 1, paddingHorizontal: scale(12), paddingTop: scale(14) },
-  
-  // Compact Stats (Image 1 Style)
+
+  // Global Components
+  loadingBox: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FAFAFA' },
+  loadingText: { marginTop: 12, fontSize: scale(12), color: COLORS.gray, fontWeight: '600' },
+  emptyStateBox: { alignItems: 'center', marginTop: 40, opacity: 0.5 },
+  emptyStateText: { fontSize: scale(14), fontWeight: '700', color: COLORS.gray },
+  sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  sectionHeaderTitle: { fontSize: scale(14), fontWeight: '900', color: COLORS.text },
+  notificationBadge: { position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.danger, borderWidth: 1.5, borderColor: COLORS.secondary },
+  adminMeta: { marginLeft: 8, justifyContent: 'center' },
+  onlineDot: { position: 'absolute', bottom: -2, right: -2, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.success, borderWidth: 1.5, borderColor: COLORS.secondary },
+
+  // Stats Grid
   gridStats: { flexDirection: 'row', gap: scale(6), marginBottom: scale(14) },
-  statCard: { flex: 1, backgroundColor: COLORS.white, borderRadius: 12, padding: scale(8), alignItems: 'center', borderWidth: 1, borderColor: '#F1F5F9', elevation: 2 },
+  statCard: { flex: 1, backgroundColor: '#fff', borderRadius: 12, padding: scale(8), alignItems: 'center', borderWidth: 1, borderColor: '#F1F5F9', elevation: 2 },
+  statCardActive: { borderColor: COLORS.secondary, backgroundColor: COLORS.accent },
   statIconBox: { width: scale(22), height: scale(22), borderRadius: 6, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   statNum: { fontSize: scale(13), fontWeight: '900', color: COLORS.text },
   statLabel: { fontSize: scale(7), fontWeight: '800', color: COLORS.gray, textTransform: 'uppercase' },
 
-  // Order Card (Image 1 Style - "Rama")
-  orderCard: { backgroundColor: COLORS.white, borderRadius: 16, padding: 12, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, elevation: 2, borderWidth: 1, borderColor: '#F1F5F9' },
-  orderCardExpanded: { borderColor: COLORS.secondary },
-  orderCardHeader: { flexDirection: 'row', alignItems: 'center' },
-  compactId: { fontSize: scale(9), fontWeight: '800', color: COLORS.gray },
-  compactName: { fontSize: scale(13), fontWeight: '900', color: COLORS.text },
-  compactAmount: { fontSize: scale(14), fontWeight: '900', color: COLORS.secondary },
-  statusBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
-  statusText: { fontSize: scale(8), fontWeight: '900', textTransform: 'uppercase' },
-  
-  expandedContent: { marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F1F5F9' },
-  detailsGrid: { flexDirection: 'row', gap: 6, marginBottom: 10 },
-  detailItem: { flex: 1, backgroundColor: '#F9FAFB', padding: 8, borderRadius: 10 },
-  detailLabel: { fontSize: scale(7), color: COLORS.gray, fontWeight: '800', textTransform: 'uppercase' },
-  detailValue: { fontSize: scale(11), fontWeight: '800', color: COLORS.text },
-  breakdownBox: { backgroundColor: '#F9FAFB', padding: 8, borderRadius: 10, marginBottom: 10 },
-  totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  totalLabel: { fontWeight: '800', color: COLORS.gray, fontSize: scale(10) },
-  totalValue: { fontWeight: '900', color: COLORS.secondary, fontSize: scale(14) },
-  addressRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10, backgroundColor: '#F9FAFB', padding: 8, borderRadius: 10 },
-  addressText: { fontSize: scale(10), color: COLORS.gray, flex: 1, fontWeight: '600' },
-  actionRow: { flexDirection: 'row', gap: 6, marginTop: 4 },
-  actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 10, gap: 4 },
-  actionBtnText: { fontSize: scale(11), fontWeight: '900', color: '#fff' },
+  // Table Styles (Order Tab)
+  tableContainer: { flex: 1, backgroundColor: '#fff', borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#F1F5F9' },
+  tableHeader: { flexDirection: 'row', backgroundColor: '#F8FAFC', paddingVertical: 12, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  tableHeaderText: { fontSize: scale(8), fontWeight: '800', color: COLORS.gray, textTransform: 'uppercase', letterSpacing: 0.5 },
+  tableRow: { flexDirection: 'row', paddingVertical: 12, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9', alignItems: 'center' },
+  tableCol: { justifyContent: 'center' },
+  tableTextId: { fontSize: scale(9), fontWeight: '700', color: COLORS.gray },
+  tableTextName: { fontSize: scale(11), fontWeight: '800', color: COLORS.text },
+  tableTextSub: { fontSize: scale(8), color: COLORS.gray, marginTop: 2 },
+  tableStatusBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, alignSelf: 'flex-start' },
+  tableStatusText: { fontSize: scale(8), fontWeight: '900', textTransform: 'uppercase' },
+  tableTextItems: { fontSize: scale(10), fontWeight: '700', color: COLORS.text },
+  tableTextAmount: { fontSize: scale(11), fontWeight: '900', color: COLORS.secondary },
+  actionMenuBtn: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC' },
 
-  // Staff List (Image 3 Style)
-  sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  sectionHeaderTitle: { fontSize: scale(14), fontWeight: '900', color: COLORS.text },
+  // Dropdown Menu Styles
+  dropdownMenu: { backgroundColor: '#fff', borderRadius: 12, padding: 8, width: scale(180), shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 10 },
+  menuTitle: { fontSize: scale(8), fontWeight: '800', color: COLORS.gray, paddingHorizontal: 12, paddingVertical: 8, textTransform: 'uppercase', letterSpacing: 1 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12, gap: 10, borderRadius: 8 },
+  menuItemText: { fontSize: scale(10), fontWeight: '700', color: COLORS.text },
+  menuDivider: { height: 1, backgroundColor: '#F1F5F9', marginVertical: 4 },
+
+  // Staff List Styles
   staffListRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, backgroundColor: '#fff', borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: '#F1F5F9' },
   staffListLeft: { flexDirection: 'row', alignItems: 'center' },
   staffListAvatar: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   staffListName: { fontSize: scale(13), fontWeight: '800', color: COLORS.text },
   staffListSub: { fontSize: scale(9), color: COLORS.gray },
-
-  fab: { position: 'absolute', bottom: 20, right: 16, width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.secondary, alignItems: 'center', justifyContent: 'center', elevation: 4 },
-  emptyStateBox: { alignItems: 'center', marginTop: 40, opacity: 0.5 },
-  emptyStateText: { fontSize: scale(14), fontWeight: '700', color: COLORS.gray },
-  
-  // Missing pieces for Admin Nav
-  notificationBadge: { position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.danger, borderWidth: 1.5, borderColor: COLORS.secondary },
-  adminMeta: { marginLeft: 8, justifyContent: 'center' },
-  onlineDot: { position: 'absolute', bottom: -2, right: -2, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.success, borderWidth: 1.5, borderColor: COLORS.secondary },
-  
-  // Helpers
-  loadingBox: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FAFAFA' },
-  loadingText: { marginTop: 12, fontSize: scale(12), color: COLORS.gray, fontWeight: '600' },
-  statCardActive: { borderColor: COLORS.secondary, backgroundColor: COLORS.accent },
 });
 
 const modalStyles = StyleSheet.create({
@@ -882,7 +1060,7 @@ const modalStyles = StyleSheet.create({
   codeText: { fontSize: scale(15), fontWeight: '900', color: COLORS.secondary, letterSpacing: 2 },
   shareBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 10, gap: 6 },
   shareBtnText: { fontSize: scale(10), fontWeight: '900' },
-  
+
   // Compatibility for older modals
   emptyBox: { alignItems: 'center', paddingVertical: 30 },
   emptyText: { fontSize: scale(12), color: COLORS.gray, marginTop: 10, fontWeight: '700', textAlign: 'center' },

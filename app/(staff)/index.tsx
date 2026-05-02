@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  StyleSheet, View, Text, ScrollView, StatusBar,
+  StyleSheet, View, Text, ScrollView, SafeAreaView, StatusBar,
   TouchableOpacity, ActivityIndicator, Alert, Linking, Platform, Modal, TextInput, Animated, KeyboardAvoidingView
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { useQuery, useMutation } from 'convex/react';
@@ -89,28 +88,27 @@ function WaterAnimatedBackground() {
 // ─────────────────────────────────────────────────────────────────────────────
 // STAFF ORDER CARD
 // ─────────────────────────────────────────────────────────────────────────────
-function StaffOrderCard({ order }: { order: any }) {
+// ─────────────────────────────────────────────────────────────────────────────
+// STAFF ORDER ROW (TABLE STYLE)
+// ─────────────────────────────────────────────────────────────────────────────
+function OrderRow({ order }: { order: any }) {
   const acceptOrder = useMutation(api.orders.acceptOrder);
   const markOutForDelivery = useMutation(api.orders.markOutForDelivery);
   const markDelivered = useMutation(api.orders.markDelivered);
   const [loading, setLoading] = useState<string | null>(null);
-
-  const status = order.status as string;
-  const statusC = statusColor(status);
-
+  const [showMenu, setShowMenu] = useState(false);
   const [deliverModalVisible, setDeliverModalVisible] = useState(false);
+  const [detailsModalVisible, setDetailsModalVisible] = useState(false);
   const [otpInput, setOtpInput] = useState('');
   const [otpError, setOtpError] = useState('');
   const [paymentMode, setPaymentMode] = useState(order.paymentMode || 'COD');
 
+  const status = order.status as string;
+  const statusC = statusColor(status);
+
   const openMaps = () => {
-    const query = encodeURIComponent(
-      [order.buildingName, order.streetName, order.area, order.location, order.pincode]
-        .filter(Boolean).join(', ')
-    );
-    Linking.openURL(`https://maps.google.com/?q=${query}`).catch(() =>
-      Alert.alert('Error', 'Could not open Google Maps.')
-    );
+    const query = encodeURIComponent([order.buildingName, order.streetName, order.area, order.location, order.pincode].filter(Boolean).join(', '));
+    Linking.openURL(`https://maps.google.com/?q=${query}`).catch(() => Alert.alert('Error', 'Could not open Google Maps.'));
   };
 
   const doAction = async (action: string, payload?: any) => {
@@ -129,135 +127,126 @@ function StaffOrderCard({ order }: { order: any }) {
       if (typeof errorMsg === 'string' && errorMsg.includes("Invalid Delivery OTP")) {
         setOtpError('Incorrect OTP. Please enter the correct code from the customer.');
       } else { 
-        // Professional fallback error that doesn't show database/convex technicalities
-        Alert.alert('System Message', 'Unable to complete delivery at this time. Please try again or contact support.'); 
+        Alert.alert('System Message', 'Unable to complete action at this time.'); 
       }
     } finally { setLoading(null); }
   };
 
-  const confirmDeliver = () => { setOtpInput(''); setOtpError(''); setPaymentMode(order.paymentMode || 'COD'); setDeliverModalVisible(true); };
-  const isDelivered = status === 'Delivered';
-
   return (
-    <View style={[styles.card, isDelivered && styles.cardDelivered]}>
-      {/* Visual Status Bar - Slimmer */}
-      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: statusC.text }} />
+    <View style={styles.tableRow}>
+      <View style={[styles.tableCol, { width: scale(50) }]}>
+        <Text style={styles.tableTextId}>#{order.orderId.slice(-5)}</Text>
+      </View>
+      
+      <View style={[styles.tableCol, { flex: 1.5 }]}>
+        <Text style={styles.tableTextName} numberOfLines={1}>{order.customerName || 'Customer'}</Text>
+        <Text style={styles.tableTextSub}>{order.customerPhone}</Text>
+      </View>
 
-      <View style={styles.cardHeader}>
-        <View style={styles.idSide}>
-          <MaterialIcons name="receipt" size={12} color={COLORS.gray} style={{ marginRight: 4 }} />
-          <Text style={styles.orderIdText}>#{order.orderId.slice(-6)}</Text>
-        </View>
-        <View style={[styles.statusBadge, { backgroundColor: statusC.bg }]}>
-          <MaterialIcons name={statusC.icon as any} size={10} color={statusC.text} />
-          <Text style={[styles.statusText, { color: statusC.text }]}>{status}</Text>
+      <View style={[styles.tableCol, { flex: 1 }]}>
+        <View style={[styles.tableStatusBadge, { backgroundColor: statusC.bg }]}>
+          <Text style={[styles.tableStatusText, { color: statusC.text }]}>{status}</Text>
         </View>
       </View>
 
-      <View style={styles.customerRow}>
-        <View style={styles.avatarIcon}>
-          <MaterialIcons name="person" size={24} color="#fff" />
-        </View>
-        <View style={styles.customerInfoCol}>
-          <Text style={styles.customerName} numberOfLines={1}>{order.customerName || 'Customer'}</Text>
-          <TouchableOpacity onPress={() => Linking.openURL(`tel:${order.customerPhone}`)} style={styles.phoneAction}>
-             <Text style={styles.customerPhone}>{order.customerPhone || 'No phone'}</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.cansBadgeCompact}>
-          <MaterialIcons name="local-drink" size={12} color={COLORS.secondary} style={{ marginRight: 6 }} />
-          <Text style={styles.cansText}>{order.quantity} × 20L</Text>
-        </View>
+      <View style={[styles.tableCol, { flex: 0.8, alignItems: 'center' }]}>
+        <Text style={styles.tableTextItems}>{order.quantity}×20L</Text>
       </View>
 
-      <View style={styles.addressBlockDetailed}>
-        <View style={styles.addressIconWrapper}>
-           <MaterialIcons name="location-on" size={18} color={COLORS.secondary} />
-        </View>
-        <View style={styles.addressTextContent}>
-          <Text style={styles.buildingText}>{order.buildingName || 'Home Address'}</Text>
-          <Text style={styles.fullAddressText}>
-            {[
-              order.doorNo ? `Door ${order.doorNo}` : null,
-              order.floorNo ? `Floor ${order.floorNo}` : null,
-              order.streetName,
-              order.area
-            ].filter(Boolean).join(', ')}
-          </Text>
-          <Text style={styles.locationPinText}>
-            {order.location} {order.pincode ? `~ ${order.pincode}` : ''}
-          </Text>
-        </View>
-        <TouchableOpacity style={styles.navigateBtnCircle} onPress={openMaps}>
-          <MaterialIcons name="near-me" size={18} color={COLORS.white} />
+      <View style={[styles.tableCol, { width: scale(60), alignItems: 'flex-end' }]}>
+        <Text style={styles.tableTextAmount}>₹{order.totalAmount}</Text>
+      </View>
+
+      <View style={[styles.tableCol, { width: scale(40), alignItems: 'center' }]}>
+        <TouchableOpacity onPress={() => setShowMenu(true)} style={styles.actionMenuBtn}>
+          <MaterialIcons name="more-horiz" size={20} color={COLORS.gray} />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.metaGrid}>
-        <View style={styles.metaItem}>
-          <Text style={styles.metaLabel}>AMOUNT</Text>
-          <Text style={styles.metaValue}>₹{order.totalAmount}</Text>
-        </View>
-        <View style={styles.metaItem}>
-          <Text style={styles.metaLabel}>MODE</Text>
-          <Text style={styles.metaValue}>{order.paymentMode}</Text>
-        </View>
-        <View style={styles.metaItem}>
-          <Text style={styles.metaLabel}>DATE</Text>
-          <Text style={styles.metaValue}>{order.date}</Text>
-        </View>
-      </View>
+      {/* ACTION DROPDOWN */}
+      <Modal visible={showMenu} transparent animationType="fade" onRequestClose={() => setShowMenu(false)}>
+        <TouchableOpacity style={modalStyles.overlay} activeOpacity={1} onPress={() => setShowMenu(false)}>
+          <View style={styles.dropdownMenu}>
+             <Text style={styles.menuTitle}>ORDER ACTIONS</Text>
+             
+             <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); setDetailsModalVisible(true); }}>
+                <MaterialIcons name="info-outline" size={18} color={COLORS.info} />
+                <Text style={styles.menuItemText}>View Details</Text>
+             </TouchableOpacity>
 
-      {isDelivered && order.deliveredAt && (
-        <View style={styles.deliveredBadgeCompact}>
-          <MaterialIcons name="check-circle" size={12} color={COLORS.success} />
-          <Text style={styles.deliveredText}>Delivered at {order.deliveredAt}</Text>
+             <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); openMaps(); }}>
+                <MaterialIcons name="near-me" size={18} color={COLORS.secondary} />
+                <Text style={styles.menuItemText}>Navigate</Text>
+             </TouchableOpacity>
+
+             <View style={styles.menuDivider} />
+
+             {status === 'Assigned' && (
+               <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); doAction('accept'); }}>
+                 <MaterialIcons name="thumb-up" size={18} color={COLORS.success} />
+                 <Text style={[styles.menuItemText, { color: COLORS.success }]}>Accept Order</Text>
+               </TouchableOpacity>
+             )}
+
+             {status === 'Accepted' && (
+               <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); doAction('out'); }}>
+                 <MaterialIcons name="local-shipping" size={18} color={COLORS.warning} />
+                 <Text style={[styles.menuItemText, { color: COLORS.warning }]}>Deliver Order</Text>
+               </TouchableOpacity>
+             )}
+
+             {status === 'Out for Delivery' && (
+               <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); setDeliverModalVisible(true); }}>
+                 <MaterialIcons name="check-circle" size={18} color={COLORS.success} />
+                 <Text style={[styles.menuItemText, { color: COLORS.success }]}>Finish Delivery</Text>
+               </TouchableOpacity>
+             )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* DETAILS MODAL */}
+      <Modal visible={detailsModalVisible} transparent animationType="slide" onRequestClose={() => setDetailsModalVisible(false)}>
+        <View style={modalStyles.overlay}>
+           <View style={modalStyles.sheet}>
+              <View style={modalStyles.header}>
+                 <Text style={modalStyles.title}>Order Details</Text>
+                 <TouchableOpacity onPress={() => setDetailsModalVisible(false)}><MaterialIcons name="close" size={24} color={COLORS.text} /></TouchableOpacity>
+              </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                 <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>CUSTOMER</Text>
+                    <Text style={styles.detailValue}>{order.customerName}</Text>
+                 </View>
+                 <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>PHONE</Text>
+                    <TouchableOpacity onPress={() => Linking.openURL(`tel:${order.customerPhone}`)}>
+                       <Text style={[styles.detailValue, { color: COLORS.info }]}>{order.customerPhone}</Text>
+                    </TouchableOpacity>
+                 </View>
+                 <View style={styles.detailDivider} />
+                 <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>ADDRESS</Text>
+                    <Text style={styles.detailValue}>
+                      {[order.buildingName, order.doorNo && `Door ${order.doorNo}`, order.floorNo && `Floor ${order.floorNo}`, order.streetName, order.area, order.location, order.pincode].filter(Boolean).join(', ')}
+                    </Text>
+                 </View>
+                 <TouchableOpacity style={styles.detailNavBtn} onPress={openMaps}>
+                    <MaterialIcons name="near-me" size={18} color="#fff" />
+                    <Text style={{ color: '#fff', fontWeight: '800' }}>NAVIGATE IN GOOGLE MAPS</Text>
+                 </TouchableOpacity>
+              </ScrollView>
+           </View>
         </View>
-      )}
+      </Modal>
 
-      {!isDelivered && (
-        <View style={styles.actionRowCompact}>
-          {status === 'Assigned' && (
-            <TouchableOpacity style={[styles.actionBtnCompact, { backgroundColor: COLORS.info }]} onPress={() => doAction('accept')} disabled={!!loading}>
-              {loading === 'accept' ? <ActivityIndicator size="small" color="#fff" /> : (
-                <><MaterialIcons name="thumb-up" size={12} color="#fff" /><Text style={styles.actionBtnText}>Accept</Text></>
-              )}
-            </TouchableOpacity>
-          )}
-
-          {status === 'Accepted' && (
-            <TouchableOpacity style={[styles.actionBtnCompact, { backgroundColor: COLORS.warning }]} onPress={() => doAction('out')} disabled={!!loading}>
-              {loading === 'out' ? <ActivityIndicator size="small" color="#fff" /> : (
-                <><MaterialIcons name="local-shipping" size={12} color="#fff" /><Text style={styles.actionBtnText}>Deliver</Text></>
-              )}
-            </TouchableOpacity>
-          )}
-
-          {status === 'Out for Delivery' && (
-            <View style={styles.dualActionRow}>
-              <TouchableOpacity style={styles.secondaryActionBtn} onPress={openMaps}>
-                <MaterialIcons name="near-me" size={14} color={COLORS.secondary} style={{ marginRight: 6 }} />
-                <Text style={styles.secondaryActionBtnText}>Navigate</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.primaryActionBtn} onPress={confirmDeliver} disabled={!!loading}>
-                {loading === 'delivered' ? <ActivityIndicator size="small" color="#fff" /> : (
-                  <><MaterialIcons name="check-circle" size={14} color="#fff" style={{ marginRight: 6 }} /><Text style={styles.primaryActionBtnText}>Finish Delivery</Text></>
-                )}
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      )}
-
-      {/* OTP Delivery Verification Modal */}
+      {/* OTP MODAL */}
       <Modal visible={deliverModalVisible} animationType="fade" transparent onRequestClose={() => setDeliverModalVisible(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={modalStyles.overlay}>
           <View style={[modalStyles.sheet, { maxWidth: scale(400) }]}>
             <View style={modalStyles.header}>
               <Text style={modalStyles.title}>Security Check</Text>
-              <TouchableOpacity onPress={() => setDeliverModalVisible(false)}>
-                <MaterialIcons name="close" size={24} color={COLORS.text} />
-              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setDeliverModalVisible(false)}><MaterialIcons name="close" size={24} color={COLORS.text} /></TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               <Text style={modalStyles.sub}>Provide the 4-digit OTP from the customer to complete delivery.</Text>
@@ -277,7 +266,6 @@ function StaffOrderCard({ order }: { order: any }) {
                   <Text style={modalStyles.errorText}>{otpError}</Text>
                 </View>
               )}
-
               <Text style={modalStyles.label}>Payment Method</Text>
               <View style={modalStyles.paymentRow}>
                 <TouchableOpacity style={[modalStyles.paymentBtn, paymentMode === 'COD' && modalStyles.paymentBtnActive]} onPress={() => setPaymentMode('COD')}>
@@ -287,7 +275,6 @@ function StaffOrderCard({ order }: { order: any }) {
                   <Text style={[modalStyles.paymentBtnText, paymentMode === 'Online' && modalStyles.paymentBtnTextActive]}>UPI / Web</Text>
                 </TouchableOpacity>
               </View>
-
               <TouchableOpacity 
                 style={[modalStyles.primaryBtn, { backgroundColor: COLORS.success }, otpInput.length !== 4 && { opacity: 0.6 }]} 
                 onPress={() => doAction('delivered', { otp: otpInput, paymentMode })} 
@@ -304,6 +291,7 @@ function StaffOrderCard({ order }: { order: any }) {
     </View>
   );
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN STAFF DASHBOARD
@@ -323,12 +311,12 @@ export default function StaffDashboard() {
   const [filter, setFilter] = useState<'All' | 'Assigned' | 'Active' | 'Completed'>('All');
 
   const handleSignOut = () => {
-    const doSignOut = async () => { await signOut(); router.replace('/(auth)/sign-in'); };
+    const doSignOut = async () => { await signOut(); router.replace('/home'); };
     if (Platform.OS === 'web') { if (window.confirm("Logout?")) doSignOut(); }
     else { Alert.alert("Logout", "Are you sure you want to sign out?", [{ text: "Cancel" }, { text: "Logout", style: 'destructive', onPress: doSignOut }]); }
   };
 
-  const goHome = () => router.replace('/(staff)');
+  const goHome = () => router.replace('/home');
 
   let displayOrders = orders ?? [];
   if (filter === 'Assigned') {
@@ -340,15 +328,16 @@ export default function StaffDashboard() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.secondary} />
-      <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
       <WaterAnimatedBackground />
 
       {/* Modern Sticky Header */}
       <View style={styles.stickyHeader}>
         <View style={styles.headerTop}>
-          <View style={{ width: scale(36) }} />
+          <TouchableOpacity style={styles.homeBtn} onPress={goHome} id="staff-home-btn">
+            <MaterialIcons name="home" size={scale(20)} color="#fff" />
+          </TouchableOpacity>
           <View style={styles.brandBox}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(6) }}>
               <FontAwesome5 name="tint" size={scale(16)} color="#fff" />
@@ -357,6 +346,10 @@ export default function StaffDashboard() {
             <Text style={styles.brandBadge}>STAFF PANEL</Text>
           </View>
           <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.iconAction}>
+              <MaterialIcons name="notifications-none" size={22} color="#fff" />
+              <View style={styles.notificationBadge} />
+            </TouchableOpacity>
             <TouchableOpacity style={styles.profileBox} onPress={handleSignOut}>
               <View style={styles.avatarHolder}>
                 <Text style={styles.avatarText}>{user?.firstName?.[0] || 'S'}</Text>
@@ -409,17 +402,29 @@ export default function StaffDashboard() {
               </Text>
             </View>
 
-            {/* Assignments List */}
-            {displayOrders.length === 0 ? (
-              <View style={styles.emptyBox}>
-                <MaterialIcons name="inbox" size={48} color={COLORS.border} />
-                <Text style={styles.emptyTitle}>All caught up!</Text>
-                <Text style={styles.emptySubtitle}>You don't have any orders here.</Text>
-              </View>
-            ) : displayOrders.map(order => <StaffOrderCard key={order._id} order={order} />)}
+          <View style={styles.tableContainer}>
+             {/* TABLE HEADER */}
+             <View style={styles.tableHeader}>
+               <View style={[styles.tableCol, { width: scale(50) }]}><Text style={styles.tableHeaderText}>ID</Text></View>
+               <View style={[styles.tableCol, { flex: 1.5 }]}><Text style={styles.tableHeaderText}>CUSTOMER</Text></View>
+               <View style={[styles.tableCol, { flex: 1 }]}><Text style={styles.tableHeaderText}>STATUS</Text></View>
+               <View style={[styles.tableCol, { flex: 0.8, alignItems: 'center' }]}><Text style={styles.tableHeaderText}>ITEMS</Text></View>
+               <View style={[styles.tableCol, { width: scale(60), alignItems: 'flex-end' }]}><Text style={styles.tableHeaderText}>AMOUNT</Text></View>
+               <View style={[styles.tableCol, { width: scale(40), alignItems: 'center' }]}><Text style={styles.tableHeaderText}>ACT</Text></View>
+             </View>
+
+             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+                {displayOrders.length === 0 ? (
+                  <View style={styles.emptyBox}>
+                    <MaterialIcons name="inbox" size={48} color={COLORS.border} />
+                    <Text style={styles.emptyTitle}>All caught up!</Text>
+                    <Text style={styles.emptySubtitle}>You don't have any orders here.</Text>
+                  </View>
+                ) : displayOrders.map(order => <OrderRow key={order._id} order={order} />)}
+             </ScrollView>
+          </View>
           </ScrollView>
         )}
-      </View>
       </View>
     </SafeAreaView>
   );
@@ -429,7 +434,7 @@ export default function StaffDashboard() {
 // STYLES
 // ─────────────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.secondary },
+  safeArea: { flex: 1, backgroundColor: '#F8FAFC' },
   mainContent: { flex: 1, marginTop: scale(10) },
   scrollContent: { paddingHorizontal: scale(16), paddingBottom: scale(60) },
   
@@ -456,149 +461,42 @@ const styles = StyleSheet.create({
   statNum: { fontSize: scale(14), fontWeight: '900', color: COLORS.text, lineHeight: scale(16) },
   statLabel: { fontSize: scale(6.5), fontWeight: '800', color: COLORS.gray, textTransform: 'uppercase' },
 
-  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16, paddingHorizontal: 4 },
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 4, marginBottom: 16 },
   sectionTitle: { fontSize: scale(13), fontWeight: '900', color: COLORS.text, letterSpacing: 1 },
 
   loadingBox: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   loadingText: { marginTop: 12, color: COLORS.secondary, fontWeight: '700' },
 
-  card: { backgroundColor: COLORS.white, borderRadius: scale(12), padding: scale(10), marginBottom: scale(10), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 4, elevation: 1, borderWidth: 1, borderColor: '#F1F5F9', overflow: 'hidden' },
-  cardDelivered: { opacity: 0.9, backgroundColor: '#FAFAFA' },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: scale(6) },
-  idSide: { flexDirection: 'row', alignItems: 'center' },
-  orderIdText: { fontSize: scale(11), fontWeight: '900', color: COLORS.text },
-  statusBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: scale(6), paddingVertical: scale(3), borderRadius: scale(6), gap: scale(4) },
-  statusText: { fontSize: scale(7.5), fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
+  // TABLE STYLES
+  tableContainer: { flex: 1, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
+  tableHeader: { flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 14, backgroundColor: '#F8FAFC', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
+  tableHeaderText: { fontSize: scale(8), fontWeight: '800', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1 },
+  tableRow: { flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F1F5F9', alignItems: 'center' },
+  tableCol: { justifyContent: 'center' },
+  tableTextId: { fontSize: scale(9), fontWeight: '800', color: COLORS.secondary, backgroundColor: '#F0FDFA', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, alignSelf: 'flex-start' },
+  tableTextName: { fontSize: scale(11), fontWeight: '800', color: COLORS.text },
+  tableTextSub: { fontSize: scale(9.5), color: COLORS.gray, fontWeight: '600', marginTop: 1 },
+  tableTextItems: { fontSize: scale(10), fontWeight: '700', color: COLORS.text },
+  tableTextAmount: { fontSize: scale(11), fontWeight: '900', color: COLORS.text },
+  tableStatusBadge: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  tableStatusText: { fontSize: scale(7.5), fontWeight: '900', textTransform: 'uppercase' },
+  actionMenuBtn: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
 
-  customerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: scale(10), gap: 10 },
-  avatarIcon: { width: scale(36), height: scale(36), borderRadius: 12, backgroundColor: COLORS.secondary, alignItems: 'center', justifyContent: 'center' },
-  customerInfoCol: { flex: 1 },
-  customerName: { fontSize: scale(13.5), fontWeight: '900', color: COLORS.text },
-  phoneAction: { flexDirection: 'row', alignItems: 'center', marginTop: 1 },
-  customerPhone: { fontSize: scale(10.5), color: COLORS.gray, fontWeight: '700' },
-  cansBadgeCompact: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F0F9FF', paddingHorizontal: scale(10), paddingVertical: scale(5), borderRadius: scale(10), borderWidth: 1, borderColor: '#BAE6FD' },
-  cansText: { fontSize: scale(11), fontWeight: '900', color: COLORS.secondary },
+  // DROPDOWN MENU
+  dropdownMenu: { position: 'absolute', right: scale(20), top: '50%', backgroundColor: '#fff', borderRadius: 12, padding: 8, width: scale(180), shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 25, borderWidth: 1, borderColor: '#F1F5F9' },
+  menuTitle: { fontSize: scale(8), fontWeight: '900', color: '#94A3B8', paddingHorizontal: 12, paddingVertical: 8, letterSpacing: 1 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8 },
+  menuItemText: { fontSize: scale(10.5), fontWeight: '700', color: COLORS.text },
+  menuDivider: { height: 1, backgroundColor: '#F1F5F9', marginVertical: 4 },
 
-  addressBlockDetailed: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8F9FA',
-    borderRadius: 14,
-    padding: scale(10),
-    marginBottom: scale(12),
-    borderWidth: 1.5,
-    borderColor: '#F1F5F9',
-  },
-  addressIconWrapper: {
-    marginRight: 12,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  addressTextContent: {
-    flex: 1,
-  },
-  buildingText: {
-    fontSize: scale(12),
-    fontWeight: '800',
-    color: COLORS.secondary,
-    marginBottom: 2,
-  },
-  fullAddressText: {
-    fontSize: scale(10),
-    color: '#64748B',
-    fontWeight: '600',
-    lineHeight: scale(14),
-  },
-  locationPinText: {
-    fontSize: scale(10),
-    color: '#64748B',
-    fontWeight: '800',
-    marginTop: 2,
-  },
-  navigateBtnCircle: {
-    width: scale(36),
-    height: scale(36),
-    borderRadius: scale(12),
-    backgroundColor: COLORS.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 8,
-    elevation: 4,
-    shadowColor: COLORS.secondary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
+  // DETAILS STYLES
+  detailRow: { marginBottom: 16 },
+  detailLabel: { fontSize: scale(8), fontWeight: '900', color: '#94A3B8', letterSpacing: 1, marginBottom: 4 },
+  detailValue: { fontSize: scale(12), fontWeight: '700', color: COLORS.text, lineHeight: 20 },
+  detailDivider: { height: 1, backgroundColor: '#F1F5F9', marginBottom: 16 },
+  detailNavBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: COLORS.secondary, padding: 16, borderRadius: 12, marginTop: 10 },
 
-  metaGrid: { flexDirection: 'row', gap: scale(8), marginBottom: scale(12) },
-  metaItem: { flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12, paddingVertical: scale(8), alignItems: 'center', borderWidth: 1.5, borderColor: '#F1F5F9' },
-  metaLabel: { fontSize: scale(7), color: '#94A3B8', fontWeight: '800', letterSpacing: 0.5, marginBottom: 2 },
-  metaValue: { fontSize: scale(11.5), fontWeight: '900', color: COLORS.text },
-
-  deliveredBadgeCompact: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#DCFCE7', borderRadius: 12, padding: scale(10), marginTop: scale(4) },
-  deliveredText: { fontSize: scale(10), color: '#166534', fontWeight: '800' },
-
-  actionRowCompact: { marginTop: scale(4) },
-  dualActionRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  primaryActionBtn: {
-    flex: 1.3,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.secondary,
-    paddingVertical: scale(12),
-    borderRadius: 14,
-    elevation: 4,
-    shadowColor: COLORS.secondary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-  },
-  primaryActionBtnText: {
-    fontSize: scale(11.5),
-    fontWeight: '900',
-    color: '#fff',
-  },
-  secondaryActionBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: COLORS.secondary,
-    paddingVertical: scale(12),
-    borderRadius: 14,
-  },
-  secondaryActionBtnText: {
-    fontSize: scale(11.5),
-    fontWeight: '900',
-    color: COLORS.secondary,
-  },
-  actionBtnCompact: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: scale(12),
-    borderRadius: 14,
-    gap: 6,
-  },
-  actionBtnText: { fontSize: scale(11.5), fontWeight: '900', color: '#fff' },
-
-  emptyBox: { alignItems: 'center', paddingTop: scale(40) },
+  emptyBox: { alignItems: 'center', paddingVertical: 60, opacity: 0.6 },
   emptyTitle: { fontSize: scale(16), fontWeight: '900', color: COLORS.text, marginTop: 12 },
   emptySubtitle: { fontSize: scale(12), color: COLORS.gray, textAlign: 'center', marginTop: 4 },
 });

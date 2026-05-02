@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  StyleSheet, View, Text, Platform, StatusBar,
+  StyleSheet, View, Text, SafeAreaView, Platform, StatusBar,
   TouchableOpacity, Alert, Modal, TextInput, ScrollView, FlatList,
   Animated
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -21,7 +20,7 @@ const COLORS = {
   danger: '#E53E3E',
 };
 
-const PINCODES = [
+const FALLBACK_PINCODES = [
   { label: 'Tirunelveli Town - 627006', value: '627006' },
   { label: 'Palayamkottai - 627002', value: '627002' },
   { label: 'Melapalayam - 627005', value: '627005' },
@@ -49,6 +48,14 @@ export default function OrdersScreen() {
   const [isSaving, setIsSaving] = useState(false);
 
   const orders = useQuery(api.orders.getOrders);
+  const pincodesData = useQuery(api.pincodes.getPincodes);
+  const displayPincodes = React.useMemo(() => {
+    let list = pincodesData && pincodesData.length > 0 ? [...pincodesData] : [...FALLBACK_PINCODES];
+    if (!list.some(p => p.value === '91176129')) {
+      list.push({ label: 'Express Delivery - 50 Mins - 91176129', value: '91176129' });
+    }
+    return list;
+  }, [pincodesData]);
   const cancelOrder = useMutation(api.orders.cancelOrder);
   const updateOrder = useMutation(api.orders.updateOrder);
 
@@ -109,7 +116,7 @@ export default function OrdersScreen() {
     setEditingOrder(item);
     setEditQty(item.quantity);
     setEditNoBottle(item.noBottleReturn ?? false);
-    const found = PINCODES.find(p => item.pincode?.includes(p.value));
+    const found = displayPincodes.find(p => item.pincode?.includes(p.value));
     setEditPincode(found?.value ?? '');
     setEditPincodeLabel(found?.label ?? item.pincode ?? '');
     setEditModalVisible(true);
@@ -201,100 +208,56 @@ export default function OrdersScreen() {
     const status = item.status.toUpperCase();
     
     return (
-      <TouchableOpacity
-        style={styles.orderCard}
-        onPress={() => router.push({ pathname: '/order-details', params: { id: item._id } })}
-        activeOpacity={0.85}
-      >
-        {/* Assigned Partner - COMPACT TEAL RE-DESIGN (Traditional Layout structure) */}
+      <View style={{ marginBottom: 1 }}>
+        <TouchableOpacity
+          style={styles.tableRow}
+          onPress={() => router.push({ pathname: '/order-details', params: { id: item._id } })}
+          activeOpacity={0.7}
+        >
+          {/* ID Column */}
+          <View style={[styles.tableCol, { flex: 1 }]}>
+            <Text style={styles.tableTextId}>#{item.orderId}</Text>
+            <Text style={styles.tableTextSub}>{item.date?.split('-')[0] + '-' + item.date?.split('-')[1]}</Text>
+          </View>
+
+          {/* Status Column */}
+          <View style={[styles.tableCol, { flex: 1.5, alignItems: 'center' }]}>
+            <View style={[styles.statusBadge, { backgroundColor: getStatusBg(status) }]}>
+              <View style={[styles.statusDot, { backgroundColor: getStatusColor(status) }]} />
+              <Text style={[styles.statusText, { color: getStatusColor(status) }]}>{item.status}</Text>
+            </View>
+          </View>
+
+          {/* Amount Column */}
+          <View style={[styles.tableCol, { flex: 1, alignItems: 'center' }]}>
+            <Text style={styles.tableTextAmount}>₹{item.totalAmount}</Text>
+            <Text style={styles.tableTextSub}>{item.quantity} Can(s)</Text>
+          </View>
+
+          {/* Actions Column */}
+          <View style={[styles.tableCol, { width: 50, alignItems: 'center' }]}>
+            <View style={styles.actionCircle}>
+              <MaterialIcons name="chevron-right" size={18} color={COLORS.gray} />
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {/* Optional Partner Row (If active) */}
         {['ASSIGNED', 'ACCEPTED', 'OUT FOR DELIVERY'].includes(status) && item.assignedStaffName && (
-          <View style={styles.partnerSection}>
-             <Text style={styles.partnerHeader}>DELIVERY PARTNER ASSIGNED</Text>
-             <View style={styles.partnerRow}>
-                <View style={styles.partnerAvatar}>
-                   <MaterialIcons name="person" size={16} color={COLORS.secondary} />
-                </View>
-                <View style={{ flex: 1, marginLeft: 8 }}>
-                   <Text style={styles.partnerName}>{item.assignedStaffName}</Text>
-                   <Text style={styles.partnerPhone}>{item.supplierPhone || 'No contact'}</Text>
-                </View>
-                {item.supplierPhone && (
-                  <TouchableOpacity 
-                    onPress={() => import('react-native').then(m => m.Linking.openURL(`tel:${item.supplierPhone}`))} 
-                    style={styles.callBtn}
-                  >
-                    <MaterialIcons name="phone" size={12} color={COLORS.white} />
-                    <Text style={styles.callBtnText}>Call</Text>
-                  </TouchableOpacity>
-                )}
-             </View>
+          <View style={styles.partnerUnderlay}>
+            <MaterialIcons name="delivery-dining" size={12} color={COLORS.secondary} />
+            <Text style={styles.partnerText}>Assigned: {item.assignedStaffName}</Text>
           </View>
         )}
-
-        {/* Traditional List Layout (Same as image but SMALL) */}
-        <View style={styles.detailsList}>
-          <View style={styles.orderRowCompact}>
-            <Text style={styles.orderLabel}>Order Id</Text>
-            <Text style={styles.colon}>:</Text>
-            <Text style={styles.orderValue}>{item.orderId}</Text>
-          </View>
-
-          <View style={styles.orderRowCompact}>
-            <Text style={styles.orderLabel}>Order Status</Text>
-            <Text style={styles.colon}>:</Text>
-            <Text style={[styles.orderValue, { color: getStatusColor(status) }]}>{item.status}</Text>
-          </View>
-
-          <View style={styles.orderRowCompact}>
-            <Text style={styles.orderLabel}>Payment mode</Text>
-            <Text style={styles.colon}>:</Text>
-            <Text style={styles.orderValue}>{item.paymentMode}</Text>
-          </View>
-
-          <View style={styles.orderRowCompact}>
-            <Text style={styles.orderLabel}>Quantity</Text>
-            <Text style={styles.colon}>:</Text>
-            <Text style={styles.orderValue}>{item.quantity} can(s)</Text>
-          </View>
-
-          <View style={styles.orderRowCompact}>
-            <Text style={styles.orderLabel}>Total amount</Text>
-            <Text style={styles.colon}>:</Text>
-            <Text style={styles.orderValue}>₹{item.totalAmount}</Text>
-          </View>
-
-          <View style={styles.orderRowCompact}>
-            <Text style={styles.orderLabel}>Date</Text>
-            <Text style={styles.colon}>:</Text>
-            <Text style={styles.orderValue}>{item.date}</Text>
-          </View>
-
-          <View style={[styles.orderRowCompact, { marginBottom: 0 }]}>
-            <Text style={styles.orderLabel}>Pincode</Text>
-            <Text style={styles.colon}>:</Text>
-            <Text style={styles.orderValue}>{item.pincode || '-'}</Text>
-          </View>
-        </View>
-
-        {status === 'PENDING' && (
-          <TouchableOpacity
-            style={styles.overlayCancelBtn}
-            onPress={(e) => { e.stopPropagation(); handleCancelOrder(item._id); }}
-          >
-            <MaterialIcons name="close" size={14} color={COLORS.danger} />
-          </TouchableOpacity>
-        )}
-      </TouchableOpacity>
+      </View>
     );
   };
 
   // ── UI ──────────────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.secondary} />
-      <View style={{ flex: 1, backgroundColor: COLORS.accent }}>
       <View style={styles.header}>
-        <MaterialIcons name="history" size={22} color={COLORS.white} style={{ marginRight: 10 }} />
         <Text style={styles.headerTitle}>Order History</Text>
       </View>
 
@@ -317,23 +280,34 @@ export default function OrdersScreen() {
           })}
         </View>
 
-        {/* Scrollable order list — 3 per page */}
-        <FlatList
-          data={paginatedOrders}
-          renderItem={renderOrderItem}
-          keyExtractor={(item) => item._id}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <MaterialIcons name="layers-clear" size={80} color={COLORS.accent} />
-              <Text style={styles.emptyTitle}>No Orders Found</Text>
-              <Text style={styles.emptySub}>
-                You haven't placed any {activeTab.toLowerCase()} orders yet.
-              </Text>
-            </View>
-          }
-        />
+        {/* DATA TABLE WRAPPER */}
+        <View style={styles.tableWrapper}>
+          {/* TABLE HEADER */}
+          <View style={styles.tableHeader}>
+            <Text style={[styles.tableHeaderText, { flex: 1 }]}>ORDER ID</Text>
+            <Text style={[styles.tableHeaderText, { flex: 1.5, textAlign: 'center' }]}>STATUS</Text>
+            <Text style={[styles.tableHeaderText, { flex: 1, textAlign: 'center' }]}>AMOUNT</Text>
+            <View style={{ width: 50 }} />
+          </View>
+
+          {/* Table Body */}
+          <FlatList
+            data={paginatedOrders}
+            renderItem={renderOrderItem}
+            keyExtractor={(item) => item._id}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <MaterialIcons name="layers-clear" size={80} color="#F1F5F9" />
+                <Text style={styles.emptyTitle}>No Orders Found</Text>
+                <Text style={styles.emptySub}>
+                  You haven't placed any {activeTab.toLowerCase()} orders yet.
+                </Text>
+              </View>
+            }
+          />
+        </View>
 
         {/* Success banner */}
         {bannerVisible && (
@@ -424,7 +398,7 @@ export default function OrdersScreen() {
 
               {showPincodeList && (
                 <View style={styles.pincodeDropdown}>
-                  {PINCODES.map(p => (
+                  {displayPincodes.map(p => (
                     <TouchableOpacity
                       key={p.value}
                       style={[styles.pincodeOption, editPincode === p.value && styles.pincodeOptionActive]}
@@ -488,22 +462,22 @@ export default function OrdersScreen() {
           </View>
         </View>
       </Modal>
-      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.secondary },
+  safeArea: { flex: 1, backgroundColor: COLORS.accent },
   header: {
     backgroundColor: COLORS.secondary,
-    height: 48,
+    paddingHorizontal: 20,
+    height: 70,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 4,
   },
-  headerTitle: { fontSize: 16, fontWeight: '900', color: '#ffffff', letterSpacing: 1 },
+  headerTitle: { fontSize: 22, fontWeight: '900', color: '#ffffff', letterSpacing: 1 },
   container: { flex: 1 },
   tabsContainer: {
     flexDirection: 'row',
@@ -518,96 +492,107 @@ const styles = StyleSheet.create({
   tabTextActive: { color: '#ffffff' },
   tabTextInactive: { color: COLORS.text },
   listContent: { padding: 12, paddingTop: 0 },
-  orderCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 10,
-    marginBottom: 8,
+  tableWrapper: {
+    flex: 1,
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#F1F5F9',
-    elevation: 3,
+    elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    position: 'relative',
-  },
-  partnerSection: {
-    backgroundColor: '#F0FDFA',
-    padding: 8,
-    borderRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
     marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#CCFBF1',
   },
-  partnerHeader: {
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#F8FAFC',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  tableHeaderText: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#64748B',
+    letterSpacing: 1,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  tableCol: {
+    justifyContent: 'center',
+  },
+  tableTextId: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+  tableTextSub: {
+    fontSize: 8,
+    color: COLORS.gray,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    marginTop: 2,
+  },
+  tableTextAmount: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: COLORS.secondary,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 6,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  statusText: {
+    fontSize: 9,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  actionCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  partnerUnderlay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDFA',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    gap: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  partnerText: {
     fontSize: 9,
     fontWeight: '800',
     color: COLORS.secondary,
-    marginBottom: 4,
-    letterSpacing: 0.5,
-  },
-  partnerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  partnerAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: '#CCFBF1',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  partnerName: {
-    fontSize: 13,
-    fontWeight: '900',
-    color: '#0F766E',
-  },
-  partnerPhone: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: COLORS.secondary,
-  },
-  callBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.secondary,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-  },
-  callBtnText: {
-    color: COLORS.white,
-    fontSize: 10,
-    fontWeight: '800',
-    marginLeft: 4,
-  },
-  detailsList: {
-    gap: 1,
-  },
-  orderRowCompact: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 1,
-  },
-  orderLabel: {
-    flex: 1.2,
-    fontSize: 10.5,
-    color: '#064E3B',
-    fontWeight: '800',
-  },
-  colon: {
-    width: 15,
-    fontSize: 10.5,
-    color: '#064E3B',
-    textAlign: 'center',
-  },
-  orderValue: {
-    flex: 2,
-    fontSize: 11.5,
-    color: COLORS.text,
-    fontWeight: '900',
+    textTransform: 'uppercase',
   },
   overlayCancelBtn: {
     position: 'absolute',
