@@ -368,22 +368,22 @@ export default function HomeScreen() {
 
           <View style={styles.priceContainer}>
             <View style={styles.priceRow}>
-              <Text style={styles.priceLabel}>Water Price :</Text>
-              <Text style={styles.priceCalc}>{quantity} X {waterPrice}</Text>
-              <Text style={styles.priceValue}>₹ {quantity * waterPrice}</Text>
+              <Text style={[styles.priceLabel, { flex: 1.2 }]}>Water Price :</Text>
+              <Text style={[styles.priceLabel, { flex: 1, textAlign: 'center' }]}>{quantity} X {waterPrice}</Text>
+              <Text style={[styles.priceValue, { flex: 0.8, textAlign: 'right' }]}>{"₹ " + (quantity * waterPrice)}</Text>
             </View>
             {hasNoBottle && (
               <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Bottle Price :</Text>
-                <Text style={styles.priceCalc}>{quantity} X {bottlePricePerUnit}</Text>
-                <Text style={styles.priceValue}>₹ {currentBottlePrice}</Text>
+                <Text style={[styles.priceLabel, { flex: 1.2 }]}>Bottle Price :</Text>
+                <Text style={[styles.priceLabel, { flex: 1, textAlign: 'center' }]}>{quantity} X {bottlePricePerUnit}</Text>
+                <Text style={[styles.priceValue, { flex: 0.8, textAlign: 'right' }]}>₹ {currentBottlePrice}</Text>
               </View>
             )}
             {expressCharge > 0 && (
               <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Express Delivery :</Text>
-                <Text style={styles.priceCalc}>{quantity} X {expressChargePerUnit}</Text>
-                <Text style={styles.priceValue}>₹ {expressCharge}</Text>
+                <Text style={[styles.priceLabel, { flex: 1.2 }]}>Express Delivery :</Text>
+                <Text style={[styles.priceLabel, { flex: 1, textAlign: 'center' }]}>{quantity} X {expressChargePerUnit}</Text>
+                <Text style={[styles.priceValue, { flex: 0.8, textAlign: 'right' }]}>{"₹ " + expressCharge}</Text>
               </View>
             )}
             <View style={styles.summaryTotalRow}>
