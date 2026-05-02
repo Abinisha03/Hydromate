@@ -92,4 +92,9 @@ export default defineSchema({
   })
     .index("by_email", ["email"])
     .index("by_code", ["inviteCode"]),
+
+  pincodes: defineTable({
+    label: v.string(), // e.g. "Abinisha Colony"
+    value: v.string(), // e.g. "91176129"
+  }),
 });

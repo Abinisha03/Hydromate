@@ -205,8 +205,19 @@ export default function OrdersScreen() {
   // ── Order card ──────────────────────────────────────────────────────────
   // ── Order card ──────────────────────────────────────────────────────────
   const renderOrderItem = ({ item }: { item: any }) => {
-    const status = item.status.toUpperCase();
+    // Safety check for status
+    const rawStatus = item.status || 'Pending';
+    const status = rawStatus.toUpperCase();
     
+    // Safety check for date
+    let dateDisplay = item.date || 'N/A';
+    if (item.date && item.date.includes('-')) {
+      const parts = item.date.split('-');
+      if (parts.length >= 2) {
+        dateDisplay = `${parts[0]}-${parts[1]}`;
+      }
+    }
+
     return (
       <View style={{ marginBottom: 1 }}>
         <TouchableOpacity
@@ -216,8 +227,8 @@ export default function OrdersScreen() {
         >
           {/* ID Column */}
           <View style={[styles.tableCol, { flex: 1 }]}>
-            <Text style={styles.tableTextId}>#{item.orderId}</Text>
-            <Text style={styles.tableTextSub}>{item.date?.split('-')[0] + '-' + item.date?.split('-')[1]}</Text>
+            <Text style={styles.tableTextId}>#{item.orderId || '???'}</Text>
+            <Text style={styles.tableTextSub}>{dateDisplay}</Text>
           </View>
 
           {/* Status Column */}

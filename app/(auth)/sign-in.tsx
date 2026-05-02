@@ -49,6 +49,7 @@ export default function SignInScreen() {
   const [pendingVerification, setPendingVerification] = useState(false);
   const [isSignUpFlow, setIsSignUpFlow] = useState(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const [isFocused, setIsFocused] = useState(false);
 
   const showAlert = (title: string, message: string) => {
     if (Platform.OS === 'web') {
@@ -238,7 +239,7 @@ export default function SignInScreen() {
             <View style={styles.form}>
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Email Address</Text>
-                <View style={styles.inputWrapper}>
+                <View style={[styles.inputWrapper, isFocused && styles.inputWrapperFocused]}>
                   <MaterialIcons name="alternate-email" size={20} color={COLORS.primary} style={styles.inputIcon} />
                   <TextInput
                     autoCapitalize="none"
@@ -246,8 +247,10 @@ export default function SignInScreen() {
                     placeholder="name@example.com"
                     placeholderTextColor="#A0AEC0"
                     onChangeText={setEmailAddress}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
                     keyboardType="email-address"
-                    style={styles.textInput}
+                    style={[styles.textInput, Platform.OS === 'web' && ({ outlineStyle: 'none' } as any)]}
                     editable={!isAnyLoading}
                   />
                 </View>
@@ -287,15 +290,17 @@ export default function SignInScreen() {
             <View style={styles.form}>
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Verification Code</Text>
-                <View style={styles.inputWrapper}>
+                <View style={[styles.inputWrapper, isFocused && styles.inputWrapperFocused]}>
                    <MaterialIcons name="lock-outline" size={20} color={COLORS.primary} style={styles.inputIcon} />
                    <TextInput
                     value={code}
                     placeholder="000000"
                     placeholderTextColor="#A0AEC0"
                     onChangeText={setCode}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
                     keyboardType="number-pad"
-                    style={styles.textInput}
+                    style={[styles.textInput, Platform.OS === 'web' && ({ outlineStyle: 'none' } as any)]}
                     maxLength={6}
                     editable={!isAnyLoading}
                   />
@@ -433,6 +438,15 @@ const styles = StyleSheet.create({
     minHeight: scale(48),
     backgroundColor: '#F8FAFC',
     textAlignVertical: 'center',
+  },
+  inputWrapperFocused: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.white,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   inputIcon: {
     marginRight: 14,

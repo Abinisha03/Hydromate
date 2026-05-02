@@ -96,6 +96,7 @@ function InitialLayout() {
     const timeout = setTimeout(() => {
       console.log('[Layout] ✅ Safety Timeout: Proceeding...');
       setInitialized(true);
+      setIsReady(true); // Ensure we eventually show the UI
     }, 2000);
 
     return () => {
@@ -161,7 +162,14 @@ function InitialLayout() {
       
       // Safety: Ensure we have a role before deciding
       const userRole = convexUser?.role || (email === 'abinishaa271@gmail.com' ? 'admin' : 'member');
-      console.log('[Layout] Routing check:', { userRole, segment: safeSegments[0], isRoot });
+      console.log('[Layout] Routing check:', { 
+        userRole, 
+        segments: safeSegments, 
+        isRoot, 
+        convexLoaded, 
+        initialized,
+        hasStoredUser
+      });
 
 
 
@@ -208,7 +216,7 @@ function InitialLayout() {
           router.replace('/(tabs)');
         }
       }
-
+      console.log('[Layout] Setting isReady to true');
       setIsReady(true);
     } catch (err) {
       console.error('[Layout] Routing Error:', err);
