@@ -148,6 +148,39 @@ export const getStaffMembers = query({
   },
 });
 
+// Check if an email is already registered as admin or staff
+export const checkEmailExists = query({
+  args: { email: v.string() },
+  handler: async (ctx, args) => {
+    const emailLower = args.email.trim().toLowerCase();
+
+    // Check users table for admin or staff with this email
+    const allUsers = await ctx.db.query("users").take(500);
+    const matchingUser = allUsers.find(
+      (u) =>
+        u.email?.toLowerCase() === emailLower &&
+        (u.role === "admin" || u.role === "staff")
+    );
+
+    if (matchingUser) {
+      return { exists: true, role: matchingUser.role ?? "user" };
+    }
+
+    // Check staffInvites table for any pending invite with this email
+    const pendingInvite = await ctx.db
+      .query("staffInvites")
+      .withIndex("by_email", (q) => q.eq("email", emailLower))
+      .filter((q) => q.eq(q.field("status"), "pending"))
+      .first();
+
+    if (pendingInvite) {
+      return { exists: true, role: "staff" };
+    }
+
+    return { exists: false, role: null };
+  },
+});
+
 // Remove staff access by resetting their role to "user"
 export const removeStaff = mutation({
   args: { staffId: v.id("users") },

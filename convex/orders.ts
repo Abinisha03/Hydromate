@@ -336,3 +336,13 @@ export const adminDeleteOrder = mutation({
     return { success: true };
   },
 });
+
+export const updateOrderStatus = mutation({
+  args: { orderId: v.id("orders"), status: v.string() },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+    await ctx.db.patch(args.orderId, { status: args.status });
+    return { success: true };
+  },
+});
