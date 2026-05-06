@@ -1,15 +1,15 @@
 import { api } from '@/convex/_generated/api';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useQuery } from 'convex/react';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Modal,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 
@@ -120,83 +120,95 @@ function MonthDropdown({ selectedMonth, selectedYear, onSelect }: MonthDropdownP
   const now = new Date();
   const currentYear = now.getFullYear();
 
-  // Build all 12 months for current year + previous year
-  const options = useMemo(() => {
-    const list: { month: number; year: number }[] = [];
+  const label = `${MONTH_SHORT[selectedMonth]} ${selectedYear}`;
+
+  // All months: previous year then current year — listed vertically
+  const rows = useMemo(() => {
+    const list: { month: number; year: number; label: string }[] = [];
     for (const yr of [currentYear - 1, currentYear]) {
       for (let m = 0; m < 12; m++) {
-        list.push({ month: m, year: yr });
+        list.push({ month: m, year: yr, label: `${MONTH_NAMES[m]} ${yr}` });
       }
     }
     return list;
   }, [currentYear]);
 
-  const label = `${MONTH_SHORT[selectedMonth]} ${selectedYear}`;
-
   return (
-    <>
+    <View style={styles.ddWrapper}>
       {/* Trigger button */}
-      <TouchableOpacity style={styles.dropdownBtn} onPress={() => setOpen(true)} activeOpacity={0.8}>
-        <MaterialIcons name="calendar-today" size={14} color={COLORS.info} />
+      <TouchableOpacity
+        style={[styles.dropdownBtn, open && styles.dropdownBtnOpen]}
+        onPress={() => setOpen((v) => !v)}
+        activeOpacity={0.85}
+      >
+        <MaterialIcons name="calendar-today" size={13} color={COLORS.info} />
         <Text style={styles.dropdownBtnText}>{label}</Text>
-        <MaterialIcons name="keyboard-arrow-down" size={18} color={COLORS.info} />
+        <MaterialIcons
+          name={open ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+          size={17}
+          color={COLORS.info}
+        />
       </TouchableOpacity>
 
-      {/* Dropdown modal */}
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <TouchableOpacity style={styles.dropdownOverlay} activeOpacity={1} onPress={() => setOpen(false)}>
-          <View style={styles.dropdownMenu}>
-            <View style={styles.dropdownHeader}>
-              <Text style={styles.dropdownHeaderText}>Select Month</Text>
-              <TouchableOpacity onPress={() => setOpen(false)}>
-                <MaterialIcons name="close" size={18} color={COLORS.gray} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 340 }}>
-              {/* Group by year */}
-              {[currentYear - 1, currentYear].map((yr) => (
-                <View key={yr}>
-                  <Text style={styles.dropdownYearLabel}>{yr}</Text>
-                  <View style={styles.dropdownMonthGrid}>
-                    {MONTH_NAMES.map((name, m) => {
-                      const isSelected = selectedMonth === m && selectedYear === yr;
-                      const isFuture = yr === currentYear && m > now.getMonth();
-                      return (
-                        <TouchableOpacity
-                          key={m}
-                          style={[
-                            styles.dropdownMonthItem,
-                            isSelected && styles.dropdownMonthItemActive,
-                            isFuture && styles.dropdownMonthItemDisabled,
-                          ]}
-                          onPress={() => {
-                            if (!isFuture) {
-                              onSelect(m, yr);
-                              setOpen(false);
-                            }
-                          }}
-                          disabled={isFuture}
-                        >
-                          <Text
-                            style={[
-                              styles.dropdownMonthText,
-                              isSelected && styles.dropdownMonthTextActive,
-                              isFuture && styles.dropdownMonthTextDisabled,
-                            ]}
-                          >
-                            {MONTH_SHORT[m]}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
+      {/* Inline dropdown panel — opens directly below */}
+      {open && (
+        <>
+          {/* Invisible backdrop to close on outside tap */}
+          <TouchableWithoutFeedback onPress={() => setOpen(false)}>
+            <View style={styles.ddBackdrop} />
+          </TouchableWithoutFeedback>
+
+          <View style={styles.ddPanel}>
+            <ScrollView
+              showsVerticalScrollIndicator={true}
+              style={styles.ddScroll}
+              nestedScrollEnabled
+            >
+              {rows.map(({ month: m, year: yr, label: rowLabel }, idx) => {
+                const isSelected = selectedMonth === m && selectedYear === yr;
+                const isFuture = yr === currentYear && m > now.getMonth();
+                const isYearHeader = m === 0; // first month of each year — show year divider
+                return (
+                  <View key={`${yr}-${m}`}>
+                    {isYearHeader && (
+                      <View style={styles.ddYearRow}>
+                        <Text style={styles.ddYearText}>{yr}</Text>
+                      </View>
+                    )}
+                    <TouchableOpacity
+                      style={[
+                        styles.ddRow,
+                        isSelected && styles.ddRowActive,
+                        isFuture && styles.ddRowDisabled,
+                      ]}
+                      onPress={() => {
+                        if (!isFuture) { onSelect(m, yr); setOpen(false); }
+                      }}
+                      disabled={isFuture}
+                      activeOpacity={0.75}
+                    >
+                      {isSelected && (
+                        <MaterialIcons name="check" size={14} color={COLORS.info} style={{ marginRight: 6 }} />
+                      )}
+                      <Text
+                        style={[
+                          styles.ddRowText,
+                          isSelected && styles.ddRowTextActive,
+                          isFuture && styles.ddRowTextDisabled,
+                          !isSelected && { marginLeft: 20 },
+                        ]}
+                      >
+                        {rowLabel}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
-                </View>
-              ))}
+                );
+              })}
             </ScrollView>
           </View>
-        </TouchableOpacity>
-      </Modal>
-    </>
+        </>
+      )}
+    </View>
   );
 }
 
@@ -341,97 +353,98 @@ const styles = StyleSheet.create({
   loadingText: { fontSize: 14, color: COLORS.gray, fontWeight: '600' },
 
   // ── Dropdown ──────────────────────────────────────────────────────────────
+  ddWrapper: {
+    position: 'relative',
+    zIndex: 999,
+  },
   dropdownBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
     backgroundColor: '#EFF6FF',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#BFDBFE',
   },
+  dropdownBtnOpen: {
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    borderBottomColor: 'transparent',
+  },
   dropdownBtnText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
     color: COLORS.info,
   },
-  dropdownOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
+  ddBackdrop: {
+    position: 'fixed' as any,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 998,
   },
-  dropdownMenu: {
+  ddPanel: {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    width: 190,
     backgroundColor: '#fff',
-    borderRadius: 20,
-    width: '100%',
-    maxWidth: 360,
-    overflow: 'hidden',
+    borderRadius: 10,
+    borderTopRightRadius: 0,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    zIndex: 999,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 30,
-    elevation: 20,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 16,
+    overflow: 'hidden',
   },
-  dropdownHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+  ddScroll: {
+    maxHeight: 260,
+  },
+  ddYearRow: {
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: '#E2E8F0',
   },
-  dropdownHeaderText: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: COLORS.text,
-  },
-  dropdownYearLabel: {
-    fontSize: 11,
+  ddYearText: {
+    fontSize: 10,
     fontWeight: '900',
     color: COLORS.secondary,
     textTransform: 'uppercase',
     letterSpacing: 1,
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 8,
   },
-  dropdownMonthGrid: {
+  ddRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 12,
-    paddingBottom: 8,
-    gap: 6,
-  },
-  dropdownMonthItem: {
-    width: '22%',
-    paddingVertical: 10,
-    borderRadius: 10,
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
-  dropdownMonthItemActive: {
-    backgroundColor: COLORS.info,
-    borderColor: COLORS.info,
+  ddRowActive: {
+    backgroundColor: '#EFF6FF',
   },
-  dropdownMonthItemDisabled: {
+  ddRowDisabled: {
     opacity: 0.35,
   },
-  dropdownMonthText: {
+  ddRowText: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '600',
     color: COLORS.text,
   },
-  dropdownMonthTextActive: {
-    color: '#fff',
+  ddRowTextActive: {
+    color: COLORS.info,
+    fontWeight: '800',
   },
-  dropdownMonthTextDisabled: {
+  ddRowTextDisabled: {
     color: COLORS.gray,
   },
 
