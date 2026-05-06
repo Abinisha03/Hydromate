@@ -2,7 +2,16 @@ import { api } from '@/convex/_generated/api';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useQuery } from 'convex/react';
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 const COLORS = {
   primary: '#2EC4B6',
@@ -16,6 +25,12 @@ const COLORS = {
   info: '#3182CE',
   danger: '#E53E3E',
 };
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function KpiCard({ icon, label, value, color, sub }: { icon: string; label: string; value: string | number; color: string; sub?: string }) {
   return (
@@ -60,7 +75,6 @@ function SimpleBarChart({ data, color, label }: { data: { name: string; value: n
 
 // Web recharts wrapper — only rendered on web
 function WebBarChart({ data, color, label }: { data: { name: string; value: number }[]; color: string; label: string }) {
-  // Dynamic import for web only
   const [charts, setCharts] = React.useState<any>(null);
 
   React.useEffect(() => {
@@ -94,23 +108,104 @@ function WebBarChart({ data, color, label }: { data: { name: string; value: numb
   );
 }
 
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// ── Month Dropdown ─────────────────────────────────────────────────────────────
+interface MonthDropdownProps {
+  selectedMonth: number;
+  selectedYear: number;
+  onSelect: (month: number, year: number) => void;
+}
 
+function MonthDropdown({ selectedMonth, selectedYear, onSelect }: MonthDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const now = new Date();
+  const currentYear = now.getFullYear();
+
+  // Build all 12 months for current year + previous year
+  const options = useMemo(() => {
+    const list: { month: number; year: number }[] = [];
+    for (const yr of [currentYear - 1, currentYear]) {
+      for (let m = 0; m < 12; m++) {
+        list.push({ month: m, year: yr });
+      }
+    }
+    return list;
+  }, [currentYear]);
+
+  const label = `${MONTH_SHORT[selectedMonth]} ${selectedYear}`;
+
+  return (
+    <>
+      {/* Trigger button */}
+      <TouchableOpacity style={styles.dropdownBtn} onPress={() => setOpen(true)} activeOpacity={0.8}>
+        <MaterialIcons name="calendar-today" size={14} color={COLORS.info} />
+        <Text style={styles.dropdownBtnText}>{label}</Text>
+        <MaterialIcons name="keyboard-arrow-down" size={18} color={COLORS.info} />
+      </TouchableOpacity>
+
+      {/* Dropdown modal */}
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <TouchableOpacity style={styles.dropdownOverlay} activeOpacity={1} onPress={() => setOpen(false)}>
+          <View style={styles.dropdownMenu}>
+            <View style={styles.dropdownHeader}>
+              <Text style={styles.dropdownHeaderText}>Select Month</Text>
+              <TouchableOpacity onPress={() => setOpen(false)}>
+                <MaterialIcons name="close" size={18} color={COLORS.gray} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 340 }}>
+              {/* Group by year */}
+              {[currentYear - 1, currentYear].map((yr) => (
+                <View key={yr}>
+                  <Text style={styles.dropdownYearLabel}>{yr}</Text>
+                  <View style={styles.dropdownMonthGrid}>
+                    {MONTH_NAMES.map((name, m) => {
+                      const isSelected = selectedMonth === m && selectedYear === yr;
+                      const isFuture = yr === currentYear && m > now.getMonth();
+                      return (
+                        <TouchableOpacity
+                          key={m}
+                          style={[
+                            styles.dropdownMonthItem,
+                            isSelected && styles.dropdownMonthItemActive,
+                            isFuture && styles.dropdownMonthItemDisabled,
+                          ]}
+                          onPress={() => {
+                            if (!isFuture) {
+                              onSelect(m, yr);
+                              setOpen(false);
+                            }
+                          }}
+                          disabled={isFuture}
+                        >
+                          <Text
+                            style={[
+                              styles.dropdownMonthText,
+                              isSelected && styles.dropdownMonthTextActive,
+                              isFuture && styles.dropdownMonthTextDisabled,
+                            ]}
+                          >
+                            {MONTH_SHORT[m]}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </>
+  );
+}
+
+// ── Main Component ─────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const orders = useQuery(api.orders.getAllOrders);
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
-  const [selectedYear] = useState(now.getFullYear());
-
-  // Build list of last 6 months for the filter
-  const monthOptions = useMemo(() => {
-    const opts = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(selectedYear, now.getMonth() - i, 1);
-      opts.push({ month: d.getMonth(), year: d.getFullYear(), label: MONTH_NAMES[d.getMonth()] });
-    }
-    return opts;
-  }, [selectedYear]);
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
 
   const stats = useMemo(() => {
     if (!orders) return null;
@@ -134,7 +229,7 @@ export default function DashboardPage() {
       }
     });
 
-    // Build 4-week buckets for selected month
+    // Build 4-week buckets for selected month/year
     const monthStart = new Date(selectedYear, selectedMonth, 1).getTime();
     const monthEnd = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59, 999).getTime();
     const monthlyData: { name: string; value: number }[] = [
@@ -147,7 +242,7 @@ export default function DashboardPage() {
       const t = o._creationTime;
       if (t >= monthStart && t <= monthEnd) {
         const dayOfMonth = new Date(t).getDate(); // 1–31
-        const weekIdx = Math.min(3, Math.floor((dayOfMonth - 1) / 7)); // 0–3
+        const weekIdx = Math.min(3, Math.floor((dayOfMonth - 1) / 7));
         monthlyData[weekIdx].value += 1;
       }
     });
@@ -176,7 +271,13 @@ export default function DashboardPage() {
       <View style={styles.kpiGrid}>
         <KpiCard icon="list-alt" label="Total Orders" value={stats.total} color={COLORS.secondary} />
         <KpiCard icon="date-range" label="Weekly Orders" value={stats.weeklyOrders} color={COLORS.info} sub="Last 7 days" />
-        <KpiCard icon="calendar-today" label="Monthly Orders" value={stats.monthlyOrders} color={COLORS.warning} sub={MONTH_NAMES[selectedMonth]} />
+        <KpiCard
+          icon="calendar-today"
+          label="Monthly Orders"
+          value={stats.monthlyOrders}
+          color={COLORS.warning}
+          sub={`${MONTH_SHORT[selectedMonth]} ${selectedYear}`}
+        />
         <KpiCard icon="currency-rupee" label="Revenue" value={`₹${stats.revenue.toLocaleString()}`} color={COLORS.success} sub="Delivered orders" />
       </View>
 
@@ -186,32 +287,19 @@ export default function DashboardPage() {
           <ChartComponent data={stats.weeklyData} color={COLORS.secondary} label="Weekly Orders (Last 7 Days)" />
         </View>
         <View style={styles.chartCard}>
-          {/* Month Filter Tabs */}
-          <View style={styles.monthFilterRow}>
-            {monthOptions.map((opt) => (
-              <TouchableOpacity
-                key={`${opt.year}-${opt.month}`}
-                style={[
-                  styles.monthTab,
-                  selectedMonth === opt.month && selectedYear === opt.year && styles.monthTabActive,
-                ]}
-                onPress={() => setSelectedMonth(opt.month)}
-              >
-                <Text
-                  style={[
-                    styles.monthTabText,
-                    selectedMonth === opt.month && styles.monthTabTextActive,
-                  ]}
-                >
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          {/* Month Dropdown Selector */}
+          <View style={styles.chartCardHeader}>
+            <Text style={styles.chartCardTitle}>Monthly Orders (4 Weeks)</Text>
+            <MonthDropdown
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+              onSelect={(m, yr) => { setSelectedMonth(m); setSelectedYear(yr); }}
+            />
           </View>
           <ChartComponent
             data={stats.monthlyData}
             color={COLORS.info}
-            label={`Monthly Orders — ${MONTH_NAMES[selectedMonth]} (4 Weeks)`}
+            label={`${MONTH_NAMES[selectedMonth]} ${selectedYear}`}
           />
         </View>
       </View>
@@ -252,33 +340,115 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   loadingText: { fontSize: 14, color: COLORS.gray, fontWeight: '600' },
 
-  monthFilterRow: {
+  // ── Dropdown ──────────────────────────────────────────────────────────────
+  dropdownBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  dropdownBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.info,
+  },
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  dropdownMenu: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 360,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 30,
+    elevation: 20,
+  },
+  dropdownHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  dropdownHeaderText: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: COLORS.text,
+  },
+  dropdownYearLabel: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: COLORS.secondary,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 8,
+  },
+  dropdownMonthGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    paddingHorizontal: 12,
+    paddingBottom: 8,
     gap: 6,
-    marginBottom: 12,
   },
-  monthTab: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
-    backgroundColor: '#F1F5F9',
+  dropdownMonthItem: {
+    width: '22%',
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  monthTabActive: {
+  dropdownMonthItemActive: {
     backgroundColor: COLORS.info,
     borderColor: COLORS.info,
   },
-  monthTabText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: COLORS.gray,
+  dropdownMonthItemDisabled: {
+    opacity: 0.35,
   },
-  monthTabTextActive: {
+  dropdownMonthText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+  dropdownMonthTextActive: {
     color: '#fff',
   },
+  dropdownMonthTextDisabled: {
+    color: COLORS.gray,
+  },
 
+  // ── Chart card header row ─────────────────────────────────────────────────
+  chartCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  chartCardTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+
+  // ── KPI grid ─────────────────────────────────────────────────────────────
   kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
   kpiCard: {
     flex: 1,
@@ -301,6 +471,7 @@ const styles = StyleSheet.create({
   kpiLabel: { fontSize: 11, fontWeight: '700', color: COLORS.text },
   kpiSub: { fontSize: 9, color: COLORS.gray, fontWeight: '600' },
 
+  // ── Charts ────────────────────────────────────────────────────────────────
   chartsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
   chartCard: {
     flex: 1,
@@ -327,6 +498,7 @@ const styles = StyleSheet.create({
   barFill: { width: '100%', borderRadius: 4 },
   barName: { fontSize: 8, fontWeight: '700', color: COLORS.gray, marginTop: 4, textAlign: 'center' },
 
+  // ── Summary bar ───────────────────────────────────────────────────────────
   summaryCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
