@@ -1,9 +1,10 @@
 import { api } from '@/convex/_generated/api';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useQuery } from 'convex/react';
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -117,97 +118,108 @@ interface MonthDropdownProps {
 
 function MonthDropdown({ selectedMonth, selectedYear, onSelect }: MonthDropdownProps) {
   const [open, setOpen] = useState(false);
+  const [viewYear, setViewYear] = useState(selectedYear);
   const now = new Date();
   const currentYear = now.getFullYear();
 
   const label = `${MONTH_SHORT[selectedMonth]} ${selectedYear}`;
 
-  // All months: previous year then current year — listed vertically
-  const rows = useMemo(() => {
-    const list: { month: number; year: number; label: string }[] = [];
-    for (const yr of [currentYear - 1, currentYear]) {
-      for (let m = 0; m < 12; m++) {
-        list.push({ month: m, year: yr, label: `${MONTH_NAMES[m]} ${yr}` });
-      }
-    }
-    return list;
-  }, [currentYear]);
-
   return (
     <View style={styles.ddWrapper}>
       {/* Trigger button */}
       <TouchableOpacity
-        style={[styles.dropdownBtn, open && styles.dropdownBtnOpen]}
-        onPress={() => setOpen((v) => !v)}
+        style={styles.dropdownBtn}
+        onPress={() => {
+          setViewYear(selectedYear);
+          setOpen(true);
+        }}
         activeOpacity={0.85}
       >
         <MaterialIcons name="calendar-today" size={13} color={COLORS.info} />
         <Text style={styles.dropdownBtnText}>{label}</Text>
-        <MaterialIcons
-          name={open ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-          size={17}
-          color={COLORS.info}
-        />
+        <MaterialIcons name="keyboard-arrow-down" size={17} color={COLORS.info} />
       </TouchableOpacity>
 
-      {/* Inline dropdown panel — opens directly below */}
-      {open && (
-        <>
-          {/* Invisible backdrop to close on outside tap */}
-          <TouchableWithoutFeedback onPress={() => setOpen(false)}>
-            <View style={styles.ddBackdrop} />
-          </TouchableWithoutFeedback>
+      {/* Professional Calendar Modal */}
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setOpen(false)}
+        >
+          <TouchableWithoutFeedback>
+            <View style={styles.calPicker}>
+              {/* Header: Year Selector */}
+              <View style={styles.calHeader}>
+                <TouchableOpacity 
+                  onPress={() => setViewYear(v => v - 1)}
+                  style={styles.calArrow}
+                >
+                  <MaterialIcons name="chevron-left" size={24} color={COLORS.info} />
+                </TouchableOpacity>
+                
+                <Text style={styles.calYearTitle}>{viewYear}</Text>
+                
+                <TouchableOpacity 
+                  onPress={() => setViewYear(v => v + 1)}
+                  style={styles.calArrow}
+                  disabled={viewYear >= currentYear + 1}
+                >
+                  <MaterialIcons 
+                    name="chevron-right" 
+                    size={24} 
+                    color={viewYear >= currentYear + 1 ? '#E2E8F0' : COLORS.info} 
+                  />
+                </TouchableOpacity>
+              </View>
 
-          <View style={styles.ddPanel}>
-            <ScrollView
-              showsVerticalScrollIndicator={true}
-              style={styles.ddScroll}
-              nestedScrollEnabled
-            >
-              {rows.map(({ month: m, year: yr, label: rowLabel }, idx) => {
-                const isSelected = selectedMonth === m && selectedYear === yr;
-                const isFuture = yr === currentYear && m > now.getMonth();
-                const isYearHeader = m === 0; // first month of each year — show year divider
-                return (
-                  <View key={`${yr}-${m}`}>
-                    {isYearHeader && (
-                      <View style={styles.ddYearRow}>
-                        <Text style={styles.ddYearText}>{yr}</Text>
-                      </View>
-                    )}
+              {/* Body: Month Grid */}
+              <View style={styles.calGrid}>
+                {MONTH_SHORT.map((mShort, mIdx) => {
+                  const isSelected = selectedMonth === mIdx && selectedYear === viewYear;
+                  const isFuture = viewYear === currentYear && mIdx > now.getMonth();
+                  const isOverFuture = viewYear > currentYear;
+
+                  return (
                     <TouchableOpacity
+                      key={mIdx}
                       style={[
-                        styles.ddRow,
-                        isSelected && styles.ddRowActive,
-                        isFuture && styles.ddRowDisabled,
+                        styles.calMonthBtn,
+                        isSelected && styles.calMonthBtnActive,
+                        (isFuture || isOverFuture) && styles.calMonthBtnDisabled,
                       ]}
                       onPress={() => {
-                        if (!isFuture) { onSelect(m, yr); setOpen(false); }
+                        if (!isFuture && !isOverFuture) {
+                          onSelect(mIdx, viewYear);
+                          setOpen(false);
+                        }
                       }}
-                      disabled={isFuture}
-                      activeOpacity={0.75}
+                      disabled={isFuture || isOverFuture}
                     >
-                      {isSelected && (
-                        <MaterialIcons name="check" size={14} color={COLORS.info} style={{ marginRight: 6 }} />
-                      )}
                       <Text
                         style={[
-                          styles.ddRowText,
-                          isSelected && styles.ddRowTextActive,
-                          isFuture && styles.ddRowTextDisabled,
-                          !isSelected && { marginLeft: 20 },
+                          styles.calMonthText,
+                          isSelected && styles.calMonthTextActive,
+                          (isFuture || isOverFuture) && styles.calMonthTextDisabled,
                         ]}
                       >
-                        {rowLabel}
+                        {mShort}
                       </Text>
                     </TouchableOpacity>
-                  </View>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </>
-      )}
+                  );
+                })}
+              </View>
+
+              <TouchableOpacity 
+                style={styles.calCloseBtn} 
+                onPress={() => setOpen(false)}
+              >
+                <Text style={styles.calCloseBtnText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableWithoutFeedback>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -352,10 +364,9 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   loadingText: { fontSize: 14, color: COLORS.gray, fontWeight: '600' },
 
-  // ── Dropdown ──────────────────────────────────────────────────────────────
+  // ── Professional Calendar Dropdown Styles ──────────────────────────────
   ddWrapper: {
     position: 'relative',
-    zIndex: 999,
   },
   dropdownBtn: {
     flexDirection: 'row',
@@ -368,84 +379,94 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#BFDBFE',
   },
-  dropdownBtnOpen: {
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-    borderBottomColor: 'transparent',
-  },
   dropdownBtnText: {
     fontSize: 11,
     fontWeight: '800',
     color: COLORS.info,
   },
-  ddBackdrop: {
-    position: 'fixed' as any,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 998,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  ddPanel: {
-    position: 'absolute',
-    top: '100%',
-    right: 0,
-    width: 190,
+  calPicker: {
     backgroundColor: '#fff',
-    borderRadius: 10,
-    borderTopRightRadius: 0,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    zIndex: 999,
+    width: 280,
+    borderRadius: 24,
+    padding: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 16,
-    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 25,
   },
-  ddScroll: {
-    maxHeight: 260,
-  },
-  ddYearRow: {
-    backgroundColor: '#F8FAFC',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-  },
-  ddYearText: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: COLORS.secondary,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  ddRow: {
+  calHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+    paddingHorizontal: 5,
   },
-  ddRowActive: {
-    backgroundColor: '#EFF6FF',
+  calArrow: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  ddRowDisabled: {
-    opacity: 0.35,
-  },
-  ddRowText: {
-    fontSize: 12,
-    fontWeight: '600',
+  calYearTitle: {
+    fontSize: 20,
+    fontWeight: '900',
     color: COLORS.text,
   },
-  ddRowTextActive: {
-    color: COLORS.info,
-    fontWeight: '800',
+  calGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: 'center',
   },
-  ddRowTextDisabled: {
+  calMonthBtn: {
+    width: '30%',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  calMonthBtnActive: {
+    backgroundColor: COLORS.info,
+    borderColor: COLORS.info,
+  },
+  calMonthBtnDisabled: {
+    backgroundColor: '#fff',
+    borderColor: '#F1F5F9',
+    opacity: 0.3,
+  },
+  calMonthText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+  calMonthTextActive: {
+    color: '#fff',
+  },
+  calMonthTextDisabled: {
     color: COLORS.gray,
+  },
+  calCloseBtn: {
+    marginTop: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+  },
+  calCloseBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.text,
   },
 
   // ── Chart card header row ─────────────────────────────────────────────────
