@@ -71,10 +71,10 @@ export default function Sidebar({ activeTab, onTabChange, onLogout, collapsed, o
       <View style={styles.bottomArea}>
         <View style={styles.divider} />
         <TouchableOpacity
-          style={[styles.logoutBtn, collapsed && styles.navItemCollapsed]}
+          style={[styles.logoutBtn, collapsed && styles.logoutBtnCollapsed]}
           onPress={onLogout}
         >
-          <MaterialIcons name="logout" size={20} color="rgba(255,100,100,0.9)" />
+          <MaterialIcons name="logout" size={18} color="#fff" />
           {!collapsed && <Text style={styles.logoutText}>Logout</Text>}
         </TouchableOpacity>
       </View>
@@ -182,15 +182,23 @@ const styles = StyleSheet.create({
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    justifyContent: 'center',
+    paddingVertical: 11,
+    paddingHorizontal: 14,
     borderRadius: 10,
-    gap: 10,
-    marginTop: 4,
+    gap: 8,
+    marginTop: 6,
+    backgroundColor: '#E53E3E',
+  },
+  logoutBtnCollapsed: {
+    paddingHorizontal: 0,
+    width: 40,
+    alignSelf: 'center',
+    borderRadius: 10,
   },
   logoutText: {
     fontSize: 13,
-    fontWeight: '700',
-    color: 'rgba(255,100,100,0.9)',
+    fontWeight: '800',
+    color: '#fff',
   },
 });

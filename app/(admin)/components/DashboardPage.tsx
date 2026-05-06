@@ -1,8 +1,8 @@
 import { api } from '@/convex/_generated/api';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useQuery } from 'convex/react';
-import React, { useMemo } from 'react';
-import { ActivityIndicator, Dimensions, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const COLORS = {
   primary: '#2EC4B6',
@@ -94,24 +94,39 @@ function WebBarChart({ data, color, label }: { data: { name: string; value: numb
   );
 }
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 export default function DashboardPage() {
   const orders = useQuery(api.orders.getAllOrders);
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
+  const [selectedYear] = useState(now.getFullYear());
+
+  // Build list of last 6 months for the filter
+  const monthOptions = useMemo(() => {
+    const opts = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(selectedYear, now.getMonth() - i, 1);
+      opts.push({ month: d.getMonth(), year: d.getFullYear(), label: MONTH_NAMES[d.getMonth()] });
+    }
+    return opts;
+  }, [selectedYear]);
 
   const stats = useMemo(() => {
     if (!orders) return null;
-    const now = Date.now();
+    const nowTs = Date.now();
     const DAY = 86400000;
 
-    const weeklyData: { name: string; value: number }[] = [];
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const weeklyData: { name: string; value: number }[] = [];
 
     // Build last-7-days buckets
     for (let i = 6; i >= 0; i--) {
-      const d = new Date(now - i * DAY);
+      const d = new Date(nowTs - i * DAY);
       weeklyData.push({ name: dayNames[d.getDay()], value: 0 });
     }
     orders.forEach((o) => {
-      const age = now - o._creationTime;
+      const age = nowTs - o._creationTime;
       if (age <= 7 * DAY) {
         const dayIdx = Math.floor(age / DAY);
         const bucketIdx = 6 - dayIdx;
@@ -119,25 +134,30 @@ export default function DashboardPage() {
       }
     });
 
-    // Build last-30-days buckets (6 groups of 5 days)
-    const monthlyData: { name: string; value: number }[] = Array.from({ length: 6 }, (_, i) => ({
-      name: `W${6 - i}`,
-      value: 0,
-    })).reverse();
+    // Build 4-week buckets for selected month
+    const monthStart = new Date(selectedYear, selectedMonth, 1).getTime();
+    const monthEnd = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59, 999).getTime();
+    const monthlyData: { name: string; value: number }[] = [
+      { name: 'W1', value: 0 },
+      { name: 'W2', value: 0 },
+      { name: 'W3', value: 0 },
+      { name: 'W4', value: 0 },
+    ];
     orders.forEach((o) => {
-      const age = now - o._creationTime;
-      if (age <= 30 * DAY) {
-        const group = Math.min(5, Math.floor(age / (5 * DAY)));
-        monthlyData[5 - group].value += 1;
+      const t = o._creationTime;
+      if (t >= monthStart && t <= monthEnd) {
+        const dayOfMonth = new Date(t).getDate(); // 1–31
+        const weekIdx = Math.min(3, Math.floor((dayOfMonth - 1) / 7)); // 0–3
+        monthlyData[weekIdx].value += 1;
       }
     });
 
     const weeklyOrders = weeklyData.reduce((s, d) => s + d.value, 0);
-    const monthlyOrders = orders.filter((o) => now - o._creationTime <= 30 * DAY).length;
+    const monthlyOrders = orders.filter((o) => o._creationTime >= monthStart && o._creationTime <= monthEnd).length;
     const revenue = orders.filter((o) => o.status === 'Delivered').reduce((s, o) => s + o.totalAmount, 0);
 
     return { total: orders.length, weeklyOrders, monthlyOrders, revenue, weeklyData, monthlyData };
-  }, [orders]);
+  }, [orders, selectedMonth, selectedYear]);
 
   if (!stats) {
     return (
@@ -156,7 +176,7 @@ export default function DashboardPage() {
       <View style={styles.kpiGrid}>
         <KpiCard icon="list-alt" label="Total Orders" value={stats.total} color={COLORS.secondary} />
         <KpiCard icon="date-range" label="Weekly Orders" value={stats.weeklyOrders} color={COLORS.info} sub="Last 7 days" />
-        <KpiCard icon="calendar-today" label="Monthly Orders" value={stats.monthlyOrders} color={COLORS.warning} sub="Last 30 days" />
+        <KpiCard icon="calendar-today" label="Monthly Orders" value={stats.monthlyOrders} color={COLORS.warning} sub={MONTH_NAMES[selectedMonth]} />
         <KpiCard icon="currency-rupee" label="Revenue" value={`₹${stats.revenue.toLocaleString()}`} color={COLORS.success} sub="Delivered orders" />
       </View>
 
@@ -166,7 +186,33 @@ export default function DashboardPage() {
           <ChartComponent data={stats.weeklyData} color={COLORS.secondary} label="Weekly Orders (Last 7 Days)" />
         </View>
         <View style={styles.chartCard}>
-          <ChartComponent data={stats.monthlyData} color={COLORS.info} label="Monthly Orders (Last 30 Days)" />
+          {/* Month Filter Tabs */}
+          <View style={styles.monthFilterRow}>
+            {monthOptions.map((opt) => (
+              <TouchableOpacity
+                key={`${opt.year}-${opt.month}`}
+                style={[
+                  styles.monthTab,
+                  selectedMonth === opt.month && selectedYear === opt.year && styles.monthTabActive,
+                ]}
+                onPress={() => setSelectedMonth(opt.month)}
+              >
+                <Text
+                  style={[
+                    styles.monthTabText,
+                    selectedMonth === opt.month && styles.monthTabTextActive,
+                  ]}
+                >
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <ChartComponent
+            data={stats.monthlyData}
+            color={COLORS.info}
+            label={`Monthly Orders — ${MONTH_NAMES[selectedMonth]} (4 Weeks)`}
+          />
         </View>
       </View>
 
@@ -205,6 +251,33 @@ const styles = StyleSheet.create({
   container: { padding: 20, paddingBottom: 60, gap: 20 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   loadingText: { fontSize: 14, color: COLORS.gray, fontWeight: '600' },
+
+  monthFilterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 12,
+  },
+  monthTab: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  monthTabActive: {
+    backgroundColor: COLORS.info,
+    borderColor: COLORS.info,
+  },
+  monthTabText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.gray,
+  },
+  monthTabTextActive: {
+    color: '#fff',
+  },
 
   kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
   kpiCard: {

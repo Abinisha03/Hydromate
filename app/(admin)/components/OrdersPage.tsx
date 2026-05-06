@@ -12,14 +12,14 @@ const COLORS = {
 };
 
 function statusColor(status: string) {
-  switch (status) {
-    case 'PENDING': return { bg: '#FFF7ED', text: '#C2410C' };
-    case 'ASSIGNED': return { bg: '#EFF6FF', text: '#1D4ED8' };
-    case 'ACTIVE': return { bg: '#FEFCE8', text: '#A16207' };
-    case 'DONE': return { bg: '#F0FDF4', text: '#15803D' };
-    case 'CANCEL': return { bg: '#FEF2F2', text: '#B91C1C' };
-    default: return { bg: '#F8FAFC', text: '#64748B' };
-  }
+  const s = status.toLowerCase();
+  if (s === 'pending') return { bg: '#FFF7ED', text: '#C2410C' };
+  if (s === 'assigned') return { bg: '#EFF6FF', text: '#1D4ED8' };
+  if (s === 'accepted') return { bg: '#FEFCE8', text: '#A16207' };
+  if (s === 'out for delivery') return { bg: '#F0F9FF', text: '#0369A1' };
+  if (s === 'delivered') return { bg: '#F0FDF4', text: '#15803D' };
+  if (s === 'cancel' || s === 'cancelled') return { bg: '#FEF2F2', text: '#B91C1C' };
+  return { bg: '#F8FAFC', text: '#64748B' };
 }
 
 export default function OrdersPage() {
@@ -33,7 +33,13 @@ export default function OrdersPage() {
   const [selectedOrderId, setSelectedOrderId] = useState<any>(null);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
-  const filteredOrders = orders?.filter(o => filter === 'All' || o.status === filter.toUpperCase()) || [];
+  const filteredOrders = orders?.filter(o => {
+    if (filter === 'All') return true;
+    if (filter === 'Pending') return o.status.toLowerCase() === 'pending';
+    if (filter === 'Active') return ['assigned', 'accepted', 'out for delivery'].includes(o.status.toLowerCase());
+    if (filter === 'Done') return o.status.toLowerCase() === 'delivered';
+    return true;
+  }) || [];
   const totalPages = Math.ceil(filteredOrders.length / 20);
   const pageOrders = filteredOrders.slice((page - 1) * 20, page * 20);
 
@@ -58,9 +64,9 @@ export default function OrdersPage() {
 
   const stats = [
     { label: 'All', count: orders?.length || 0 },
-    { label: 'Pending', count: orders?.filter(o => o.status === 'PENDING').length || 0 },
-    { label: 'Active', count: orders?.filter(o => o.status === 'ASSIGNED' || o.status === 'ACTIVE').length || 0 },
-    { label: 'Done', count: orders?.filter(o => o.status === 'DONE').length || 0 },
+    { label: 'Pending', count: orders?.filter(o => o.status.toLowerCase() === 'pending').length || 0 },
+    { label: 'Active', count: orders?.filter(o => ['assigned', 'accepted', 'out for delivery'].includes(o.status.toLowerCase())).length || 0 },
+    { label: 'Done', count: orders?.filter(o => o.status.toLowerCase() === 'delivered').length || 0 },
   ];
 
   return (
@@ -176,9 +182,9 @@ export default function OrdersPage() {
             <View style={styles.sheetBody}>
               <Text style={styles.sectionLabel}>Quick Status</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-                {['PENDING', 'ASSIGNED', 'DONE', 'CANCEL'].map((st) => (
+                {['Pending', 'Assigned', 'Delivered', 'Cancel'].map((st) => (
                   <TouchableOpacity key={st} style={[styles.statusChip, { borderColor: statusColor(st).text }]} onPress={() => handleUpdate(st)}>
-                    <Text style={[styles.statusChipText, { color: statusColor(st).text }]}>{st}</Text>
+                    <Text style={[styles.statusChipText, { color: statusColor(st).text }]}>{st.toUpperCase()}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
