@@ -109,112 +109,93 @@ function WebBarChart({ data, color, label }: { data: { name: string; value: numb
   );
 }
 
-// ── Month Dropdown ─────────────────────────────────────────────────────────────
-interface MonthDropdownProps {
-  selectedMonth: number;
-  selectedYear: number;
-  onSelect: (month: number, year: number) => void;
+// ── Calendar Helpers ─────────────────────────────────────────────────────────
+const getDaysInMonth = (m: number, y: number) => new Date(y, m + 1, 0).getDate();
+const getFirstDayOfMonth = (m: number, y: number) => new Date(y, m, 1).getDay();
+
+// ── Calendar Picker ─────────────────────────────────────────────────────────────
+interface CalendarPickerProps {
+  selectedDate: Date;
+  onSelect: (date: Date) => void;
 }
 
-function MonthDropdown({ selectedMonth, selectedYear, onSelect }: MonthDropdownProps) {
+function CalendarPicker({ selectedDate, onSelect }: CalendarPickerProps) {
   const [open, setOpen] = useState(false);
-  const [viewYear, setViewYear] = useState(selectedYear);
+  const [viewDate, setViewDate] = useState(new Date(selectedDate));
   const now = new Date();
-  const currentYear = now.getFullYear();
 
-  const label = `${MONTH_SHORT[selectedMonth]} ${selectedYear}`;
+  const month = viewDate.getMonth();
+  const year = viewDate.getFullYear();
+  const daysInMonth = getDaysInMonth(month, year);
+  const firstDay = getFirstDayOfMonth(month, year);
+
+  const days = [];
+  for (let i = 0; i < firstDay; i++) days.push(null);
+  for (let i = 1; i <= daysInMonth; i++) days.push(i);
+
+  const label = `${selectedDate.getDate()} ${MONTH_SHORT[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`;
+
+  const changeMonth = (offset: number) => {
+    setViewDate(new Date(year, month + offset, 1));
+  };
 
   return (
     <View style={styles.ddWrapper}>
-      {/* Trigger button */}
       <TouchableOpacity
         style={styles.dropdownBtn}
         onPress={() => {
-          setViewYear(selectedYear);
+          setViewDate(new Date(selectedDate));
           setOpen(true);
         }}
         activeOpacity={0.85}
       >
-        <MaterialIcons name="calendar-today" size={13} color={COLORS.info} />
+        <MaterialIcons name="event" size={14} color={COLORS.info} />
         <Text style={styles.dropdownBtnText}>{label}</Text>
-        <MaterialIcons name="keyboard-arrow-down" size={17} color={COLORS.info} />
+        <MaterialIcons name="keyboard-arrow-down" size={18} color={COLORS.info} />
       </TouchableOpacity>
 
-      {/* Professional Calendar Modal */}
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <TouchableOpacity 
-          style={styles.modalOverlay} 
-          activeOpacity={1} 
-          onPress={() => setOpen(false)}
-        >
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setOpen(false)}>
           <TouchableWithoutFeedback>
             <View style={styles.calPicker}>
-              {/* Header: Year Selector */}
               <View style={styles.calHeader}>
-                <TouchableOpacity 
-                  onPress={() => setViewYear(v => v - 1)}
-                  style={styles.calArrow}
-                >
+                <TouchableOpacity onPress={() => changeMonth(-1)} style={styles.calArrow}>
                   <MaterialIcons name="chevron-left" size={24} color={COLORS.info} />
                 </TouchableOpacity>
-                
-                <Text style={styles.calYearTitle}>{viewYear}</Text>
-                
-                <TouchableOpacity 
-                  onPress={() => setViewYear(v => v + 1)}
-                  style={styles.calArrow}
-                  disabled={viewYear >= currentYear + 1}
-                >
-                  <MaterialIcons 
-                    name="chevron-right" 
-                    size={24} 
-                    color={viewYear >= currentYear + 1 ? '#E2E8F0' : COLORS.info} 
-                  />
+                <Text style={styles.calYearTitle}>{MONTH_NAMES[month]} {year}</Text>
+                <TouchableOpacity onPress={() => changeMonth(1)} style={styles.calArrow}>
+                  <MaterialIcons name="chevron-right" size={24} color={COLORS.info} />
                 </TouchableOpacity>
               </View>
 
-              {/* Body: Month Grid */}
-              <View style={styles.calGrid}>
-                {MONTH_SHORT.map((mShort, mIdx) => {
-                  const isSelected = selectedMonth === mIdx && selectedYear === viewYear;
-                  const isFuture = viewYear === currentYear && mIdx > now.getMonth();
-                  const isOverFuture = viewYear > currentYear;
+              <View style={styles.weekDaysRow}>
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                  <Text key={i} style={styles.weekDayText}>{d}</Text>
+                ))}
+              </View>
 
+              <View style={styles.daysGrid}>
+                {days.map((day, idx) => {
+                  if (day === null) return <View key={`pad-${idx}`} style={styles.dayCell} />;
+                  const isSelected = selectedDate.getDate() === day && selectedDate.getMonth() === month && selectedDate.getFullYear() === year;
+                  const isToday = now.getDate() === day && now.getMonth() === month && now.getFullYear() === year;
                   return (
                     <TouchableOpacity
-                      key={mIdx}
-                      style={[
-                        styles.calMonthBtn,
-                        isSelected && styles.calMonthBtnActive,
-                        (isFuture || isOverFuture) && styles.calMonthBtnDisabled,
-                      ]}
+                      key={idx}
+                      style={[styles.dayCell, isSelected && styles.dayCellActive, isToday && !isSelected && styles.dayCellToday]}
                       onPress={() => {
-                        if (!isFuture && !isOverFuture) {
-                          onSelect(mIdx, viewYear);
-                          setOpen(false);
-                        }
+                        onSelect(new Date(year, month, day));
+                        setOpen(false);
                       }}
-                      disabled={isFuture || isOverFuture}
                     >
-                      <Text
-                        style={[
-                          styles.calMonthText,
-                          isSelected && styles.calMonthTextActive,
-                          (isFuture || isOverFuture) && styles.calMonthTextDisabled,
-                        ]}
-                      >
-                        {mShort}
-                      </Text>
+                      <Text style={[styles.dayText, isSelected && styles.dayTextActive, isToday && styles.dayTextToday]}>{day}</Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
 
-              <TouchableOpacity 
-                style={styles.calCloseBtn} 
-                onPress={() => setOpen(false)}
-              >
-                <Text style={styles.calCloseBtnText}>Close</Text>
+              <TouchableOpacity style={styles.calCloseBtn} onPress={() => setOpen(false)}>
+                <Text style={styles.calCloseBtnText}>Cancel</Text>
               </TouchableOpacity>
             </View>
           </TouchableWithoutFeedback>
@@ -227,56 +208,67 @@ function MonthDropdown({ selectedMonth, selectedYear, onSelect }: MonthDropdownP
 // ── Main Component ─────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const orders = useQuery(api.orders.getAllOrders);
-  const now = new Date();
-  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
-  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [viewType, setViewType] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
 
   const stats = useMemo(() => {
     if (!orders) return null;
-    const nowTs = Date.now();
     const DAY = 86400000;
 
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const weeklyData: { name: string; value: number }[] = [];
+    const selectedTs = selectedDate.getTime();
+    const selectedMonth = selectedDate.getMonth();
+    const selectedYear = selectedDate.getFullYear();
 
-    // Build last-7-days buckets
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(nowTs - i * DAY);
-      weeklyData.push({ name: dayNames[d.getDay()], value: 0 });
+    // 1. Weekly Data (Centered around selected date)
+    const weeklyData: { name: string; value: number; fullDate: string }[] = [];
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    for (let i = 3; i >= -3; i--) {
+      const d = new Date(selectedTs - i * DAY);
+      weeklyData.push({ name: dayNames[d.getDay()], value: 0, fullDate: d.toDateString() });
     }
     orders.forEach((o) => {
-      const age = nowTs - o._creationTime;
-      if (age <= 7 * DAY) {
-        const dayIdx = Math.floor(age / DAY);
-        const bucketIdx = 6 - dayIdx;
-        if (bucketIdx >= 0 && bucketIdx < 7) weeklyData[bucketIdx].value += 1;
-      }
+      const od = new Date(o._creationTime).toDateString();
+      const bucket = weeklyData.find(w => w.fullDate === od);
+      if (bucket) bucket.value += 1;
     });
 
-    // Build 4-week buckets for selected month/year
+    // 2. Monthly Data (4 weeks of selected month)
     const monthStart = new Date(selectedYear, selectedMonth, 1).getTime();
     const monthEnd = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59, 999).getTime();
-    const monthlyData: { name: string; value: number }[] = [
-      { name: 'W1', value: 0 },
-      { name: 'W2', value: 0 },
-      { name: 'W3', value: 0 },
-      { name: 'W4', value: 0 },
+    const monthlyData = [
+      { name: 'W1', value: 0 }, { name: 'W2', value: 0 }, { name: 'W3', value: 0 }, { name: 'W4', value: 0 }
     ];
     orders.forEach((o) => {
-      const t = o._creationTime;
-      if (t >= monthStart && t <= monthEnd) {
-        const dayOfMonth = new Date(t).getDate(); // 1–31
-        const weekIdx = Math.min(3, Math.floor((dayOfMonth - 1) / 7));
+      if (o._creationTime >= monthStart && o._creationTime <= monthEnd) {
+        const d = new Date(o._creationTime).getDate();
+        const weekIdx = Math.min(3, Math.floor((d - 1) / 7));
         monthlyData[weekIdx].value += 1;
       }
     });
 
+    // 3. Daily Data (3-hour blocks)
+    const dailyData = [
+      { name: '12am', value: 0 }, { name: '3am', value: 0 }, { name: '6am', value: 0 }, { name: '9am', value: 0 },
+      { name: '12pm', value: 0 }, { name: '3pm', value: 0 }, { name: '6pm', value: 0 }, { name: '9pm', value: 0 }
+    ];
+    orders.forEach(o => {
+      const d = new Date(o._creationTime);
+      if (d.toDateString() === selectedDate.toDateString()) {
+        const bucket = Math.floor(d.getHours() / 3);
+        dailyData[bucket].value += 1;
+      }
+    });
+
     const weeklyOrders = weeklyData.reduce((s, d) => s + d.value, 0);
-    const monthlyOrders = orders.filter((o) => o._creationTime >= monthStart && o._creationTime <= monthEnd).length;
+    const monthlyOrders = monthlyData.reduce((s, d) => s + d.value, 0);
     const revenue = orders.filter((o) => o.status === 'Delivered').reduce((s, o) => s + o.totalAmount, 0);
 
-    return { total: orders.length, weeklyOrders, monthlyOrders, revenue, weeklyData, monthlyData };
-  }, [orders, selectedMonth, selectedYear]);
+    let chartData: { name: string; value: number }[] = weeklyData.map(({ name, value }) => ({ name, value }));
+    if (viewType === 'monthly') chartData = monthlyData;
+    if (viewType === 'daily') chartData = dailyData;
+
+    return { total: orders.length, weeklyOrders, monthlyOrders, revenue, chartData };
+  }, [orders, selectedDate, viewType]);
 
   if (!stats) {
     return (
@@ -294,13 +286,13 @@ export default function DashboardPage() {
       {/* KPI Cards */}
       <View style={styles.kpiGrid}>
         <KpiCard icon="list-alt" label="Total Orders" value={stats.total} color={COLORS.secondary} />
-        <KpiCard icon="date-range" label="Weekly Orders" value={stats.weeklyOrders} color={COLORS.info} sub="Last 7 days" />
+        <KpiCard icon="date-range" label="Weekly Orders" value={stats.weeklyOrders} color={COLORS.info} sub="Selected Week" />
         <KpiCard
           icon="calendar-today"
           label="Monthly Orders"
           value={stats.monthlyOrders}
           color={COLORS.warning}
-          sub={`${MONTH_SHORT[selectedMonth]} ${selectedYear}`}
+          sub={`${MONTH_SHORT[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`}
         />
         <KpiCard icon="currency-rupee" label="Revenue" value={`₹${stats.revenue.toLocaleString()}`} color={COLORS.success} sub="Delivered orders" />
       </View>
@@ -308,22 +300,42 @@ export default function DashboardPage() {
       {/* Charts Row */}
       <View style={styles.chartsRow}>
         <View style={styles.chartCard}>
-          <ChartComponent data={stats.weeklyData} color={COLORS.secondary} label="Weekly Orders (Last 7 Days)" />
-        </View>
-        <View style={styles.chartCard}>
-          {/* Month Dropdown Selector */}
           <View style={styles.chartCardHeader}>
-            <Text style={styles.chartCardTitle}>Monthly Orders (4 Weeks)</Text>
-            <MonthDropdown
-              selectedMonth={selectedMonth}
-              selectedYear={selectedYear}
-              onSelect={(m, yr) => { setSelectedMonth(m); setSelectedYear(yr); }}
+            <View style={styles.toggleContainer}>
+              <TouchableOpacity
+                style={[styles.toggleBtn, viewType === 'daily' && styles.toggleBtnActive]}
+                onPress={() => setViewType('daily')}
+              >
+                <Text style={[styles.toggleText, viewType === 'daily' && styles.toggleTextActive]}>Day</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.toggleBtn, viewType === 'weekly' && styles.toggleBtnActive]}
+                onPress={() => setViewType('weekly')}
+              >
+                <Text style={[styles.toggleText, viewType === 'weekly' && styles.toggleTextActive]}>Week</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.toggleBtn, viewType === 'monthly' && styles.toggleBtnActive]}
+                onPress={() => setViewType('monthly')}
+              >
+                <Text style={[styles.toggleText, viewType === 'monthly' && styles.toggleTextActive]}>Month</Text>
+              </TouchableOpacity>
+            </View>
+
+            <CalendarPicker
+              selectedDate={selectedDate}
+              onSelect={(date) => setSelectedDate(date)}
             />
           </View>
+          
           <ChartComponent
-            data={stats.monthlyData}
-            color={COLORS.info}
-            label={`${MONTH_NAMES[selectedMonth]} ${selectedYear}`}
+            data={stats.chartData}
+            color={viewType === 'daily' ? COLORS.danger : viewType === 'weekly' ? COLORS.secondary : COLORS.info}
+            label={
+              viewType === 'daily' ? `Orders for ${selectedDate.toDateString()}` :
+              viewType === 'weekly' ? 'Weekly Comparison' :
+              `${MONTH_NAMES[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`
+            }
           />
         </View>
       </View>
@@ -481,6 +493,34 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: COLORS.text,
   },
+  toggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    padding: 3,
+    borderRadius: 10,
+    gap: 4,
+  },
+  toggleBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  toggleBtnActive: {
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  toggleText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.gray,
+  },
+  toggleTextActive: {
+    color: COLORS.text,
+  },
 
   // ── KPI grid ─────────────────────────────────────────────────────────────
   kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
@@ -504,6 +544,16 @@ const styles = StyleSheet.create({
   kpiValue: { fontSize: 26, fontWeight: '900', letterSpacing: -1 },
   kpiLabel: { fontSize: 11, fontWeight: '700', color: COLORS.text },
   kpiSub: { fontSize: 9, color: COLORS.gray, fontWeight: '600' },
+  // Calendar Grid Styles
+  weekDaysRow: { flexDirection: 'row', marginBottom: 10, paddingHorizontal: 5 },
+  weekDayText: { flex: 1, textAlign: 'center', fontSize: 12, fontWeight: '800', color: COLORS.gray },
+  daysGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 2 },
+  dayCell: { width: '13.5%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
+  dayCellActive: { backgroundColor: COLORS.info },
+  dayCellToday: { backgroundColor: COLORS.accent },
+  dayText: { fontSize: 13, fontWeight: '700', color: COLORS.text },
+  dayTextActive: { color: '#fff' },
+  dayTextToday: { color: COLORS.info },
 
   // ── Charts ────────────────────────────────────────────────────────────────
   chartsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
